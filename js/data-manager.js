@@ -1204,21 +1204,88 @@ class DataManager {
         }
         
         console.log(`✅ 필터 업데이트 완료: 전체 ${this.heritageData.length}개 데이터`);
+        
+        // 4축 필터링 이벤트 리스너 설정
+        this.setup4AxisFilterListeners();
+    }
+    
+    /**
+     * 4축 필터링 이벤트 리스너 설정
+     */
+    setup4AxisFilterListeners() {
+        console.log('🔧 4축 필터링 이벤트 리스너 설정 중...');
+        
+        // 기존 이벤트 리스너 제거 (중복 방지)
+        const filterElements = [
+            'authority-filter', 'region-group-filter', 'quality-filter', 'period-filter',
+            'category-filter', 'location-filter', 'region-filter'
+        ];
+        
+        filterElements.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                // 기존 이벤트 리스너 제거
+                element.removeEventListener('change', this.handleFilterChange);
+                // 새 이벤트 리스너 추가
+                element.addEventListener('change', this.handleFilterChange.bind(this));
+                console.log(`✅ ${id} 이벤트 리스너 설정 완료`);
+            }
+        });
+        
+        // 검색어 이벤트 리스너
+        const searchElement = document.getElementById('globalSearch');
+        if (searchElement) {
+            searchElement.removeEventListener('input', this.handleSearchInput);
+            searchElement.addEventListener('input', this.handleSearchInput.bind(this));
+            console.log('✅ 검색어 이벤트 리스너 설정 완료');
+        }
+        
+        console.log('🔧 4축 필터링 이벤트 리스너 설정 완료');
+    }
+    
+    /**
+     * 필터 변경 이벤트 핸들러
+     */
+    handleFilterChange(event) {
+        console.log('🔍 필터 변경:', event.target.id, event.target.value);
+        this.applyFilters();
+    }
+    
+    /**
+     * 검색어 입력 이벤트 핸들러
+     */
+    handleSearchInput(event) {
+        console.log('🔍 검색어 입력:', event.target.value);
+        // 디바운스 적용 (300ms)
+        clearTimeout(this.searchTimeout);
+        this.searchTimeout = setTimeout(() => {
+            this.applyFilters();
+        }, 300);
     }
     
     /**
      * 4축 필터링 적용
      */
     applyFilters() {
+        // 모든 필터 값 수집
         const searchTerm = document.getElementById('globalSearch')?.value?.toLowerCase() || '';
         const categoryFilter = document.getElementById('category-filter')?.value || '';
         const regionFilter = document.getElementById('region-filter')?.value || 
                            document.getElementById('location-filter')?.value || '';
         
-        console.log('🔍 필터 적용:', { searchTerm, categoryFilter, regionFilter });
+        // 4축 필터링 값들
+        const authorityFilter = document.getElementById('authority-filter')?.value || '';
+        const regionGroupFilter = document.getElementById('region-group-filter')?.value || '';
+        const qualityFilter = document.getElementById('quality-filter')?.value || '';
+        const periodFilter = document.getElementById('period-filter')?.value || '';
+        
+        console.log('🔍 4축 필터 적용:', { 
+            searchTerm, categoryFilter, regionFilter,
+            authorityFilter, regionGroupFilter, qualityFilter, periodFilter
+        });
         
         this.filteredData = this.heritageData.filter(item => {
-            // 검색어 필터
+            // 1. 검색어 필터
             if (searchTerm) {
                 const searchableText = [
                     item.name,
@@ -1230,29 +1297,193 @@ class DataManager {
                 if (!searchableText.includes(searchTerm)) return false;
             }
             
-            // 카테고리 필터 (수정된 로직)
+            // 2. 카테고리 필터
             if (categoryFilter) {
                 const itemCategory = item.kdcd_name || item.category || 
                                    (item.key_kdcd ? `미분류코드${item.key_kdcd}` : '미분류');
                 if (itemCategory !== categoryFilter) return false;
             }
             
-            // 지역 필터 (수정된 로직)
+            // 3. 지역 필터
             if (regionFilter) {
                 const itemRegion = item.ctcd_name || item.location || 
                                   (item.key_ctcd ? `미분류지역${item.key_ctcd}` : '미분류지역');
                 if (itemRegion !== regionFilter) return false;
             }
             
+            // 4. 지정 권한 필터
+            if (authorityFilter) {
+                const authority = this.getAuthorityLevel(item.key_kdcd);
+                if (authority !== authorityFilter) return false;
+            }
+            
+            // 5. 지역 그룹 필터
+            if (regionGroupFilter) {
+                const regionGroup = this.getRegionGroup(item.key_ctcd);
+                if (regionGroup !== regionGroupFilter) return false;
+            }
+            
+            // 6. 데이터 품질 필터
+            if (qualityFilter) {
+                const qualityScore = this.getDataQualityScore(item);
+                if (!this.matchesQualityFilter(qualityScore, qualityFilter)) return false;
+            }
+            
+            // 7. 역사적 시대 필터
+            if (periodFilter) {
+                const period = this.getHistoricalPeriod(item);
+                if (period !== periodFilter) return false;
+            }
+            
             return true;
         });
         
-        console.log(`🔍 필터 적용 결과: ${this.filteredData.length}개`);
+        console.log(`🔍 4축 필터 적용 결과: ${this.filteredData.length}개`);
         
         // 결과 개수 실시간 업데이트
         this.updateResultsCount();
         
+        // 필터 요약 업데이트
+        this.updateFilterSummary();
+        
         return this.filteredData;
+    }
+    
+    /**
+     * 지정 권한 레벨 반환
+     */
+    getAuthorityLevel(keyKdcd) {
+        if (!keyKdcd) return '기타지정';
+        
+        const authorityMapping = {
+            '11': '국가지정', '12': '국가지정', '13': '국가지정', '14': '국가지정',
+            '15': '국가지정', '16': '국가지정', '17': '국가지정',
+            '21': '시도지정', '22': '시도지정', '23': '시도지정',
+            '31': '시도지정', '79': '기타지정', '80': '기타지정'
+        };
+        
+        return authorityMapping[keyKdcd] || '기타지정';
+    }
+    
+    /**
+     * 지역 그룹 반환
+     */
+    getRegionGroup(keyCtcd) {
+        if (!keyCtcd) return '기타';
+        
+        const regionGroupMapping = {
+            '11': '수도권', '31': '수도권',  // 서울, 경기
+            '21': '영남권', '22': '영남권', '25': '영남권', '26': '영남권', '37': '영남권', '38': '영남권',  // 부산, 대구, 대전, 울산, 경북, 경남
+            '24': '호남권', '35': '호남권', '36': '호남권',  // 광주, 전북, 전남
+            '23': '충청권', '29': '충청권', '33': '충청권', '34': '충청권',  // 인천, 세종, 충북, 충남
+            '32': '강원권',  // 강원
+            '39': '제주권'   // 제주
+        };
+        
+        return regionGroupMapping[keyCtcd] || '기타';
+    }
+    
+    /**
+     * 데이터 품질 점수 계산
+     */
+    getDataQualityScore(item) {
+        let score = 0;
+        
+        // 기본 정보 (1점)
+        if (item.name && item.name.trim()) score += 1;
+        
+        // 카테고리 정보 (1점)
+        if (item.kdcd_name || item.category) score += 1;
+        
+        // 지역 정보 (1점)
+        if (item.ctcd_name || item.location) score += 1;
+        
+        // 설명 정보 (1점)
+        if (item.content || item.korean_description) score += 1;
+        
+        // 이미지 정보 (1점)
+        if (item.image_url && item.image_url.trim()) score += 1;
+        
+        // 좌표 정보 (1점)
+        if (item.coords && item.coords.lat && item.coords.lng) score += 1;
+        
+        return score;
+    }
+    
+    /**
+     * 품질 필터 매칭 확인
+     */
+    matchesQualityFilter(score, filter) {
+        switch (filter) {
+            case 'complete': return score >= 6;
+            case 'high': return score >= 3;
+            case 'medium': return score >= 2;
+            case 'basic': return score >= 1;
+            default: return true;
+        }
+    }
+    
+    /**
+     * 역사적 시대 반환
+     */
+    getHistoricalPeriod(item) {
+        const name = item.name || '';
+        const description = item.content || item.korean_description || '';
+        const text = (name + ' ' + description).toLowerCase();
+        
+        // 시대별 키워드 매칭
+        if (text.includes('삼국') || text.includes('고구려') || text.includes('백제') || text.includes('신라')) {
+            return '삼국시대';
+        } else if (text.includes('고려') || text.includes('고려시대')) {
+            return '고려시대';
+        } else if (text.includes('조선') || text.includes('조선시대')) {
+            return '조선시대';
+        } else if (text.includes('일제') || text.includes('일본') || text.includes('근대')) {
+            return '근대';
+        } else if (text.includes('현대') || text.includes('현재')) {
+            return '현대';
+        } else {
+            return '시대미상';
+        }
+    }
+    
+    /**
+     * 필터 요약 업데이트
+     */
+    updateFilterSummary() {
+        const summaryElement = document.getElementById('filter-summary');
+        if (!summaryElement) return;
+        
+        const activeFilters = [];
+        
+        // 활성 필터 수집
+        const filters = [
+            { id: 'authority-filter', label: '지정권한' },
+            { id: 'region-group-filter', label: '지역그룹' },
+            { id: 'quality-filter', label: '데이터품질' },
+            { id: 'period-filter', label: '역사적시대' },
+            { id: 'category-filter', label: '카테고리' },
+            { id: 'location-filter', label: '지역' }
+        ];
+        
+        filters.forEach(filter => {
+            const element = document.getElementById(filter.id);
+            if (element && element.value) {
+                activeFilters.push(`${filter.label}: ${element.value}`);
+            }
+        });
+        
+        // 요약 표시
+        if (activeFilters.length > 0) {
+            summaryElement.innerHTML = `
+                <div class="alert alert-info mb-0">
+                    <i class="fas fa-filter me-2"></i>
+                    <strong>활성 필터:</strong> ${activeFilters.join(', ')}
+                </div>
+            `;
+        } else {
+            summaryElement.innerHTML = '';
+        }
     }
     
     /**
@@ -1285,6 +1516,37 @@ class DataManager {
         const countElements = document.querySelectorAll('.results-count, .heritage-count, .total-count');
         countElements.forEach(element => {
             element.textContent = count.toLocaleString();
+        });
+        
+        // 메인 페이지 총 문화재 수 업데이트
+        this.updateMainPageCount();
+    }
+    
+    /**
+     * 메인 페이지 총 문화재 수 업데이트
+     */
+    updateMainPageCount() {
+        const totalCount = this.heritageData.length;
+        console.log('🏠 메인 페이지 총 문화재 수 업데이트:', totalCount);
+        
+        // 여러 가능한 요소 ID들에 대해 업데이트 시도
+        const possibleIds = [
+            'total-heritage-count', 'main-total-count', 'dashboard-total-count',
+            'sidebar-total', 'home-total-count'
+        ];
+        
+        possibleIds.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = totalCount.toLocaleString();
+                console.log(`✅ ${id} 업데이트: ${totalCount.toLocaleString()}`);
+            }
+        });
+        
+        // 클래스 기반으로도 찾기
+        const totalCountElements = document.querySelectorAll('.total-heritage-count, .main-total-count');
+        totalCountElements.forEach(element => {
+            element.textContent = totalCount.toLocaleString();
         });
     }
     

@@ -1627,3 +1627,27 @@ body.sidebar-hidden .sidebar-toggle-desktop {
         font-size: 1.2rem;
     }
 }
+
+/* 미분류 카테고리 토글 스타일 */
+.submenu-toggle .toggle-icon {
+    transition: transform 0.3s ease;
+    margin-left: auto;
+}
+
+.submenu-toggle.active .toggle-icon {
+    transform: rotate(180deg);
+}
+
+.submenu-collapsed {
+    display: none;
+}
+
+.submenu-collapsed.show {
+    display: block;
+}
+
+.submenu-toggle .submenu-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}

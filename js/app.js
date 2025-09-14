@@ -719,10 +719,22 @@ function renderHeritageDetail(item) {
         `;
 
         // 지도 표시
-        if (window.mapManager && item.coords) {
+        if (typeof mapManager !== 'undefined' && mapManager.showMap && item.coords) {
             setTimeout(() => {
                 mapManager.showMap('heritage-map', item.coords, item.name);
             }, 100);
+        } else if (item.coords) {
+            // 지도 매니저가 없으면 기본 메시지 표시
+            const mapContainer = document.getElementById('heritage-map');
+            if (mapContainer) {
+                mapContainer.innerHTML = `
+                    <div class="text-center py-4 bg-light rounded">
+                        <i class="fas fa-map-marked-alt fa-2x text-muted mb-2"></i>
+                        <p class="mb-0 text-muted">지도 정보</p>
+                        <small class="text-muted">좌표: ${item.coords.lat.toFixed(6)}, ${item.coords.lng.toFixed(6)}</small>
+                    </div>
+                `;
+            }
         }
     }
     
@@ -1689,3 +1701,19 @@ document.addEventListener('click', (e) => {
         e.preventDefault();
     }
 });
+
+/**
+ * 서브메뉴 토글 기능
+ */
+function toggleSubmenu(menuId) {
+    const menu = document.getElementById(menuId);
+    const toggle = menu.parentElement;
+    
+    if (menu.classList.contains('show')) {
+        menu.classList.remove('show');
+        toggle.classList.remove('active');
+    } else {
+        menu.classList.add('show');
+        toggle.classList.add('active');
+    }
+}

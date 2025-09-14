@@ -423,7 +423,7 @@
         <!-- 목록 뷰 -->
         <div id="list-view" class="view" style="display: none;">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2>문화재 목록</h2>
+                <h2 id="results-title">📋 문화재 목록 (0개)</h2>
                 <div class="d-flex gap-2">
                     <!-- 뷰 모드 전환 버튼 -->
                     <div class="btn-group" role="group" aria-label="뷰 모드 선택">
@@ -449,6 +449,91 @@
                     <button class="btn btn-outline-secondary btn-sm" onclick="resetFilters()">
                         <i class="fas fa-undo"></i> 초기화
                     </button>
+                </div>
+            </div>
+            
+            <!-- 4축 필터링 시스템 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-filter me-2"></i>4축 필터링 시스템
+                        <small class="text-muted ms-2">총 <span id="total-heritage-count">0</span>개 문화재</small>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <!-- 축 1: 지정 권한 -->
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-crown text-warning me-1"></i>지정 권한
+                            </label>
+                            <select id="authority-filter" class="form-select form-select-sm">
+                                <option value="">모든 권한</option>
+                                <option value="국가지정">국가지정</option>
+                                <option value="시도지정">시도지정</option>
+                                <option value="기타지정">기타지정</option>
+                            </select>
+                        </div>
+                        
+                        <!-- 축 2: 지역 분포 -->
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-map-marker-alt text-danger me-1"></i>지역 분포
+                            </label>
+                            <select id="region-group-filter" class="form-select form-select-sm">
+                                <option value="">모든 권역</option>
+                                <option value="수도권">수도권</option>
+                                <option value="영남권">영남권</option>
+                                <option value="호남권">호남권</option>
+                                <option value="충청권">충청권</option>
+                                <option value="강원권">강원권</option>
+                                <option value="제주권">제주권</option>
+                            </select>
+                        </div>
+                        
+                        <!-- 축 3: 데이터 품질 -->
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-star text-success me-1"></i>데이터 품질
+                            </label>
+                            <select id="quality-filter" class="form-select form-select-sm">
+                                <option value="">모든 품질</option>
+                                <option value="complete">완전한 데이터</option>
+                                <option value="high">고품질 (3점+)</option>
+                                <option value="medium">보통 (2점+)</option>
+                                <option value="basic">기본 (1점+)</option>
+                            </select>
+                        </div>
+                        
+                        <!-- 축 4: 시대 분류 -->
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-clock text-info me-1"></i>시대 분류
+                            </label>
+                            <select id="period-filter" class="form-select form-select-sm">
+                                <option value="">모든 시대</option>
+                                <option value="선사시대">선사시대</option>
+                                <option value="삼국시대">삼국시대</option>
+                                <option value="통일신라">통일신라</option>
+                                <option value="고려시대">고려시대</option>
+                                <option value="조선시대">조선시대</option>
+                                <option value="근현대">근현대</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- 필터 결과 요약 -->
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="alert alert-info py-2 mb-0">
+                                <small>
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    현재 필터: <span id="current-filters">모든 문화재</span> 
+                                    | 결과: <strong id="filtered-count">0</strong>개
+                                </small>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             

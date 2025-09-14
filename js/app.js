@@ -107,6 +107,14 @@ function updateDashboard() {
     updateElement('site-count', (stats.categories['사적'] || 0) + (stats.categories['명승'] || 0));
     updateElement('natural-count', stats.categories['천연기념물'] || 0);
     
+    // 대시보드 카테고리별 건수 업데이트
+    updateElement('explore-national-count', (stats.categories['국보'] || 0) + '건');
+    updateElement('explore-treasure-count', (stats.categories['보물'] || 0) + '건');
+    updateElement('explore-historic-count', (stats.categories['사적'] || 0) + '건');
+    updateElement('explore-scenic-count', (stats.categories['명승'] || 0) + '건');
+    updateElement('explore-natural-count', (stats.categories['천연기념물'] || 0) + '건');
+    updateElement('explore-intangible-count', (stats.categories['국가무형문화재'] || 0) + '건');
+    
     // 4축 필터링 시스템 업데이트
     if (dataManager && typeof dataManager.updateFilters === 'function') {
         dataManager.updateFilters();

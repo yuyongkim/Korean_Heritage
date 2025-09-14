@@ -75,6 +75,14 @@ class DataManager {
                     
                     console.log('✅ JavaScript 데이터 로드 성공:', this.heritageData.length, '개 항목');
                     
+                    // 데이터 샘플 확인
+                    if (this.heritageData.length > 0) {
+                        console.log('📊 데이터 샘플:', {
+                            첫번째: this.heritageData[0],
+                            카테고리분포: this.heritageData.slice(0, 10).map(item => item.kdcd_name || item.category)
+                        });
+                    }
+                    
                     // JavaScript 데이터를 대용량 저장소에 저장
                     await this.saveData();
                     
@@ -150,14 +158,14 @@ class DataManager {
                             
                         } else if (Array.isArray(parsedData) && parsedData.length > 0) {
                             // 기존 형식: [...]
-                            this.heritageData = parsedData;
+                    this.heritageData = parsedData;
                             const backupAge = timestamp ? 
                                 Math.floor((Date.now() - parseInt(timestamp)) / 1000 / 60) : '알 수 없음';
-                            
+                    
                             console.log('✅ 사용자 데이터 로드 성공 (기존 형식):', this.heritageData.length, '개 항목');
-                            console.log('마지막 업데이트:', backupAge, '분 전');
+                    console.log('마지막 업데이트:', backupAge, '분 전');
                         }
-                        
+                    
                         if (this.heritageData && this.heritageData.length > 0) {
                     this.processData();
                     this.isLoaded = true;
@@ -802,7 +810,7 @@ class DataManager {
     }
     
     /**
-     * 검색 및 필터링
+     * 검색 및 필터링 (기본)
      */
     search(query = '', categoryFilter = '', locationFilter = '') {
         this.filteredData = this.heritageData.filter(item => {
@@ -818,6 +826,184 @@ class DataManager {
         });
         
         return this.filteredData;
+    }
+    
+    /**
+     * 4축 필터링 시스템
+     */
+    applyFilters() {
+        const searchTerm = document.getElementById('globalSearch')?.value || '';
+        const categoryFilter = document.getElementById('category-filter')?.value || '';
+        const regionFilter = document.getElementById('location-filter')?.value || '';
+        const authorityFilter = document.getElementById('authority-filter')?.value || '';
+        const regionGroupFilter = document.getElementById('region-group-filter')?.value || '';
+        const qualityFilter = document.getElementById('quality-filter')?.value || '';
+        const periodFilter = document.getElementById('period-filter')?.value || '';
+        
+        console.log('🔍 4축 필터링 적용:', {
+            searchTerm, categoryFilter, regionFilter, authorityFilter, 
+            regionGroupFilter, qualityFilter, periodFilter
+        });
+        
+        this.filteredData = this.heritageData.filter(item => {
+            // 1. 검색어 필터
+            if (searchTerm) {
+                const searchableText = [
+                    item.name, item.kdcd_name || item.category, 
+                    item.ctcd_name || item.location, item.content
+                ].join(' ').toLowerCase();
+                if (!searchableText.includes(searchTerm.toLowerCase())) return false;
+            }
+            
+            // 2. 카테고리 필터 (기존)
+            if (categoryFilter) {
+                const itemCategory = item.kdcd_name || item.category || (item.key_kdcd ? `미분류코드${item.key_kdcd}` : '미분류');
+                if (itemCategory !== categoryFilter) return false;
+            }
+            
+            // 3. 지역 필터 (기존)
+            if (regionFilter) {
+                const itemRegion = item.ctcd_name || item.location || (item.key_ctcd ? `미분류지역${item.key_ctcd}` : '미분류지역');
+                if (itemRegion !== regionFilter) return false;
+            }
+            
+            // 4. 지정 권한 필터 (축 1)
+            if (authorityFilter) {
+                const authorityLevel = this.getAuthorityLevel(item.key_kdcd);
+                if (authorityLevel !== authorityFilter) return false;
+            }
+            
+            // 5. 지역 그룹 필터 (축 2)
+            if (regionGroupFilter) {
+                const regionGroup = this.getRegionGroup(item.key_ctcd);
+                if (regionGroup !== regionGroupFilter) return false;
+            }
+            
+            // 6. 데이터 품질 필터 (축 3)
+            if (qualityFilter) {
+                const qualityScore = this.getDataQualityScore(item);
+                if (!this.matchesQualityFilter(qualityScore, qualityFilter)) return false;
+            }
+            
+            // 7. 시대 분류 필터 (축 4)
+            if (periodFilter) {
+                const period = this.getHistoricalPeriod(item);
+                if (period !== periodFilter) return false;
+            }
+            
+            return true;
+        });
+        
+        // 결과 개수 실시간 업데이트
+        this.updateResultsCount();
+        
+        // 필터 요약 업데이트
+        this.updateFilterSummary();
+        
+        console.log(`✅ 4축 필터링 완료: ${this.filteredData.length}개 결과`);
+        return this.filteredData;
+    }
+    
+    /**
+     * 지정 권한 레벨 계산
+     */
+    getAuthorityLevel(keyKdcd) {
+        if (!keyKdcd) return '미분류';
+        
+        const code = String(keyKdcd);
+        if (['11', '12', '13', '14', '15', '16', '17'].includes(code)) {
+            return '국가지정';
+        } else if (['21', '22', '23', '31'].includes(code)) {
+            return '시도지정';
+        } else if (['79', '80'].includes(code)) {
+            return '기타지정';
+        }
+        return '미분류';
+    }
+    
+    /**
+     * 지역 그룹 계산
+     */
+    getRegionGroup(keyCtcd) {
+        if (!keyCtcd) return '미분류';
+        
+        const code = String(keyCtcd);
+        const regionGroups = {
+            '수도권': ['11', '23', '31'], // 서울, 인천, 경기
+            '영남권': ['21', '22', '26', '37', '38'], // 부산, 대구, 울산, 경북, 경남
+            '호남권': ['24', '35', '36'], // 광주, 전북, 전남
+            '충청권': ['25', '29', '33', '34'], // 대전, 세종, 충북, 충남
+            '강원권': ['32'], // 강원
+            '제주권': ['39'] // 제주
+        };
+        
+        for (const [group, codes] of Object.entries(regionGroups)) {
+            if (codes.includes(code)) return group;
+        }
+        return '기타지역';
+    }
+    
+    /**
+     * 데이터 품질 점수 계산
+     */
+    getDataQualityScore(item) {
+        let score = 0;
+        if (item.content && item.content.trim()) score += 1;
+        if (item.image_url && item.image_url.trim()) score += 1;
+        if (item.english_description && item.english_description.trim()) score += 1;
+        if (item.coords && item.coords.lat && item.coords.lng) score += 1;
+        return score;
+    }
+    
+    /**
+     * 품질 필터 매칭
+     */
+    matchesQualityFilter(score, filter) {
+        switch (filter) {
+            case 'complete': return score >= 4;
+            case 'high': return score >= 3;
+            case 'medium': return score >= 2;
+            case 'basic': return score >= 1;
+            default: return true;
+        }
+    }
+    
+    /**
+     * 시대 분류 계산 (간단한 키워드 기반)
+     */
+    getHistoricalPeriod(item) {
+        const content = (item.content || '').toLowerCase();
+        const name = (item.name || '').toLowerCase();
+        const text = content + ' ' + name;
+        
+        if (text.includes('선사') || text.includes('구석기') || text.includes('신석기')) return '선사시대';
+        if (text.includes('삼국') || text.includes('고구려') || text.includes('백제') || text.includes('신라')) return '삼국시대';
+        if (text.includes('통일신라') || text.includes('신라시대')) return '통일신라';
+        if (text.includes('고려') || text.includes('고려시대')) return '고려시대';
+        if (text.includes('조선') || text.includes('조선시대') || text.includes('세종') || text.includes('이성계')) return '조선시대';
+        if (text.includes('근대') || text.includes('현대') || text.includes('일제') || text.includes('해방')) return '근현대';
+        
+        return '미분류';
+    }
+    
+    /**
+     * 필터 요약 업데이트
+     */
+    updateFilterSummary() {
+        const filters = [];
+        const authorityFilter = document.getElementById('authority-filter')?.value;
+        const regionGroupFilter = document.getElementById('region-group-filter')?.value;
+        const qualityFilter = document.getElementById('quality-filter')?.value;
+        const periodFilter = document.getElementById('period-filter')?.value;
+        
+        if (authorityFilter) filters.push(`지정권한: ${authorityFilter}`);
+        if (regionGroupFilter) filters.push(`지역: ${regionGroupFilter}`);
+        if (qualityFilter) filters.push(`품질: ${qualityFilter}`);
+        if (periodFilter) filters.push(`시대: ${periodFilter}`);
+        
+        const summary = filters.length > 0 ? filters.join(', ') : '모든 문화재';
+        updateElement('current-filters', summary);
+        updateElement('filtered-count', this.filteredData.length.toLocaleString());
     }
     
     /**
@@ -845,6 +1031,8 @@ class DataManager {
      * 통계 정보 가져오기
      */
     getStatistics() {
+        console.log('📊 통계 계산 시작, 총 데이터:', this.heritageData.length);
+        
         const stats = {
             total: this.heritageData.length,
             categories: {},
@@ -853,13 +1041,52 @@ class DataManager {
         
         // 실제 데이터 기반으로 통계 수집
         this.heritageData.forEach(item => {
-            const category = item.kdcd_name || item.category || '미분류';
+            // 카테고리 통계 (우선순위: kdcd_name > category > 코드 기반)
+            let category = '미분류';
+            if (item.kdcd_name && item.kdcd_name !== '') {
+                category = item.kdcd_name;
+            } else if (item.category && item.category !== '') {
+                category = item.category;
+            } else if (item.key_kdcd) {
+                // 코드 기반 매핑
+                const codeMapping = {
+                    '11': '국보', '12': '보물', '13': '사적', '14': '명승',
+                    '15': '천연기념물', '16': '국가무형문화재', '17': '국가민속문화재',
+                    '21': '시도유형문화재', '22': '시도기념물', '23': '시도민속문화재',
+                    '31': '시도무형문화재', '79': '문화재자료', '80': '등록문화재'
+                };
+                category = codeMapping[item.key_kdcd] || `미분류코드${item.key_kdcd}`;
+            }
+            
             stats.categories[category] = (stats.categories[category] || 0) + 1;
             
-            const location = item.ctcd_name || item.location;
+            // 지역 통계 (우선순위: ctcd_name > location > 코드 기반)
+            let location = null;
+            if (item.ctcd_name && item.ctcd_name !== '') {
+                location = item.ctcd_name;
+            } else if (item.location && item.location !== '') {
+                location = item.location;
+            } else if (item.key_ctcd) {
+                // 지역 코드 기반 매핑
+                const regionMapping = {
+                    '11': '서울특별시', '21': '부산광역시', '22': '대구광역시', '23': '인천광역시',
+                    '24': '광주광역시', '25': '대전광역시', '26': '울산광역시', '29': '세종특별자치시',
+                    '31': '경기도', '32': '강원특별자치도', '33': '충청북도', '34': '충청남도',
+                    '35': '전북특별자치도', '36': '전라남도', '37': '경상북도', '38': '경상남도',
+                    '39': '제주특별자치도'
+                };
+                location = regionMapping[item.key_ctcd] || `미분류지역${item.key_ctcd}`;
+            }
+            
             if (location) {
                 stats.locations.add(location);
             }
+        });
+        
+        console.log('📊 통계 계산 완료:', {
+            total: stats.total,
+            categories: stats.categories,
+            locationCount: stats.locations.size
         });
         
         return {

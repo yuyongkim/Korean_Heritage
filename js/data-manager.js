@@ -581,8 +581,8 @@ class DataManager {
         `;
         const storageIcon = storageType === 'IndexedDB' ? 'fa-database' : 'fa-hdd';
         const storageMessage = storageType === 'IndexedDB' 
-            ? `${this.heritageData.length}개 항목이 IndexedDB에 대용량 저장되었습니다!<br>수백MB~GB까지 지원합니다!`
-            : `${this.heritageData.length}개 항목이 로컬 스토리지에 압축 저장되었습니다.<br>이제 매번 CSV 업로드할 필요가 없습니다!`;
+            ? `${this.heritageData.length}개 항목이 IndexedDB에 대용량 저장되었습니다! 수백MB~GB까지 지원합니다!`
+            : `${this.heritageData.length}개 항목이 로컬 스토리지에 압축 저장되었습니다. 이제 매번 CSV 업로드할 필요가 없습니다!`;
             
         notification.innerHTML = `
             <i class="fas ${storageIcon} me-2"></i>
@@ -1024,7 +1024,66 @@ class DataManager {
      * 카테고리별 문화재 가져오기
      */
     getByCategory(category) {
-        return this.heritageData.filter(item => item.category === category);
+        console.log('🔍 카테고리별 검색:', category);
+        
+        return this.heritageData.filter(item => {
+            // 미분류 카테고리 처리
+            if (category.startsWith('미분류-')) {
+                const subCategory = category.replace('미분류-', '');
+                
+                // 이름 기반 분류
+                if (item.name && item.name.includes(subCategory)) {
+                    return true;
+                }
+                
+                // 설명 기반 분류
+                const content = (item.content || item.korean_description || '').toLowerCase();
+                if (content.includes(subCategory)) {
+                    return true;
+                }
+                
+                // 키워드 기반 분류
+                const keywords = {
+                    '사찰': ['사찰', '절', '암자', '선원', '정사'],
+                    '고분': ['고분', '무덤', '분묘', '능', '릉'],
+                    '성곽': ['성', '성곽', '성벽', '성터', '산성'],
+                    '탑': ['탑', '석탑', '목탑', '전탑'],
+                    '불상': ['불상', '석불', '목불', '금불'],
+                    '기와': ['기와', '와당', '전', '벽돌'],
+                    '도자기': ['도자기', '자기', '도기', '토기', '청자', '백자'],
+                    '서적': ['서적', '책', '문서', '고문서', '필사본'],
+                    '회화': ['회화', '그림', '화', '도화', '산수화'],
+                    '공예': ['공예', '장식', '금속', '목공', '칠공'],
+                    '기타': ['기타', '미상', '불명']
+                };
+                
+                if (keywords[subCategory]) {
+                    return keywords[subCategory].some(keyword => 
+                        item.name.includes(keyword) || content.includes(keyword)
+                    );
+                }
+                
+                return false;
+            }
+            
+            // 일반 카테고리 처리
+            return item.category === category || 
+                   item.kdcd_name === category ||
+                   (item.key_kdcd && this.getCategoryByCode(item.key_kdcd) === category);
+        });
+    }
+    
+    /**
+     * 코드로 카테고리명 반환
+     */
+    getCategoryByCode(keyKdcd) {
+        const codeMapping = {
+            '11': '국보', '12': '보물', '13': '사적', '14': '명승',
+            '15': '천연기념물', '16': '국가무형문화재', '17': '국가민속문화재',
+            '21': '시도유형문화재', '22': '시도기념물', '23': '시도민속문화재',
+            '31': '시도무형문화재', '79': '문화재자료', '80': '등록문화재'
+        };
+        return codeMapping[keyKdcd] || '미분류';
     }
     
     /**

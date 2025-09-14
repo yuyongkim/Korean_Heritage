@@ -742,9 +742,12 @@ function renderHeritageDetail(item) {
     const linksContainer = document.getElementById('heritage-links');
     if (linksContainer) {
         linksContainer.innerHTML = `
+            <a href="https://www.heritage.go.kr" target="_blank" class="heritage-link d-block mb-2">
+                <i class="fas fa-external-link-alt me-2"></i>문화재청 홈페이지
+            </a>
             ${item.source_url ? `
                 <a href="${item.source_url}" target="_blank" class="heritage-link d-block mb-2">
-                    <i class="fas fa-external-link-alt me-2"></i>문화재청 원문 페이지
+                    <i class="fas fa-info-circle me-2"></i>상세 정보 (원문)
                 </a>
             ` : ''}
             <a href="#" class="heritage-link d-block mb-2" onclick="shareHeritage('${item.name}'); return false;">
@@ -784,7 +787,20 @@ function updateHeritageDescription(item) {
     
     container.innerHTML = paragraphs.map(p => {
         // 문단 내 줄바꿈을 <br>로 변환
-        const formattedParagraph = p.trim().replace(/\n/g, '<br>');
+        let formattedParagraph = p.trim().replace(/\n/g, '<br>');
+        
+        // 숫자와 단위 사이의 줄바꿈 방지 (예: 1.54m, 1.4m 등)
+        formattedParagraph = formattedParagraph.replace(/(\d+\.?\d*)\s*<br>\s*([a-zA-Z가-힣]+)/g, '$1$2');
+        
+        // 일반적인 줄바꿈 패턴 처리 (한글 단어 사이)
+        formattedParagraph = formattedParagraph.replace(/([가-힣])\s*<br>\s*([가-힣])/g, '$1 $2');
+        
+        // 문장 끝 마침표 후 줄바꿈 처리 (자연스러운 문단 구분)
+        formattedParagraph = formattedParagraph.replace(/([가-힣]\.)\s*<br>\s*([가-힣])/g, '$1 $2');
+        
+        // 연속된 공백 정리
+        formattedParagraph = formattedParagraph.replace(/\s+/g, ' ');
+        
         return `<p>${formattedParagraph}</p>`;
     }).join('');
 }

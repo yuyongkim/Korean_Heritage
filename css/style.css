@@ -62,16 +62,16 @@
     --radius-xl: 16px;
 }
 
-/* 기본 스타일 */
+/* 기본 스타일 - 위키 스타일 */
 * {
     box-sizing: border-box;
 }
 
 body {
     font-family: var(--font-sans);
-    background-color: var(--background);
-    color: var(--text);
-    line-height: var(--line-height-normal);
+    background-color: #f8f9fa; /* 위키피디아 스타일 배경 */
+    color: #202122; /* 위키피디아 스타일 텍스트 */
+    line-height: 1.6;
     margin: 0;
     padding: 0;
 }
@@ -433,15 +433,17 @@ body.sidebar-hidden .sidebar-toggle-desktop {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* 히어로 섹션 */
+/* 히어로 섹션 - 위키 스타일 */
 .hero-section {
-    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 50%, var(--secondary) 100%);
-    color: var(--background);
-    border-radius: var(--radius-xl);
+    background: #ffffff;
+    color: #202122;
+    border: 1px solid #a2a9b1;
+    border-radius: 0;
     margin-bottom: var(--space-2xl);
     padding: var(--space-2xl) var(--space-xl);
     position: relative;
     overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .hero-section::before {
@@ -458,9 +460,10 @@ body.sidebar-hidden .sidebar-toggle-desktop {
 .hero-section .display-4 {
     font-family: var(--font-serif);
     font-size: var(--font-size-h1);
-    font-weight: 700;
-    text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+    font-weight: 400; /* 위키 스타일 - 얇은 폰트 */
+    text-shadow: none; /* 위키 스타일 - 그림자 제거 */
     margin-bottom: var(--space-md);
+    color: #000000;
 }
 
 .hero-section .lead {
@@ -521,29 +524,30 @@ body.sidebar-hidden .sidebar-toggle-desktop {
     margin: 0;
 }
 
-/* 카드 스타일 */
+/* 카드 스타일 - 위키 스타일 */
 .card {
-    border: 1px solid var(--border);
-    box-shadow: var(--shadow-sm);
-    transition: all 0.2s ease;
-    border-radius: var(--radius-md);
-    background-color: var(--background);
+    border: 1px solid #a2a9b1;
+    box-shadow: none;
+    transition: none;
+    border-radius: 0;
+    background-color: #ffffff;
 }
 
 .card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
+    transform: none;
+    box-shadow: none;
+    border-color: #36c;
 }
 
-/* 통계 카드 */
+/* 통계 카드 - 위키 스타일 */
 .stat-card {
     height: 100%;
-    transition: all 0.3s ease;
+    transition: none;
 }
 
 .stat-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-lg);
+    transform: none;
+    box-shadow: none;
 }
 
 .stat-card .stat-icon {
@@ -906,10 +910,10 @@ body.sidebar-hidden .sidebar-toggle-desktop {
 
 .heritage-card {
     cursor: pointer;
-    transition: all 0.3s ease;
-    border: none;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    border-radius: 12px;
+    transition: none;
+    border: 1px solid #a2a9b1;
+    box-shadow: none;
+    border-radius: 0;
     overflow: hidden;
     display: flex;
     flex-direction: row;
@@ -918,8 +922,9 @@ body.sidebar-hidden .sidebar-toggle-desktop {
 }
 
 .heritage-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    transform: none;
+    box-shadow: none;
+    border-color: #36c;
 }
 
 .heritage-card .card-body {
@@ -1131,76 +1136,69 @@ body.sidebar-hidden .sidebar-toggle-desktop {
 }
 
 /* 배지 스타일 */
-/* 탐색 카드 */
+/* 탐색 카드 - 위키 스타일 */
 .explore-card {
     cursor: pointer;
-    transition: all 0.3s ease;
-    border: 2px solid transparent;
+    transition: none;
+    border: 1px solid #a2a9b1;
 }
 
 .explore-card:hover {
-    transform: translateY(-8px);
-    box-shadow: var(--shadow-lg);
-    border-color: var(--primary);
+    transform: none;
+    box-shadow: none;
+    border-color: #36c;
 }
 
 .explore-icon {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    border-radius: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 2rem;
+    font-size: 1.5rem;
     margin: 0 auto;
     position: relative;
+    background: #f8f9fa;
+    border: 1px solid #a2a9b1;
 }
 
 .explore-icon::after {
-    content: '';
-    position: absolute;
-    inset: -4px;
-    border-radius: 50%;
-    padding: 4px;
-    background: linear-gradient(135deg, currentColor, transparent);
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: exclude;
-    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    mask-composite: exclude;
+    display: none; /* 위키 스타일에서는 장식 요소 제거 */
 }
 
 .explore-icon.national-treasure {
-    background: linear-gradient(135deg, var(--accent), #ff6b6b);
-    color: white;
+    background: #f8f9fa;
+    color: #d73502;
 }
 
 .explore-icon.treasure {
-    background: linear-gradient(135deg, var(--secondary), #d4a574);
-    color: white;
+    background: #f8f9fa;
+    color: #8b4513;
 }
 
 .explore-icon.historic-site {
-    background: linear-gradient(135deg, var(--primary), #4a90e2);
-    color: white;
+    background: #f8f9fa;
+    color: #2e4a62;
 }
 
 .explore-icon.natural-monument {
-    background: linear-gradient(135deg, #28a745, #71dd8a);
-    color: white;
+    background: #f8f9fa;
+    color: #28a745;
 }
 
 .explore-title {
     font-family: var(--font-serif);
     font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--text);
+    font-weight: 400; /* 위키 스타일 - 얇은 폰트 */
+    color: #000000;
     margin-bottom: var(--space-sm);
 }
 
 .explore-description {
-    color: var(--gray-600);
+    color: #54595d; /* 위키 스타일 텍스트 색상 */
     font-size: 0.9rem;
-    line-height: var(--line-height-normal);
+    line-height: 1.6;
     margin-bottom: var(--space-md);
 }
 
@@ -1398,6 +1396,8 @@ body.sidebar-hidden .sidebar-toggle-desktop {
 #heritage-map {
     border: 1px solid #dee2e6;
     border-radius: 8px;
+    width: 300px !important;
+    height: 300px !important;
 }
 
 /* 버튼 스타일 개선 */

@@ -42,8 +42,12 @@ class SimpleMapManager {
 
         // 지도 컨테이너 설정
         container.innerHTML = '<div id="loading-map" class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> 지도 로딩 중...</div>';
-        container.style.height = '200px';
-        container.style.width = '100%';
+        container.style.height = '300px';
+        container.style.width = '300px';
+        container.style.margin = '0 auto';
+        container.style.display = 'flex';
+        container.style.alignItems = 'center';
+        container.style.justifyContent = 'center';
 
         // 좌표 유효성 검사
         const lat = parseFloat(coords.lat);

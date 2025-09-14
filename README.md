@@ -40,6 +40,58 @@
 - **실시간 처리**: 진행률 표시와 오류 검증
 - **데이터 검증**: 필수 필드 및 형식 검사
 - **로컬 저장**: 브라우저 로컬 스토리지 활용
+- **번역 데이터 업로드**: 영어 번역 완료된 CSV 파일 업로드 지원
+
+## 📝 번역 완료된 CSV 업로드 방법
+
+### 1. 번역 완료된 CSV 파일 준비
+번역이 완료된 CSV 파일은 다음 형식을 따라야 합니다:
+
+```csv
+name,key_asno,key_kdcd,key_ctcd,longitude,latitude,collected_at,composite_key,kdcd_name,ctcd_name,content,imageUrl,content_length,has_image,detail_collected_at,api_success,api_error,english_description
+서울 숭례문,10000000,11,11,126.975312652739,37.559975221378,2025-09-13T06:35:01.196603,11-11-10000000,국보,서울특별시,"조선시대 한양도성의 정문...","https://example.com/image.jpg",1500,true,2025-09-13T06:35:01.196603,true,,Sungnyemun Gate, the main gate of Hanyangdoseong Fortress...
+```
+
+**중요한 필드:**
+- `name`: 문화재명 (한국어)
+- `content`: 한국어 설명
+- `english_description`: **새로 추가된 영어 번역 필드**
+- 기타 모든 기존 필드 유지
+
+### 2. CSV 파일 업로드 방법
+
+#### 방법 1: 웹 인터페이스 사용 (권장)
+1. 웹사이트 접속 후 우상단 "CSV 업로드" 버튼 클릭
+2. 번역 완료된 CSV 파일 선택
+3. 업로드 진행률 확인
+4. 완료 후 자동으로 영어 설명이 적용됨
+
+#### 방법 2: 로컬 서버 사용
+```bash
+# 1. 번역 완료된 CSV 파일을 data 폴더에 복사
+cp translated_heritage_data.csv ./data/heritage_master.csv
+
+# 2. 서버 재시작
+python -m http.server 8080 --bind 0.0.0.0
+
+# 3. 브라우저에서 새로고침 (Ctrl+F5)
+```
+
+### 3. 번역 데이터 확인
+- 상세 페이지에서 언어 토글 버튼으로 한국어/영어 전환 확인
+- 영어 설명이 제대로 표시되는지 확인
+- 번역 품질 및 완성도 검증
+
+### 4. 백업 및 버전 관리
+```bash
+# 번역 완료된 CSV 백업
+cp heritage_master.csv heritage_master_translated_$(date +%Y%m%d).csv
+
+# Git에 커밋 (선택사항)
+git add heritage_master.csv
+git commit -m "Add English translations for cultural heritage data"
+git push origin main
+```
 
 ## 🚀 배포 및 관리 방법
 

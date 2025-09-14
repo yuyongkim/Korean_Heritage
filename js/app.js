@@ -744,13 +744,13 @@ function renderHeritageDetail(item) {
         linksContainer.innerHTML = `
             ${item.source_url ? `
                 <a href="${item.source_url}" target="_blank" class="heritage-link d-block mb-2">
-                    <i class="fas fa-external-link-alt me-2"></i>문화재청 상세 정보
+                    <i class="fas fa-external-link-alt me-2"></i>문화재청 원문 페이지
                 </a>
             ` : ''}
-            <a href="#" class="heritage-link d-block mb-2">
+            <a href="#" class="heritage-link d-block mb-2" onclick="shareHeritage('${item.name}'); return false;">
                 <i class="fas fa-share me-2"></i>공유하기
             </a>
-            <a href="#" class="heritage-link d-block">
+            <a href="#" class="heritage-link d-block" onclick="addToFavorites('${item.name}'); return false;">
                 <i class="fas fa-heart me-2"></i>즐겨찾기
             </a>
         `;
@@ -769,13 +769,24 @@ function updateHeritageDescription(item) {
     
     const isKorean = dataManager.currentLanguage === 'ko';
     const description = isKorean 
-        ? item.korean_description 
+        ? (item.content || item.korean_description || '설명이 없습니다.')
         : (item.english_description || '영문 설명을 준비 중입니다.');
     
-    // 문단 나누기
-    const paragraphs = description.split('.').filter(p => p.trim().length > 0);
+    // 줄바꿈 처리 및 문단 나누기
+    let processedDescription = description
+        .replace(/\r\n/g, '\n')  // Windows 줄바꿈 처리
+        .replace(/\r/g, '\n')    // Mac 줄바꿈 처리
+        .replace(/\n\s*\n/g, '\n\n')  // 연속된 줄바꿈 정리
+        .trim();
     
-    container.innerHTML = paragraphs.map(p => `<p>${p.trim()}.</p>`).join('');
+    // 문단별로 나누기 (빈 줄 기준)
+    const paragraphs = processedDescription.split('\n\n').filter(p => p.trim().length > 0);
+    
+    container.innerHTML = paragraphs.map(p => {
+        // 문단 내 줄바꿈을 <br>로 변환
+        const formattedParagraph = p.trim().replace(/\n/g, '<br>');
+        return `<p>${formattedParagraph}</p>`;
+    }).join('');
 }
 
 /**
@@ -1715,5 +1726,48 @@ function toggleSubmenu(menuId) {
     } else {
         menu.classList.add('show');
         toggle.classList.add('active');
+    }
+}
+
+/**
+ * 문화재 공유하기
+ */
+function shareHeritage(heritageName) {
+    const url = window.location.href;
+    const text = `${heritageName} - 한국 문화유산 정보`;
+    
+    if (navigator.share) {
+        navigator.share({
+            title: text,
+            text: text,
+            url: url
+        }).catch(err => console.log('공유 실패:', err));
+    } else {
+        // 클립보드에 복사
+        navigator.clipboard.writeText(`${text}\n${url}`).then(() => {
+            alert('링크가 클립보드에 복사되었습니다!');
+        }).catch(() => {
+            alert('공유 기능을 사용할 수 없습니다.');
+        });
+    }
+}
+
+/**
+ * 즐겨찾기 추가
+ */
+function addToFavorites(heritageName) {
+    try {
+        let favorites = JSON.parse(localStorage.getItem('heritage_favorites') || '[]');
+        
+        if (!favorites.includes(heritageName)) {
+            favorites.push(heritageName);
+            localStorage.setItem('heritage_favorites', JSON.stringify(favorites));
+            alert(`"${heritageName}"이(가) 즐겨찾기에 추가되었습니다!`);
+        } else {
+            alert(`"${heritageName}"은(는) 이미 즐겨찾기에 있습니다.`);
+        }
+    } catch (error) {
+        console.error('즐겨찾기 추가 실패:', error);
+        alert('즐겨찾기 추가에 실패했습니다.');
     }
 }

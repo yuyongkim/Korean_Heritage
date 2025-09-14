@@ -115,6 +115,9 @@ function updateDashboard() {
     // 결과 개수 실시간 업데이트
     updateResultsCount();
     
+    // 사이드바 총 문화재 수 업데이트
+    updateElement('sidebar-total', stats.total.toLocaleString());
+    
     // 애니메이션 효과
     animateNumbers();
 }

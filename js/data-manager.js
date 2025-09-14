@@ -1056,6 +1056,31 @@ class DataManager {
                     '31': '시도무형문화재', '79': '문화재자료', '80': '등록문화재'
                 };
                 category = codeMapping[item.key_kdcd] || `미분류코드${item.key_kdcd}`;
+            } else {
+                // 미분류 항목들을 더 세분화
+                if (item.name && item.name.includes('사찰')) {
+                    category = '미분류-사찰';
+                } else if (item.name && item.name.includes('고분')) {
+                    category = '미분류-고분';
+                } else if (item.name && item.name.includes('성')) {
+                    category = '미분류-성곽';
+                } else if (item.name && item.name.includes('탑')) {
+                    category = '미분류-탑';
+                } else if (item.name && item.name.includes('불상')) {
+                    category = '미분류-불상';
+                } else if (item.name && item.name.includes('기와')) {
+                    category = '미분류-기와';
+                } else if (item.name && item.name.includes('도자기')) {
+                    category = '미분류-도자기';
+                } else if (item.name && item.name.includes('서적')) {
+                    category = '미분류-서적';
+                } else if (item.name && item.name.includes('회화')) {
+                    category = '미분류-회화';
+                } else if (item.name && item.name.includes('공예')) {
+                    category = '미분류-공예';
+                } else {
+                    category = '미분류-기타';
+                }
             }
             
             stats.categories[category] = (stats.categories[category] || 0) + 1;

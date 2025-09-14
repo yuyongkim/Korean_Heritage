@@ -78,29 +78,32 @@ class MapManager {
             }
 
             // Leaflet 지도 생성 (최적화된 설정)
-            this.currentMap = L.map(containerId, {
-                zoomControl: true,
-                attributionControl: true,
-                preferCanvas: false,
-                // 성능 최적화 옵션
-                zoomAnimation: true,
-                fadeAnimation: true,
-                markerZoomAnimation: true,
-                // 렌더링 최적화
-                renderer: L.canvas(),
-                // 휠 줌 최적화
-                wheelPxPerZoomLevel: 120
-            }).setView([lat, lng], 15);
+            // 지도 생성 (타임아웃 추가)
+            setTimeout(() => {
+                try {
+                    this.currentMap = L.map(containerId, {
+                        zoomControl: true,
+                        attributionControl: true,
+                        preferCanvas: false,
+                        // 성능 최적화 옵션
+                        zoomAnimation: true,
+                        fadeAnimation: true,
+                        markerZoomAnimation: true,
+                                // 렌더링 최적화
+                        renderer: L.canvas(),
+                        // 휠 줌 최적화
+                        wheelPxPerZoomLevel: 120
+                    }).setView([lat, lng], 15);
 
-            // OpenStreetMap 타일 레이어 추가 (최적화된 설정)
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a> contributors',
-                maxZoom: 18,
-                minZoom: 1,
-                subdomains: ['a', 'b', 'c'],
-                // 성능 최적화 옵션
-                keepBuffer: 2,
-                updateWhenIdle: false,
+                    // OpenStreetMap 타일 레이어 추가 (최적화된 설정)
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a> contributors',
+                        maxZoom: 18,
+                        minZoom: 1,
+                        subdomains: ['a', 'b', 'c'],
+                        // 성능 최적화 옵션
+                        keepBuffer: 2,
+                        updateWhenIdle: false,
                 updateWhenZooming: false,
                 // 타일 로딩 최적화
                 tileSize: 256,
@@ -212,11 +215,11 @@ class MapManager {
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© OpenStreetMap contributors',
                 maxZoom: 18,
-                minZoom: 1,
-                subdomains: ['a', 'b', 'c'],
-                // 성능 최적화 옵션
-                keepBuffer: 2,
-                updateWhenIdle: false,
+                        minZoom: 1,
+                        subdomains: ['a', 'b', 'c'],
+                        // 성능 최적화 옵션
+                        keepBuffer: 2,
+                        updateWhenIdle: false,
                 updateWhenZooming: false,
                 tileSize: 256,
                 zoomOffset: 0

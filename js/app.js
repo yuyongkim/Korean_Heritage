@@ -70,6 +70,21 @@ function setupEventListeners() {
         locationFilter.addEventListener('change', applyFilters);
     }
     
+    // 4축 필터링 이벤트 리스너
+    const authorityFilter = document.getElementById('authority-filter');
+    const regionGroupFilter = document.getElementById('region-group-filter');
+    const qualityFilter = document.getElementById('quality-filter');
+    const periodFilter = document.getElementById('period-filter');
+    
+    [authorityFilter, regionGroupFilter, qualityFilter, periodFilter].forEach(filter => {
+        if (filter) {
+            filter.addEventListener('change', () => {
+                console.log('🔄 4축 필터 변경:', filter.id, filter.value);
+                applyFilters();
+            });
+        }
+    });
+    
     // 뷰 모드 전환
     const gridViewBtn = document.getElementById('grid-view-btn');
     const listViewBtn = document.getElementById('list-view-btn');

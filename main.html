@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>한국 문화유산 위키 시스템</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;500;700&family=Inter:wght@400;500;600&family=Crimson+Text:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- 사이드바 네비게이션 -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <a href="#home" class="sidebar-brand">
+                <i class="fas fa-landmark me-2"></i>
+                <span>Korean Heritage Archive</span>
+            </a>
+            <button class="sidebar-close d-md-none" id="sidebarClose">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="sidebar-content">
+            <!-- 언어 토글 -->
+            <div class="language-toggle mb-4">
+                <div class="btn-group w-100" role="group">
+                    <input type="radio" class="btn-check" name="lang" id="lang-ko" autocomplete="off" checked>
+                    <label class="btn btn-outline-primary btn-sm" for="lang-ko">한글</label>
+                    
+                    <input type="radio" class="btn-check" name="lang" id="lang-en" autocomplete="off">
+                    <label class="btn btn-outline-primary btn-sm" for="lang-en">English</label>
+                </div>
+            </div>
+            
+            <!-- 검색 박스 -->
+            <div class="sidebar-search mb-4">
+                <div class="position-relative">
+                    <input type="text" id="globalSearch" class="form-control" data-i18n-placeholder="search.placeholder" placeholder="문화재 검색...">
+                    <i class="fas fa-search search-icon"></i>
+                </div>
+            </div>
+            
+            <!-- 메뉴 -->
+            <ul class="sidebar-menu">
+                <li class="menu-item">
+                    <a href="#home" class="menu-link active">
+                        <i class="fas fa-home"></i>
+                        <span data-i18n="sidebar.home">홈</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="#list" class="menu-link">
+                        <i class="fas fa-list"></i>
+                        <span data-i18n="sidebar.list">전체 목록</span>
+                    </a>
+                </li>
+
+                <li class="menu-item">
+                    <div class="menu-label">
+                        <i class="fas fa-tags"></i>
+                        <span data-i18n="sidebar.categories">카테고리</span>
+                    </div>
+                    <ul class="submenu">
+                        <li><a href="#category/국보" class="submenu-link">
+                            <i class="fas fa-medal heritage-icon-national"></i><span data-i18n="category.national">국보</span>
+                        </a></li>
+                        <li><a href="#category/보물" class="submenu-link">
+                            <i class="fas fa-coins heritage-icon-treasure"></i><span data-i18n="category.treasure">보물</span>
+                        </a></li>
+                        <li><a href="#category/사적" class="submenu-link">
+                            <i class="fas fa-monument heritage-icon-historic"></i><span data-i18n="category.historic">사적</span>
+                        </a></li>
+                        <li><a href="#category/명승" class="submenu-link">
+                            <i class="fas fa-mountain-sun heritage-icon-scenic"></i>명승
+                        </a></li>
+                        <li><a href="#category/천연기념물" class="submenu-link">
+                            <i class="fas fa-seedling heritage-icon-natural"></i><span data-i18n="category.natural">천연기념물</span>
+                        </a></li>
+                    </ul>
+                </li>
+            </ul>
+            
+            <!-- 통계 요약 -->
+            <div class="sidebar-stats mt-4">
+                <h6 class="stats-title">현재 통계</h6>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-number" id="sidebar-total">6</div>
+                        <div class="stat-label">총 문화재</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">87%</div>
+                        <div class="stat-label">번역률</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 관리 기능 -->
+            <div class="sidebar-admin mt-4">
+                <button class="btn btn-primary w-100" id="csv-upload-btn">
+                    <i class="fas fa-upload me-2"></i>CSV 업로드
+                </button>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- 모바일 오버레이 -->
+    <div class="sidebar-overlay d-md-none" id="sidebarOverlay"></div>
+    
+    <!-- 상단바 (모바일용) -->
+    <div class="topbar d-md-none">
+        <button class="sidebar-toggle" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+        </button>
+        <span class="topbar-title">Heritage Archive</span>
+    </div>
+    
+    <!-- 데스크톱 사이드바 토글 -->
+    <button class="sidebar-toggle-desktop d-none d-md-block" id="sidebarToggleDesktop">
+        <i class="fas fa-chevron-left"></i>
+    </button>
+
+    <!-- 메인 컨텐츠 -->
+    <main id="app" class="main-content">
+        
+        <!-- 홈 대시보드 -->
+        <div id="home-view" class="view">
+            <div class="hero-section text-center">
+                <div class="hero-subtitle">Korean Cultural Heritage Digital Archive</div>
+                <h1 class="display-4 fw-bold" data-i18n="main.title">한국 문화유산 디지털 아카이브</h1>
+                <p class="lead" data-i18n="main.subtitle">우리의 소중한 문화재를 디지털로 보존하고 공유합니다</p>
+                <div class="hero-stats mt-4">
+                    <div class="row justify-content-center">
+                        <div class="col-auto">
+                            <div class="stat-item">
+                                <div class="stat-number">11,247</div>
+                                <div class="stat-label">총 문화유산</div>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <div class="stat-item">
+                                <div class="stat-number">87.3%</div>
+                                <div class="stat-label">AI 번역 완료</div>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <div class="stat-item">
+                                <div class="stat-number">0.742</div>
+                                <div class="stat-label">평균 COMET 점수</div>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <div class="stat-item">
+                                <div class="stat-number">2</div>
+                                <div class="stat-label">지원 언어</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <div class="row g-4 mt-3">
+                        <div class="col-md-6 col-lg-4">
+                            <div class="explore-card card h-100" onclick="router.navigate('category/국보')">
+                                <div class="card-body text-center">
+                                    <div class="explore-icon national-treasure mb-3">
+                                        <i class="fas fa-medal"></i>
+                                    </div>
+                                    <h5 class="explore-title" data-i18n="category.national">국보</h5>
+                                    <p class="explore-description">최고 등급의 문화재<br>Supreme Cultural Properties</p>
+                                    <div class="explore-stats">
+                                        <span class="badge heritage-badge-national">최상급</span>
+                                        <small class="text-muted ms-2" id="explore-national-count">0건</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-4">
+                            <div class="explore-card card h-100" onclick="router.navigate('category/보물')">
+                                <div class="card-body text-center">
+                                    <div class="explore-icon treasure mb-3">
+                                        <i class="fas fa-coins"></i>
+                                    </div>
+                                    <h5 class="explore-title" data-i18n="category.treasure">보물</h5>
+                                    <p class="explore-description">국가지정문화재<br>State-designated Heritage</p>
+                                    <div class="explore-stats">
+                                        <span class="badge heritage-badge-treasure">문화재</span>
+                                        <small class="text-muted ms-2" id="explore-treasure-count">0건</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-4">
+                            <div class="explore-card card h-100" onclick="router.navigate('category/사적')">
+                                <div class="card-body text-center">
+                                    <div class="explore-icon historic-site mb-3">
+                                        <i class="fas fa-monument"></i>
+                                    </div>
+                                    <h5 class="explore-title" data-i18n="category.historic">사적</h5>
+                                    <p class="explore-description">역사적 장소와 유적<br>Historical Places & Sites</p>
+                                    <div class="explore-stats">
+                                        <span class="badge heritage-badge-historic">유적</span>
+                                        <small class="text-muted ms-2" id="explore-historic-count">0건</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-4">
+                            <div class="explore-card card h-100" onclick="router.navigate('category/명승')">
+                                <div class="card-body text-center">
+                                    <div class="explore-icon scenic-site mb-3">
+                                        <i class="fas fa-mountain-sun"></i>
+                                    </div>
+                                    <h5 class="explore-title" data-i18n="category.scenic">명승</h5>
+                                    <p class="explore-description">아름다운 경치의 명소<br>Beautiful Scenic Places</p>
+                                    <div class="explore-stats">
+                                        <span class="badge heritage-badge-scenic">명소</span>
+                                        <small class="text-muted ms-2" id="explore-scenic-count">0건</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-4">
+                            <div class="explore-card card h-100" onclick="router.navigate('category/천연기념물')">
+                                <div class="card-body text-center">
+                                    <div class="explore-icon natural-monument mb-3">
+                                        <i class="fas fa-seedling"></i>
+                                    </div>
+                                    <h5 class="explore-title" data-i18n="category.natural">천연기념물</h5>
+                                    <p class="explore-description">자연 유산과 생물<br>Natural Heritage & Creatures</p>
+                                    <div class="explore-stats">
+                                        <span class="badge heritage-badge-natural">자연</span>
+                                        <small class="text-muted ms-2" id="explore-natural-count">0건</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-4">
+                            <div class="explore-card card h-100" onclick="router.navigate('category/국가무형문화재')">
+                                <div class="card-body text-center">
+                                    <div class="explore-icon intangible-heritage mb-3">
+                                        <i class="fas fa-theater-masks"></i>
+                                    </div>
+                                    <h5 class="explore-title" data-i18n="category.intangible">국가무형문화재</h5>
+                                    <p class="explore-description">전통 기능과 예술<br>Traditional Skills & Arts</p>
+                                    <div class="explore-stats">
+                                        <span class="badge heritage-badge-intangible">무형</span>
+                                        <small class="text-muted ms-2" id="explore-intangible-count">0건</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 고급 통계 대시보드 -->
+            <div class="row mb-5">
+                <div class="col-12">
+                    <div class="section-header mb-4">
+                        <h3 class="section-title">Cultural Heritage Statistics</h3>
+                        <p class="section-subtitle">국가지정문화재 현황 및 디지털화 진행 상황</p>
+                    </div>
+                    
+                    <!-- 메인 통계 -->
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-3">
+                            <div class="stat-card card border-0">
+                                <div class="card-body text-center">
+                                    <div class="stat-icon mb-3">
+                                        <i class="fas fa-landmark"></i>
+                                    </div>
+                                    <h4 id="total-count" class="stat-number">-</h4>
+                                    <p class="stat-label">총 문화재</p>
+                                    <small class="stat-description">국가지정문화재 전체</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card card border-0">
+                                <div class="card-body text-center">
+                                    <div class="stat-icon mb-3">
+                                        <i class="fas fa-language"></i>
+                                    </div>
+                                    <h4 class="stat-number">87.3%</h4>
+                                    <p class="stat-label">번역 완료율</p>
+                                    <div class="progress mt-2">
+                                        <div class="progress-bar" style="width: 87.3%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card card border-0">
+                                <div class="card-body text-center">
+                                    <div class="stat-icon mb-3">
+                                        <i class="fas fa-robot"></i>
+                                    </div>
+                                    <h4 class="stat-number">0.742</h4>
+                                    <p class="stat-label">평균 COMET 점수</p>
+                                    <small class="stat-description">AI 번역 품질 지수</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card card border-0">
+                                <div class="card-body text-center">
+                                    <div class="stat-icon mb-3">
+                                        <i class="fas fa-map-marked-alt"></i>
+                                    </div>
+                                    <h4 id="location-count" class="stat-number">-</h4>
+                                    <p class="stat-label">커버 지역</p>
+                                    <small class="stat-description">전국 17개 광역시도</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 카테고리별 통계 -->
+                    <div class="row g-4">
+                        <div class="col-lg-8">
+                            <div class="card border-0 category-stats">
+                                <div class="card-header bg-transparent">
+                                    <h5 class="card-title mb-0">문화재 분류별 현황</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row g-3">
+                                        <div class="col-6 col-md-3">
+                                            <div class="category-item">
+                                                <div class="category-icon national-treasure">
+                                                    <i class="fas fa-crown"></i>
+                                                </div>
+                                                <div class="category-info">
+                                                    <div class="category-count" id="national-count">-</div>
+                                                    <div class="category-name">국보</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6 col-md-3">
+                                            <div class="category-item">
+                                                <div class="category-icon treasure">
+                                                    <i class="fas fa-gem"></i>
+                                                </div>
+                                                <div class="category-info">
+                                                    <div class="category-count" id="treasure-count">-</div>
+                                                    <div class="category-name">보물</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6 col-md-3">
+                                            <div class="category-item">
+                                                <div class="category-icon historic-site">
+                                                    <i class="fas fa-mountain"></i>
+                                                </div>
+                                                <div class="category-info">
+                                                    <div class="category-count" id="site-count">-</div>
+                                                    <div class="category-name">사적·명승</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6 col-md-3">
+                                            <div class="category-item">
+                                                <div class="category-icon natural-monument">
+                                                    <i class="fas fa-tree"></i>
+                                                </div>
+                                                <div class="category-info">
+                                                    <div class="category-count" id="natural-count">-</div>
+                                                    <div class="category-name">천연기념물</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="card border-0 quality-metrics">
+                                <div class="card-header bg-transparent">
+                                    <h5 class="card-title mb-0">번역 품질 지표</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="quality-item">
+                                        <div class="quality-label">COMET Score Distribution</div>
+                                        <div class="quality-bars">
+                                            <div class="quality-bar">
+                                                <span>0.8+</span>
+                                                <div class="bar">
+                                                    <div class="fill" style="width: 45%"></div>
+                                                </div>
+                                                <span>45%</span>
+                                            </div>
+                                            <div class="quality-bar">
+                                                <span>0.6+</span>
+                                                <div class="bar">
+                                                    <div class="fill" style="width: 73%"></div>
+                                                </div>
+                                                <span>73%</span>
+                                            </div>
+                                            <div class="quality-bar">
+                                                <span>0.4+</span>
+                                                <div class="bar">
+                                                    <div class="fill" style="width: 91%"></div>
+                                                </div>
+                                                <span>91%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 목록 뷰 -->
+        <div id="list-view" class="view" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>문화재 목록</h2>
+                <div class="d-flex gap-2">
+                    <!-- 뷰 모드 전환 버튼 -->
+                    <div class="btn-group" role="group" aria-label="뷰 모드 선택">
+                        <input type="radio" class="btn-check" name="view-mode" id="grid-view-btn" autocomplete="off" checked>
+                        <label class="btn btn-outline-primary btn-sm" for="grid-view-btn" title="그리드 뷰">
+                            <i class="fas fa-th"></i>
+                        </label>
+                        
+                        <input type="radio" class="btn-check" name="view-mode" id="list-view-btn" autocomplete="off">
+                        <label class="btn btn-outline-primary btn-sm" for="list-view-btn" title="리스트 뷰">
+                            <i class="fas fa-list"></i>
+                        </label>
+                    </div>
+                    
+                    <div class="vr"></div>
+                    
+                    <select id="category-filter" class="form-select form-select-sm">
+                        <option value="">모든 카테고리</option>
+                    </select>
+                    <select id="location-filter" class="form-select form-select-sm">
+                        <option value="">모든 지역</option>
+                    </select>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="resetFilters()">
+                        <i class="fas fa-undo"></i> 초기화
+                    </button>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-12">
+                    <!-- 그리드 뷰 컨테이너 -->
+                    <div id="heritage-grid" style="display: block;">
+                        <!-- 동적으로 생성됨 -->
+                    </div>
+                    
+                    <!-- 리스트 뷰 컨테이너 -->
+                    <div id="heritage-table" style="display: none;">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 100px;">이미지</th>
+                                        <th>문화재명</th>
+                                        <th>카테고리</th>
+                                        <th>지역</th>
+                                        <th>설명</th>
+                                        <th style="width: 100px;">상세보기</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="heritage-list-tbody">
+                                    <!-- 동적으로 생성됨 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 페이지네이션 -->
+            <nav class="mt-4">
+                <ul id="pagination" class="pagination justify-content-center">
+                    <!-- 동적으로 생성됨 -->
+                </ul>
+            </nav>
+        </div>
+
+        <!-- 상세 뷰 -->
+        <div id="detail-view" class="view" style="display: none;">
+            <div class="row">
+                <!-- 뒤로가기 버튼 -->
+                <div class="col-12 mb-3">
+                    <button class="btn btn-outline-secondary" onclick="goBack()">
+                        <i class="fas fa-arrow-left"></i> 뒤로가기
+                    </button>
+                </div>
+                
+                <!-- 메인 컨텐츠 -->
+                <div class="col-lg-8">
+                    <!-- 이미지 영역 -->
+                    <div class="card mb-4">
+                        <div id="heritage-image" class="heritage-image-container">
+                            <!-- 문화재 이미지 -->
+                        </div>
+                    </div>
+                    
+                    <!-- 설명 영역 -->
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">상세 정보</h5>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <input type="radio" class="btn-check" name="detail-lang" id="detail-lang-ko" autocomplete="off" checked>
+                                <label class="btn btn-outline-primary" for="detail-lang-ko">한글</label>
+                                
+                                <input type="radio" class="btn-check" name="detail-lang" id="detail-lang-en" autocomplete="off">
+                                <label class="btn btn-outline-primary" for="detail-lang-en">English</label>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="heritage-description">
+                                <!-- 문화재 설명 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 사이드바 -->
+                <div class="col-lg-4">
+                    <!-- 기본 정보 -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>기본 정보</h6>
+                        </div>
+                        <div class="card-body">
+                            <dl id="heritage-info" class="row mb-0">
+                                <!-- 동적으로 생성됨 -->
+                            </dl>
+                        </div>
+                    </div>
+                    
+                    <!-- 위치 정보 -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>위치 정보</h6>
+                        </div>
+                        <div class="card-body">
+                            <div id="heritage-location">
+                                <!-- 위치 정보 -->
+                            </div>
+                            <div id="heritage-map" class="mt-3" style="height: 200px; background: #f8f9fa; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #6c757d;">
+                                지도 로딩 중...
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 관련 링크 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-external-link-alt me-2"></i>관련 링크</h6>
+                        </div>
+                        <div class="card-body">
+                            <div id="heritage-links">
+                                <!-- 관련 링크들 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 카테고리 뷰 -->
+        <div id="category-view" class="view" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 id="category-title">카테고리</h2>
+                <button class="btn btn-outline-secondary" onclick="goBack()">
+                    <i class="fas fa-arrow-left"></i> 뒤로가기
+                </button>
+            </div>
+            
+            <!-- 카테고리 페이지 컨트롤 -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="text-muted">총 <span id="category-count">0</span>건</span>
+                    
+                    <!-- 지역별 필터 -->
+                    <select id="category-location-filter" class="form-select form-select-sm" style="width: auto;">
+                        <option value="">모든 지역</option>
+                    </select>
+                </div>
+                
+                <div class="d-flex gap-2">
+                    <!-- 뷰 모드 전환 버튼 -->
+                    <div class="btn-group" role="group" aria-label="뷰 모드 선택">
+                        <input type="radio" class="btn-check" name="category-view-mode" id="category-grid-btn" autocomplete="off" checked>
+                        <label class="btn btn-outline-primary btn-sm" for="category-grid-btn" title="그리드 뷰">
+                            <i class="fas fa-th"></i>
+                        </label>
+                        
+                        <input type="radio" class="btn-check" name="category-view-mode" id="category-list-btn" autocomplete="off">
+                        <label class="btn btn-outline-primary btn-sm" for="category-list-btn" title="리스트 뷰">
+                            <i class="fas fa-list"></i>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 그리드 뷰 컨테이너 -->
+            <div id="category-grid" style="display: block;">
+                <!-- 동적으로 생성됨 -->
+            </div>
+            
+            <!-- 리스트 뷰 컨테이너 -->
+            <div id="category-table" style="display: none;">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 100px;">이미지</th>
+                                <th>문화재명</th>
+                                <th>지역</th>
+                                <th>설명</th>
+                                <th style="width: 100px;">상세보기</th>
+                            </tr>
+                        </thead>
+                        <tbody id="category-list-tbody">
+                            <!-- 동적으로 생성됨 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- 카테고리 페이지네이션 -->
+            <nav class="mt-4">
+                <ul id="category-pagination" class="pagination justify-content-center">
+                    <!-- 동적으로 생성됨 -->
+                </ul>
+            </nav>
+        </div>
+
+
+    </main>
+
+    <!-- 로딩 스피너 -->
+    <div id="loading" class="position-fixed top-50 start-50 translate-middle" style="z-index: 9999; display: none;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">로딩 중...</span>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- CSV 파서 -->
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    
+    <!-- Leaflet 지도 라이브러리 (API 키 불필요) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js"></script>
+    
+
+
+    <!-- 문화재 데이터 (CSV 대신 JavaScript) -->
+    <script src="js/heritage-data.js"></script>
+    
+    <!-- 메인 앱 스크립트 -->
+    <script src="js/indexeddb-manager.js"></script>
+    <script src="js/i18n.js"></script>
+    <script src="js/image-resolver.js"></script>
+    <script src="js/map-manager.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/router.js"></script>
+    <script src="js/data-manager.js"></script>
+    <script src="js/csv-uploader.js"></script>
+    <script src="js/sidebar.js"></script>
+</body>
+</html>

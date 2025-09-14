@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="0; url=main.html" />
+    <title>한국 문화재 디지털 아카이브</title>
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #2E4A62, #8B4513);
+            color: white;
+        }
+        .loading-container {
+            text-align: center;
+            padding: 40px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255,255,255,0.3);
+            border-top: 5px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        h1 {
+            margin: 0 0 10px 0;
+            font-size: 1.8rem;
+        }
+        p {
+            margin: 0;
+            opacity: 0.8;
+        }
+        .fallback-link {
+            margin-top: 20px;
+        }
+        .fallback-link a {
+            color: #FFD700;
+            text-decoration: none;
+            padding: 10px 20px;
+            border: 2px solid #FFD700;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+        }
+        .fallback-link a:hover {
+            background: #FFD700;
+            color: #2E4A62;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-container">
+        <div class="spinner"></div>
+        <h1>🏛️ 한국 문화재 디지털 아카이브</h1>
+        <p>로딩 중... 자동으로 이동하지 않으면 아래 버튼을 클릭하세요.</p>
+        <div class="fallback-link">
+            <a href="main.html">📚 아카이브 바로가기</a>
+        </div>
+    </div>
+    
+    <script>
+        // 3초 후 자동 리다이렉션 (메타 태그가 작동하지 않는 경우 대비)
+        setTimeout(() => {
+            window.location.href = 'main.html';
+        }, 3000);
+        
+        // 즉시 리다이렉션 시도
+        window.location.replace('main.html');
+    </script>
+</body>
+</html>

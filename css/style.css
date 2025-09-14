@@ -1,0 +1,1629 @@
+/* CSS 변수 - 한국 문화유산 전용 디자인 시스템 */
+:root {
+    /* 색상 팔레트 */
+    --primary: #2E4A62;      /* 청자색 (신뢰성) */
+    --secondary: #8B4513;    /* 단청 갈색 (전통성) */
+    --accent: #C73E1D;       /* 단청 적색 (포인트) */
+    --text: #2C2C2C;         /* 먹색 (가독성) */
+    --background: #FEFEFE;   /* 한지색 (깔끔함) */
+    --border: #E5E5E5;       /* 연회색 (구분) */
+    
+    /* 보조 색상 */
+    --primary-light: #4A6B85;
+    --primary-dark: #1E2F3F;
+    --secondary-light: #A0661F;
+    --accent-light: #D55A42;
+    
+    /* 그레이스케일 */
+    --gray-50: #F9FAFB;
+    --gray-100: #F3F4F6;
+    --gray-200: #E5E7EB;
+    --gray-300: #D1D5DB;
+    --gray-400: #9CA3AF;
+    --gray-500: #6B7280;
+    --gray-600: #4B5563;
+    --gray-700: #374151;
+    --gray-800: #1F2937;
+    --gray-900: #111827;
+    
+    /* 타이포그래피 */
+    --font-serif: 'Noto Serif KR', 'Crimson Text', serif;
+    --font-sans: 'Noto Sans KR', 'Inter', sans-serif;
+    
+    /* 폰트 크기 */
+    --font-size-h1: 2rem;     /* 32px */
+    --font-size-h2: 1.5rem;   /* 24px */
+    --font-size-h3: 1.25rem;  /* 20px */
+    --font-size-body: 1rem;   /* 16px */
+    --font-size-small: 0.875rem; /* 14px */
+    
+    /* 줄간격 */
+    --line-height-tight: 1.25;
+    --line-height-normal: 1.6;
+    --line-height-loose: 1.8;
+    
+    /* 간격 */
+    --space-xs: 0.25rem;
+    --space-sm: 0.5rem;
+    --space-md: 1rem;
+    --space-lg: 1.5rem;
+    --space-xl: 2rem;
+    --space-2xl: 3rem;
+    
+    /* 그림자 */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+    --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.2);
+    
+    /* 모서리 */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+}
+
+/* 기본 스타일 */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-sans);
+    background-color: var(--background);
+    color: var(--text);
+    line-height: var(--line-height-normal);
+    margin: 0;
+    padding: 0;
+}
+
+/* 사이드바 네비게이션 */
+.sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 280px;
+    height: 100vh;
+    background: linear-gradient(180deg, 
+        var(--primary) 0%, 
+        var(--primary-dark) 50%, 
+        #1a2332 100%);
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
+    color: var(--background);
+    z-index: 1000;
+    overflow-y: auto;
+    transform: translateX(0);
+    transition: transform 0.3s ease;
+}
+
+.sidebar.collapsed {
+    transform: translateX(-100%);
+}
+
+.sidebar-header {
+    padding: var(--space-lg);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    display: flex;
+    justify-content: between;
+    align-items: center;
+}
+
+.sidebar-brand {
+    font-family: var(--font-serif);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--background);
+    text-decoration: none;
+}
+
+.sidebar-brand:hover {
+    color: var(--background);
+}
+
+.sidebar-close {
+    background: none;
+    border: none;
+    color: var(--background);
+    font-size: 1.2rem;
+    padding: 0;
+    margin-left: auto;
+}
+
+.sidebar-content {
+    padding: var(--space-lg);
+}
+
+/* 언어 토글 */
+.language-toggle .btn-outline-primary {
+    border-color: rgba(255, 255, 255, 0.3);
+    color: var(--background);
+}
+
+.language-toggle .btn-outline-primary:hover {
+    background-color: var(--background);
+    color: var(--primary);
+}
+
+.language-toggle .btn-check:checked + .btn-outline-primary {
+    background-color: var(--background);
+    color: var(--primary);
+    border-color: var(--background);
+}
+
+/* 검색 박스 */
+.sidebar-search .form-control {
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--background);
+    padding-right: 35px;
+}
+
+.sidebar-search .form-control::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.sidebar-search .form-control:focus {
+    background-color: var(--background);
+    color: var(--text);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 0.2rem rgba(199, 62, 29, 0.25);
+}
+
+.sidebar-search .search-icon {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.7);
+    pointer-events: none;
+}
+
+/* 메뉴 */
+.sidebar-menu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.menu-item {
+    margin-bottom: var(--space-xs);
+}
+
+.menu-link {
+    display: flex;
+    align-items: center;
+    padding: var(--space-md);
+    color: rgba(255, 255, 255, 0.9);
+    text-decoration: none;
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+}
+
+.menu-link:hover,
+.menu-link.active {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--background);
+}
+
+.menu-link i {
+    width: 20px;
+    margin-right: var(--space-sm);
+    text-align: center;
+}
+
+.menu-label {
+    display: flex;
+    align-items: center;
+    padding: var(--space-md);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: var(--font-size-small);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.menu-label i {
+    width: 20px;
+    margin-right: var(--space-sm);
+    text-align: center;
+}
+
+.submenu {
+    list-style: none;
+    padding-left: var(--space-lg);
+    margin: 0;
+}
+
+.submenu-link {
+    display: flex;
+    align-items: center;
+    padding: var(--space-sm) var(--space-md);
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    border-radius: var(--radius-sm);
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+}
+
+.submenu-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--background);
+}
+
+.submenu-link i {
+    width: 16px;
+    margin-right: var(--space-sm);
+    text-align: center;
+    font-size: 0.8rem;
+}
+
+/* 문화재 카테고리 아이콘 */
+.heritage-icon-national { color: #C73E1D; } /* 국보 - 단청 적색 */
+.heritage-icon-treasure { color: #B8860B; } /* 보물 - 금색 */
+.heritage-icon-historic { color: #FFFFFF; } /* 사적 - 흰색 (배경과 대비) */
+.heritage-icon-scenic { color: #228B22; }   /* 명승 - 자연 녹색 */
+.heritage-icon-natural { color: #32CD32; }  /* 천연기념물 - 연두색 */
+
+/* 사이드바 통계 */
+.sidebar-stats {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+}
+
+.stats-title {
+    font-size: var(--font-size-small);
+    font-weight: 600;
+    margin-bottom: var(--space-md);
+    opacity: 0.9;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-md);
+}
+
+.sidebar-stats .stat-item {
+    text-align: center;
+}
+
+.sidebar-stats .stat-number {
+    font-family: var(--font-serif);
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--background);
+}
+
+.sidebar-stats .stat-label {
+    font-size: 0.75rem;
+    opacity: 0.8;
+    margin-top: var(--space-xs);
+}
+
+/* 관리 버튼 */
+.sidebar-admin .btn-primary {
+    background-color: var(--accent);
+    border-color: var(--accent);
+}
+
+.sidebar-admin .btn-primary:hover {
+    background-color: var(--accent-light);
+    border-color: var(--accent-light);
+}
+
+/* 메인 컨텐츠 */
+.main-content {
+    margin-left: 280px;
+    padding: var(--space-lg);
+    min-height: 100vh;
+}
+
+/* 모바일 상단바 */
+.topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: linear-gradient(90deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: var(--background);
+    display: flex;
+    align-items: center;
+    padding: 0 var(--space-lg);
+    z-index: 999;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar-toggle {
+    background: none;
+    border: none;
+    color: var(--background);
+    font-size: 1.2rem;
+    margin-right: var(--space-md);
+}
+
+.topbar-title {
+    font-family: var(--font-serif);
+    font-weight: 600;
+}
+
+/* 사이드바 오버레이 */
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    display: none;
+}
+
+.sidebar-overlay.active {
+    display: block;
+}
+
+/* 데스크톱 사이드바 토글 */
+.sidebar-toggle-desktop {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: var(--primary);
+    color: white;
+    border: none;
+    box-shadow: var(--shadow-md);
+    z-index: 1001;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sidebar-toggle-desktop:hover {
+    background-color: var(--primary-dark);
+    transform: scale(1.1);
+}
+
+.sidebar-toggle-desktop.rotated i {
+    transform: rotate(180deg);
+}
+
+/* 사이드바 숨김 상태 */
+body.sidebar-hidden .sidebar {
+    transform: translateX(-100%);
+}
+
+body.sidebar-hidden .main-content {
+    margin-left: 0;
+}
+
+body.sidebar-hidden .sidebar-toggle-desktop {
+    left: 20px;
+}
+
+.search-box {
+    width: 250px;
+}
+
+.search-box .form-control {
+    padding-right: 35px;
+}
+
+.search-icon {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+    pointer-events: none;
+}
+
+/* 뷰 전환 */
+.view {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* 히어로 섹션 */
+.hero-section {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 50%, var(--secondary) 100%);
+    color: var(--background);
+    border-radius: var(--radius-xl);
+    margin-bottom: var(--space-2xl);
+    padding: var(--space-2xl) var(--space-xl);
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 200px;
+    height: 200px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50 10L60 40L90 40L68 58L78 88L50 70L22 88L32 58L10 40L40 40Z' fill='rgba(255,255,255,0.1)'/%3E%3C/svg%3E") no-repeat center;
+    background-size: contain;
+}
+
+.hero-section .display-4 {
+    font-family: var(--font-serif);
+    font-size: var(--font-size-h1);
+    font-weight: 700;
+    text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+    margin-bottom: var(--space-md);
+}
+
+.hero-section .lead {
+    font-size: 1.1rem;
+    line-height: var(--line-height-loose);
+    margin-bottom: var(--space-lg);
+}
+
+.hero-subtitle {
+    font-family: var(--font-serif);
+    font-size: 1.2rem;
+    font-weight: 500;
+    opacity: 0.9;
+    margin-bottom: var(--space-sm);
+}
+
+/* 히어로 통계 */
+.hero-stats {
+    margin-top: var(--space-lg);
+}
+
+.stat-item {
+    text-align: center;
+    padding: var(--space-md);
+}
+
+.stat-number {
+    font-family: var(--font-serif);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--background);
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: var(--font-size-small);
+    opacity: 0.9;
+    margin-top: var(--space-xs);
+}
+
+/* 섹션 헤더 */
+.section-header {
+    text-align: center;
+    margin-bottom: var(--space-2xl);
+}
+
+.section-title {
+    font-family: var(--font-serif);
+    font-size: var(--font-size-h2);
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: var(--space-sm);
+}
+
+.section-subtitle {
+    color: var(--gray-600);
+    font-size: var(--font-size-body);
+    margin: 0;
+}
+
+/* 카드 스타일 */
+.card {
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+    border-radius: var(--radius-md);
+    background-color: var(--background);
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+/* 통계 카드 */
+.stat-card {
+    height: 100%;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.stat-card .stat-icon {
+    color: var(--primary);
+    font-size: 2rem;
+}
+
+.stat-card .stat-number {
+    font-family: var(--font-serif);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin: 0;
+}
+
+.stat-card .stat-label {
+    font-weight: 600;
+    color: var(--text);
+    margin: 0;
+}
+
+.stat-card .stat-description {
+    color: var(--gray-500);
+    font-size: 0.8rem;
+}
+
+.stat-card .progress {
+    height: 4px;
+    background-color: var(--gray-200);
+}
+
+.stat-card .progress-bar {
+    background-color: var(--accent);
+}
+
+/* 카테고리 통계 */
+.category-stats .card-header {
+    border-bottom: 2px solid var(--border);
+    padding: var(--space-lg);
+}
+
+.category-item {
+    display: flex;
+    align-items: center;
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    transition: background-color 0.2s ease;
+}
+
+.category-item:hover {
+    background-color: var(--gray-50);
+}
+
+.category-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-right: var(--space-md);
+}
+
+.category-icon.national-treasure {
+    background-color: rgba(199, 62, 29, 0.1);
+    color: var(--accent);
+}
+
+.category-icon.treasure {
+    background-color: rgba(139, 69, 19, 0.1);
+    color: var(--secondary);
+}
+
+.category-icon.historic-site {
+    background-color: rgba(46, 74, 98, 0.1);
+    color: var(--primary);
+}
+
+.category-icon.natural-monument {
+    background-color: rgba(75, 85, 99, 0.1);
+    color: var(--gray-600);
+}
+
+.category-count {
+    font-family: var(--font-serif);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.category-name {
+    font-size: var(--font-size-small);
+    color: var(--gray-600);
+    font-weight: 500;
+}
+
+/* 품질 지표 */
+.quality-metrics .card-header {
+    border-bottom: 2px solid var(--border);
+    padding: var(--space-lg);
+}
+
+.quality-item {
+    margin-bottom: var(--space-lg);
+}
+
+.quality-label {
+    font-size: var(--font-size-small);
+    font-weight: 600;
+    color: var(--gray-600);
+    margin-bottom: var(--space-md);
+}
+
+.quality-bar {
+    display: flex;
+    align-items: center;
+    margin-bottom: var(--space-sm);
+    font-size: var(--font-size-small);
+}
+
+.quality-bar span:first-child {
+    width: 40px;
+    text-align: right;
+    margin-right: var(--space-sm);
+    font-weight: 500;
+}
+
+.quality-bar span:last-child {
+    width: 40px;
+    margin-left: var(--space-sm);
+    font-weight: 600;
+    color: var(--primary);
+}
+
+.quality-bar .bar {
+    flex: 1;
+    height: 8px;
+    background-color: var(--gray-200);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.quality-bar .fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--primary));
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+/* 상세 페이지 문화재 디자인 */
+.heritage-detail-header {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white;
+    padding: 2rem 0;
+    border-radius: 12px 12px 0 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.heritage-detail-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+        radial-gradient(circle at 20% 80%, rgba(255,255,255,0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255,255,255,0.1) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+.heritage-title {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.heritage-subtitle {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    font-weight: 300;
+}
+
+.heritage-image-container {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    background: linear-gradient(45deg, #f8f9fa, #e9ecef);
+}
+
+.heritage-image-container img {
+    width: 100%;
+    height: auto;
+    max-height: 500px;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.heritage-image-container:hover img {
+    transform: scale(1.02);
+}
+
+.heritage-info-card {
+    border: none;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    border-radius: 12px;
+    background: white;
+    overflow: hidden;
+}
+
+.heritage-info-card .card-header {
+    background: linear-gradient(90deg, var(--primary), var(--primary-light));
+    color: white;
+    font-weight: 600;
+    border: none;
+    padding: 1rem 1.25rem;
+}
+
+.heritage-info-card .card-header i {
+    color: rgba(255,255,255,0.9);
+}
+
+.heritage-description {
+    font-family: 'Noto Serif KR', serif;
+    line-height: 1.8;
+    font-size: 1.05rem;
+    color: #333;
+}
+
+.heritage-meta-item {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.heritage-meta-item:last-child {
+    border-bottom: none;
+}
+
+.heritage-meta-label {
+    font-weight: 600;
+    color: var(--primary);
+    min-width: 120px;
+}
+
+.heritage-meta-value {
+    color: #555;
+}
+
+.heritage-badge {
+    background: linear-gradient(45deg, var(--primary), var(--primary-light));
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.heritage-period {
+    background: var(--secondary);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.heritage-designation {
+    background: var(--accent);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+/* 전통 장식 요소 */
+.traditional-border {
+    border-top: 3px solid var(--primary);
+    border-image: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent)) 1;
+    position: relative;
+}
+
+.traditional-border::before {
+    content: '◆';
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    color: var(--primary);
+    padding: 0 10px;
+    font-size: 12px;
+}
+
+/* 지도 스타일 개선 */
+#heritage-map {
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+    overflow: hidden;
+}
+
+.custom-heritage-marker {
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
+/* 리스트 뷰 스타일 */
+.heritage-list-row {
+    transition: all 0.2s ease;
+}
+
+.heritage-list-row:hover {
+    background-color: rgba(46, 74, 98, 0.05);
+}
+
+.heritage-list-image {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.heritage-list-desc {
+    font-size: 0.9rem;
+    color: #6c757d;
+    line-height: 1.4;
+    max-width: 300px;
+}
+
+/* 뷰 모드 전환 버튼 */
+.btn-group .btn-check:checked + .btn {
+    background-color: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
+/* 그리드 레이아웃 개선 - 왼쪽 정사각형 이미지 + 오른쪽 설명 박스 */
+#heritage-grid, #category-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 0;
+}
+
+@media (max-width: 576px) {
+    #heritage-grid, #category-grid {
+        gap: 1rem;
+    }
+}
+
+.heritage-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: row;
+    min-height: 200px;
+    background: white;
+}
+
+.heritage-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+}
+
+.heritage-card .card-body {
+    padding: 1.5rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.heritage-card .card-img-top {
+    width: 200px;
+    height: 200px;
+    flex-shrink: 0;
+    overflow: hidden;
+    background-color: #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.heritage-card .card-img-top img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.heritage-card:hover .card-img-top img {
+    transform: scale(1.05);
+}
+
+.heritage-card .card-img-top.no-image {
+    background-color: var(--gray-100);
+}
+
+@media (max-width: 768px) {
+    .heritage-card {
+        flex-direction: column;
+        min-height: auto;
+    }
+    
+    .heritage-card .card-img-top {
+        width: 100%;
+        height: 180px;
+    }
+}
+
+.no-image-placeholder {
+    text-align: center;
+    color: var(--gray-500);
+    padding: var(--space-lg);
+}
+
+.no-image-placeholder i {
+    font-size: 2rem;
+    margin-bottom: var(--space-sm);
+    opacity: 0.5;
+}
+
+.no-image-placeholder span {
+    display: block;
+    font-size: 0.9rem;
+}
+
+.heritage-card .card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    line-height: 1.3;
+    margin-bottom: 0.75rem;
+    color: var(--text);
+}
+
+.heritage-card .card-text {
+    font-size: 0.9rem;
+    color: #6c757d;
+    line-height: 1.5;
+    margin-bottom: 1rem;
+    flex: 1;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+}
+
+/* 카테고리 배지 스타일 개선 */
+.category-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.category-국보 {
+    background-color: #C73E1D;
+    color: white;
+}
+
+.category-보물 {
+    background-color: #8B4513;
+    color: white;
+}
+
+.category-사적 {
+    background-color: #2E4A62;
+    color: white;
+}
+
+.category-명승 {
+    background-color: #228B22;
+    color: white;
+}
+
+.category-천연기념물 {
+    background-color: #32CD32;
+    color: white;
+}
+
+.category-국가무형문화재 {
+    background-color: #9370DB;
+    color: white;
+}
+
+/* 상세 페이지 스타일 */
+.heritage-image-container {
+    height: 400px;
+    background-color: #e9ecef;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Ctext x='50%25' y='50%25' font-size='16' text-anchor='middle' dy='.3em' fill='%23999'%3E문화재 이미지%3C/text%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.heritage-image-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* 이미지 래퍼 스타일 */
+.heritage-image-wrapper {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    background: linear-gradient(45deg, #f8f9fa, #e9ecef);
+}
+
+.heritage-main-image {
+    width: 100%;
+    height: 400px;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.heritage-image-wrapper:hover .heritage-main-image {
+    transform: scale(1.02);
+}
+
+.heritage-image-overlay {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.heritage-image-wrapper:hover .heritage-image-overlay {
+    opacity: 1;
+}
+
+.heritage-image-overlay .btn {
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    backdrop-filter: blur(10px);
+}
+
+.heritage-image-overlay .btn:hover {
+    background: white;
+    transform: translateY(-1px);
+}
+
+.heritage-description {
+    line-height: 1.7;
+    font-size: 1rem;
+}
+
+.heritage-description p {
+    margin-bottom: 1rem;
+}
+
+/* 정보 테이블 스타일 */
+#heritage-info dt {
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.9rem;
+}
+
+#heritage-info dd {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+/* 배지 스타일 */
+/* 탐색 카드 */
+.explore-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.explore-card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary);
+}
+
+.explore-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin: 0 auto;
+    position: relative;
+}
+
+.explore-icon::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    padding: 4px;
+    background: linear-gradient(135deg, currentColor, transparent);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: exclude;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+}
+
+.explore-icon.national-treasure {
+    background: linear-gradient(135deg, var(--accent), #ff6b6b);
+    color: white;
+}
+
+.explore-icon.treasure {
+    background: linear-gradient(135deg, var(--secondary), #d4a574);
+    color: white;
+}
+
+.explore-icon.historic-site {
+    background: linear-gradient(135deg, var(--primary), #4a90e2);
+    color: white;
+}
+
+.explore-icon.natural-monument {
+    background: linear-gradient(135deg, #28a745, #71dd8a);
+    color: white;
+}
+
+.explore-title {
+    font-family: var(--font-serif);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: var(--space-sm);
+}
+
+.explore-description {
+    color: var(--gray-600);
+    font-size: 0.9rem;
+    line-height: var(--line-height-normal);
+    margin-bottom: var(--space-md);
+}
+
+.explore-stats {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 배지 스타일 */
+.category-badge {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.category-국보 { background-color: var(--accent); }
+.category-보물 { background-color: var(--secondary); }
+.category-사적 { background-color: var(--primary); }
+.category-명승 { background-color: var(--primary); }
+.category-천연기념물 { background-color: #28a745; }
+
+/* 전문적 배지 스타일 */
+.heritage-badge-national {
+    background-color: #C73E1D;
+    color: white;
+    font-weight: 600;
+    font-size: 0.75rem;
+}
+
+.heritage-badge-treasure {
+    background-color: #B8860B;
+    color: white;
+    font-weight: 600;
+    font-size: 0.75rem;
+}
+
+.heritage-badge-historic {
+    background-color: #2E4A62;
+    color: white;
+    font-weight: 600;
+    font-size: 0.75rem;
+}
+
+.heritage-badge-natural {
+    background-color: #228B22;
+    color: white;
+    font-weight: 600;
+    font-size: 0.75rem;
+}
+
+/* 검색 및 필터 */
+.filter-section {
+    background-color: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    margin-bottom: 2rem;
+}
+
+/* 페이지네이션 */
+.pagination .page-link {
+    border: none;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .search-box {
+        width: 200px;
+    }
+    
+    .hero-section {
+        padding: 2rem 1rem;
+    }
+    
+    .heritage-image-container {
+        height: 250px;
+    }
+    
+    #heritage-map {
+        height: 150px !important;
+    }
+}
+
+@media (max-width: 576px) {
+    .search-box {
+        width: 150px;
+    }
+    
+    .navbar-brand {
+        font-size: 1.2rem;
+    }
+    
+    .display-4 {
+        font-size: 2rem;
+    }
+}
+
+/* 로딩 스타일 */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.9);
+    z-index: 9998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 애니메이션 */
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+.slide-up {
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from { 
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to { 
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 스크롤바 스타일 */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* 텍스트 스타일 */
+.text-truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.text-truncate-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* 빈 상태 스타일 */
+.empty-state {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: #6c757d;
+}
+
+.empty-state i {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+/* 통계 카드 애니메이션 */
+.stat-card {
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: scale(1.05);
+}
+
+/* 지도 스타일 */
+#heritage-map {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+}
+
+/* 버튼 스타일 개선 */
+.btn-group-sm > .btn {
+    font-size: 0.8rem;
+}
+
+/* 카드 호버 효과 */
+.info-card {
+    transition: all 0.2s ease-in-out;
+}
+
+.info-card:hover {
+    border-color: #0d6efd !important;
+}
+
+/* 링크 스타일 */
+.heritage-link {
+    color: #0d6efd;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.heritage-link:hover {
+    text-decoration: underline;
+}
+
+/* CSV 업로드 스타일 */
+.upload-zone {
+    border: 3px dashed var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-2xl);
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background-color: var(--gray-50);
+}
+
+.upload-zone:hover,
+.upload-area.drag-over .upload-zone {
+    border-color: var(--primary);
+    background-color: rgba(46, 74, 98, 0.05);
+}
+
+.upload-zone h5 {
+    color: var(--text);
+    margin-bottom: var(--space-sm);
+}
+
+.upload-zone p {
+    margin: 0;
+}
+
+.modal-dialog {
+    max-width: 600px;
+}
+
+.modal-header {
+    background-color: var(--gray-50);
+    border-bottom: 2px solid var(--border);
+}
+
+.modal-title {
+    font-family: var(--font-serif);
+    font-weight: 600;
+    color: var(--primary);
+}
+
+.upload-instructions .alert {
+    border: 1px solid var(--border);
+    background-color: rgba(46, 74, 98, 0.05);
+    color: var(--text);
+}
+
+.upload-instructions code {
+    background-color: var(--gray-100);
+    color: var(--accent);
+    padding: 0.2em 0.4em;
+    border-radius: var(--radius-sm);
+}
+
+#file-info .card {
+    border: 1px solid var(--border);
+    background-color: var(--gray-50);
+}
+
+#upload-progress .progress {
+    height: 8px;
+    background-color: var(--gray-200);
+}
+
+#upload-progress .progress-bar {
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+}
+
+#upload-results .alert-success {
+    border-color: #28a745;
+    background-color: rgba(40, 167, 69, 0.1);
+    color: var(--text);
+}
+
+/* 관리 메뉴 스타일 */
+.admin-menu {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 1000;
+}
+
+.admin-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: white;
+    border: none;
+    box-shadow: var(--shadow-lg);
+    font-size: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.admin-btn:hover {
+    transform: scale(1.1);
+    box-shadow: var(--shadow-lg);
+}
+
+/* 모바일 반응형 */
+@media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-100%);
+    }
+    
+    .sidebar.mobile-open {
+        transform: translateX(0);
+    }
+    
+    .main-content {
+        margin-left: 0;
+        padding-top: 80px;
+        padding: 80px var(--space-md) var(--space-md);
+    }
+    
+    .hero-section {
+        padding: var(--space-xl) var(--space-md);
+    }
+    
+    .hero-section .display-4 {
+        font-size: 1.75rem;
+    }
+    
+    .hero-stats .row {
+        --bs-gutter-x: 0.5rem;
+    }
+    
+    .hero-stats .stat-item {
+        padding: var(--space-sm);
+    }
+    
+    .hero-stats .stat-number {
+        font-size: 1.2rem;
+    }
+    
+    .section-header {
+        margin-bottom: var(--space-xl);
+    }
+    
+    .explore-card {
+        margin-bottom: var(--space-md);
+    }
+    
+    .explore-icon {
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
+    }
+    
+    .stat-card .stat-icon {
+        font-size: 1.5rem;
+    }
+    
+    .stat-card .stat-number {
+        font-size: 1.5rem;
+    }
+    
+    .upload-zone {
+        padding: var(--space-lg);
+    }
+    
+    .heritage-card .card-title {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .main-content {
+        padding: 80px var(--space-sm) var(--space-sm);
+    }
+    
+    .hero-section .display-4 {
+        font-size: 1.5rem;
+    }
+    
+    .hero-stats .col-auto {
+        flex: 0 0 50%;
+        margin-bottom: var(--space-sm);
+    }
+    
+    .explore-title {
+        font-size: 1rem;
+    }
+    
+    .explore-description {
+        font-size: 0.8rem;
+    }
+    
+    .category-item {
+        flex-direction: column;
+        text-align: center;
+        padding: var(--space-sm);
+    }
+    
+    .category-icon {
+        margin-right: 0;
+        margin-bottom: var(--space-sm);
+        width: 40px;
+        height: 40px;
+        font-size: 1.2rem;
+    }
+}

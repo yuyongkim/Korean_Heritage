@@ -1392,12 +1392,17 @@ body.sidebar-hidden .sidebar-toggle-desktop {
     transform: scale(1.05);
 }
 
-/* 지도 스타일 */
+/* 지도 스타일 - 정사각형 강제 */
 #heritage-map {
     border: 1px solid #dee2e6;
     border-radius: 8px;
     width: 300px !important;
     height: 300px !important;
+    min-width: 300px !important;
+    min-height: 300px !important;
+    max-width: 300px !important;
+    max-height: 300px !important;
+    aspect-ratio: 1/1 !important;
 }
 
 /* 버튼 스타일 개선 */

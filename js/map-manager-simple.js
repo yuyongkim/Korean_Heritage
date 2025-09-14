@@ -40,10 +40,15 @@ class SimpleMapManager {
             return;
         }
 
-        // 지도 컨테이너 설정
+        // 지도 컨테이너 설정 - 정사각형 강제
         container.innerHTML = '<div id="loading-map" class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> 지도 로딩 중...</div>';
         container.style.height = '300px';
         container.style.width = '300px';
+        container.style.minWidth = '300px';
+        container.style.minHeight = '300px';
+        container.style.maxWidth = '300px';
+        container.style.maxHeight = '300px';
+        container.style.aspectRatio = '1/1';
         container.style.margin = '0 auto';
         container.style.display = 'flex';
         container.style.alignItems = 'center';
@@ -83,7 +88,7 @@ class SimpleMapManager {
                     // 로딩 메시지 제거
                     container.innerHTML = '';
                     
-                    // 지도 생성
+                    // 지도 생성 - 정사각형 강제
                     this.currentMap = L.map(containerId, {
                         center: [lat, lng],
                         zoom: 15,
@@ -93,6 +98,21 @@ class SimpleMapManager {
                         doubleClickZoom: true,
                         dragging: true
                     });
+                    
+                    // 지도 크기 강제 설정
+                    setTimeout(() => {
+                        const mapElement = document.getElementById(containerId);
+                        if (mapElement) {
+                            mapElement.style.width = '300px';
+                            mapElement.style.height = '300px';
+                            mapElement.style.minWidth = '300px';
+                            mapElement.style.minHeight = '300px';
+                            mapElement.style.maxWidth = '300px';
+                            mapElement.style.maxHeight = '300px';
+                            mapElement.style.aspectRatio = '1/1';
+                        }
+                        this.currentMap.invalidateSize();
+                    }, 100);
 
                     // 타일 레이어 추가
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {

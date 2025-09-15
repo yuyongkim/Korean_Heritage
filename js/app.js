@@ -854,7 +854,10 @@ async function renderHeritageDetail(item) {
                     const ccbaCtcd = parts[1];
                     const ccbaAsno = parts[2].padStart(13, '0'); // 13자리로 패딩
                     
-                    heritageUrl = `https://www.heritage.go.kr/heri/cul/culSelectDetail.do?culPageNo=1&region=1&searchCondition=&searchCondition2=&ccbaKdcd=${ccbaKdcd}&ccbaAsno=${ccbaAsno}&ccbaCtcd=${ccbaCtcd}&ccbaCpno=${ccbaKdcd}${ccbaCtcd}${ccbaAsno}&ccbaCndt=&ccbaLcto=&stCcbaAsdt=&endCcbaAsdt=&header=view&returnUrl=%2Fheri%2Fcul%2FculSelectViewList.do&pageNo=1_1_1_0&p=multiSch&sortType=&sortOrd=&sngl=Y&s_kdcdArr=00&s_ctcdArr=00&ccbaPcd1Arr=99&ccbaGcodeArr=00`;
+                    // ccbaCpno는 ccbaKdcd + ccbaCtcd + ccbaAsno 형식이지만 길이가 다름
+                    const ccbaCpno = `${ccbaKdcd}${ccbaCtcd}${ccbaAsno}`;
+                    console.log('🔍 URL 파라미터:', { ccbaKdcd, ccbaCtcd, ccbaAsno, ccbaCpno });
+                    heritageUrl = `https://www.heritage.go.kr/heri/cul/culSelectDetail.do?culPageNo=1&region=1&searchCondition=&searchCondition2=&ccbaKdcd=${ccbaKdcd}&ccbaAsno=${ccbaAsno}&ccbaCtcd=${ccbaCtcd}&ccbaCpno=${ccbaCpno}&ccbaCndt=&ccbaLcto=&stCcbaAsdt=&endCcbaAsdt=&header=view&returnUrl=%2Fheri%2Fcul%2FculSelectViewList.do&pageNo=1_1_1_0&p=multiSch&sortType=&sortOrd=&sngl=Y&s_kdcdArr=00&s_ctcdArr=00&ccbaPcd1Arr=99&ccbaGcodeArr=00`;
                     isOriginalUrl = true;
                     console.log('✅ 상세 페이지 URL 생성 성공:', heritageUrl);
                 } else {

@@ -785,6 +785,13 @@ class DataManager {
         
         // 기존 필터 옵션도 업데이트 (호환성)
         this.updateFilterOptions();
+        
+        // 대시보드 업데이트 (데이터 로드 완료 후)
+        if (typeof updateDashboard === 'function') {
+            setTimeout(() => {
+                updateDashboard();
+            }, 100);
+        }
     }
     
     /**

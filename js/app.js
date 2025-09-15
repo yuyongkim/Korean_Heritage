@@ -25,6 +25,9 @@ console.log('전역 객체들 확인:', {
     // 초기 통계 표시
     console.log('현재 총 문화재 수:', dataManager.heritageData.length);
     
+    // 대시보드 업데이트
+    updateDashboard();
+    
     // 이벤트 리스너 설정
     setupEventListeners();
     
@@ -130,6 +133,32 @@ function updateDashboard() {
     updateElement('explore-natural-count', (stats.categories['천연기념물'] || 0) + '건');
     updateElement('explore-intangible-count', (stats.categories['국가무형문화재'] || 0) + '건');
     
+    // 히어로 섹션 통계 업데이트 (4개 주요 숫자)
+    updateElement('hero-total-count', stats.total.toLocaleString());
+    
+    // 번역 완료율 계산 (영어 설명이 있는 항목 비율)
+    const totalItems = dataManager.heritageData.length;
+    const translatedItems = dataManager.heritageData.filter(item => 
+        item.english_description && item.english_description.trim() !== ''
+    ).length;
+    const translationRate = totalItems > 0 ? Math.round((translatedItems / totalItems) * 100) : 0;
+    
+    updateElement('hero-translation-count', translationRate + '%');
+    updateElement('translation-percentage', translationRate + '%');
+    
+    // 프로그레스 바 업데이트
+    const progressBar = document.getElementById('translation-progress');
+    if (progressBar) {
+        progressBar.style.width = translationRate + '%';
+    }
+    
+    // COMET 점수 (임시로 고정값 사용, 추후 실제 계산 로직 추가)
+    updateElement('hero-comet-score', '0.742');
+    updateElement('comet-score', '0.742');
+    
+    // 지원 언어 수
+    updateElement('hero-language-count', '2');
+    
     // 4축 필터링 시스템 업데이트
     if (dataManager && typeof dataManager.updateFilters === 'function') {
         dataManager.updateFilters();
@@ -140,6 +169,9 @@ function updateDashboard() {
     
     // 사이드바 총 문화재 수 업데이트
     updateElement('sidebar-total', stats.total.toLocaleString());
+    
+    // 사이드바 번역률 업데이트
+    updateElement('sidebar-translation-rate', translationRate + '%');
     
     // 애니메이션 효과
     animateNumbers();
@@ -190,19 +222,34 @@ function updateResultsCount() {
 function animateNumbers() {
     const counters = document.querySelectorAll('.stat-number, .category-count');
     counters.forEach(counter => {
-        const target = parseInt(counter.textContent.replace(/,/g, '')) || 0;
-        const increment = target / 50;
+        const originalText = counter.textContent;
+        const target = parseInt(originalText.replace(/,/g, '').replace('%', '')) || 0;
+        
+        // 이미 애니메이션 중이면 건너뛰기
+        if (counter.dataset.animating === 'true') {
+            return;
+        }
+        
+        counter.dataset.animating = 'true';
+        
+        const increment = Math.max(1, Math.ceil(target / 50));
         let current = 0;
         
         const timer = setInterval(() => {
             current += increment;
             if (current >= target) {
-                counter.textContent = target.toLocaleString();
+                counter.textContent = originalText;
+                counter.dataset.animating = 'false';
                 clearInterval(timer);
             } else {
-                counter.textContent = Math.floor(current).toLocaleString();
+                // 퍼센트나 다른 단위가 있으면 유지
+                if (originalText.includes('%')) {
+                    counter.textContent = current + '%';
+                } else {
+                    counter.textContent = current.toLocaleString();
+                }
             }
-        }, 40);
+        }, 30);
     });
 }
 
@@ -582,7 +629,8 @@ function loadHeritageDetail(name) {
     const item = dataManager.getByName(name);
     if (!item) {
         console.error('문화재를 찾을 수 없습니다:', name);
-        router.navigate('home');
+        // 홈으로 바로 이동하지 않고 이전 페이지로 돌아가기
+        goBack();
         return;
     }
     
@@ -835,6 +883,13 @@ let currentCategoryName = '';
  */
 function loadCategoryView(category) {
     console.log('카테고리 뷰 로드:', category);
+    
+    // 동일한 카테고리로의 중복 로드 방지
+    if (currentCategoryName === category && currentCategoryData.length > 0) {
+        console.log('동일한 카테고리 중복 로드 방지:', category);
+        return;
+    }
+    
     currentCategoryName = category;
     currentCategoryPage = 1;
     

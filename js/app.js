@@ -835,7 +835,7 @@ async function renderHeritageDetail(item) {
     const linksContainer = document.getElementById('heritage-links');
     if (linksContainer) {
         linksContainer.innerHTML = `
-            <a href="https://www.heritage.go.kr" target="_blank" class="heritage-link d-block mb-2">
+            <a href="${item.source_url || 'https://www.heritage.go.kr'}" target="_blank" class="heritage-link d-block mb-2">
                 <i class="fas fa-external-link-alt me-2"></i>문화재청 홈페이지
             </a>
             ${item.source_url ? `

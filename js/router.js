@@ -222,10 +222,10 @@ router.addRoute('list', () => {
     }
 });
 
-router.addRoute('detail', (params) => {
+router.addRoute('detail', async (params) => {
     router.showView('detail-view');
     if (params[0] && typeof loadHeritageDetail === 'function') {
-        loadHeritageDetail(decodeURIComponent(params[0]));
+        await loadHeritageDetail(decodeURIComponent(params[0]));
     }
 });
 

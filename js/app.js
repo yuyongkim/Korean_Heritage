@@ -629,7 +629,7 @@ function renderPagination(current, total, totalItems) {
 /**
  * 문화재 상세 정보 로드
  */
-function loadHeritageDetail(name) {
+async function loadHeritageDetail(name) {
     console.log('상세 페이지 로드 시작:', name);
     
     const item = dataManager.getByName(name);
@@ -641,7 +641,7 @@ function loadHeritageDetail(name) {
     }
     
     console.log('문화재 데이터 로드 성공:', item.name);
-    renderHeritageDetail(item);
+    await renderHeritageDetail(item);
 }
 
 /**
@@ -664,7 +664,7 @@ function getEraInformation(item) {
 /**
  * 문화재 상세 정보 렌더링
  */
-function renderHeritageDetail(item) {
+async function renderHeritageDetail(item) {
     console.log('상세 페이지 렌더링 시작:', item.name);
     
     // 시대 정보 가져오기
@@ -799,9 +799,23 @@ function renderHeritageDetail(item) {
 
         // 지도 표시
         if (typeof mapManager !== 'undefined' && mapManager.showMap && item.coords) {
-            mapManager.showMap('heritage-map', item.coords, item.name, () => {
-                console.log('🗺️ 지도 로딩 완료 - 추가 작업 수행 가능');
-            });
+            try {
+                await mapManager.showMap('heritage-map', item.coords, item.name, () => {
+                    console.log('🗺️ 지도 로딩 완료 - 추가 작업 수행 가능');
+                });
+            } catch (error) {
+                console.error('지도 로딩 실패:', error);
+                const mapContainer = document.getElementById('heritage-map');
+                if (mapContainer) {
+                    mapContainer.innerHTML = `
+                        <div class="text-center py-4 bg-light rounded">
+                            <i class="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
+                            <p class="mb-0 text-muted">지도 로딩에 실패했습니다</p>
+                            <small class="text-muted">좌표: ${item.coords.lat.toFixed(6)}, ${item.coords.lng.toFixed(6)}</small>
+                        </div>
+                    `;
+                }
+            }
         } else if (item.coords) {
             // 지도 매니저가 없으면 기본 메시지 표시
             const mapContainer = document.getElementById('heritage-map');

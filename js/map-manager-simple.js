@@ -14,7 +14,7 @@ class SimpleMapManager {
     /**
      * 지도 표시 (Kakao Maps API 사용)
      */
-    showMap(containerId, coords, locationName = '') {
+    showMap(containerId, coords, locationName = '', callback = null) {
         console.log('🗺️ Kakao 지도 표시 시작:', containerId, coords, locationName);
         
         const container = document.getElementById(containerId);
@@ -154,6 +154,11 @@ class SimpleMapManager {
                     clearTimeout(timeoutId);
                     
                     console.log('✅ Kakao 지도 로딩 성공');
+                    
+                    // 콜백 실행 (지도가 성공적으로 로드된 후)
+                    if (callback && typeof callback === 'function') {
+                        callback();
+                    }
 
                 } catch (error) {
                     console.error('Kakao 지도 생성 오류:', error);

@@ -799,9 +799,9 @@ function renderHeritageDetail(item) {
 
         // 지도 표시
         if (typeof mapManager !== 'undefined' && mapManager.showMap && item.coords) {
-            setTimeout(() => {
-                mapManager.showMap('heritage-map', item.coords, item.name);
-            }, 100);
+            mapManager.showMap('heritage-map', item.coords, item.name, () => {
+                console.log('🗺️ 지도 로딩 완료 - 추가 작업 수행 가능');
+            });
         } else if (item.coords) {
             // 지도 매니저가 없으면 기본 메시지 표시
             const mapContainer = document.getElementById('heritage-map');

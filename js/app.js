@@ -577,6 +577,8 @@ function renderPagination(current, total, totalItems) {
  * 문화재 상세 정보 로드
  */
 function loadHeritageDetail(name) {
+    console.log('상세 페이지 로드 시작:', name);
+    
     const item = dataManager.getByName(name);
     if (!item) {
         console.error('문화재를 찾을 수 없습니다:', name);
@@ -584,6 +586,7 @@ function loadHeritageDetail(name) {
         return;
     }
     
+    console.log('문화재 데이터 로드 성공:', item.name);
     renderHeritageDetail(item);
 }
 
@@ -591,6 +594,8 @@ function loadHeritageDetail(name) {
  * 문화재 상세 정보 렌더링
  */
 function renderHeritageDetail(item) {
+    console.log('상세 페이지 렌더링 시작:', item.name);
+    
     // 헤더 영역 추가 (제목과 카테고리)
     const mainContent = document.querySelector('#detail-view .col-lg-8');
     if (mainContent) {
@@ -761,6 +766,8 @@ function renderHeritageDetail(item) {
     
     // 상세 페이지 언어 토글 이벤트 재설정
     setupDetailLanguageToggle(item);
+    
+    console.log('상세 페이지 렌더링 완료:', item.name);
 }
 
 /**
@@ -1640,6 +1647,16 @@ function changePage(page) {
     currentPage = page;
     loadHeritageList();
     window.scrollTo(0, 0);
+    
+    // 현재 뷰가 상세 페이지인 경우에만 라우터 히스토리 관리
+    if (router.currentView === 'detail-view') {
+        // 상세 페이지에서 페이지네이션을 사용하는 경우는 없지만, 
+        // 혹시 모를 상황을 대비해 현재 경로를 히스토리에 유지
+        const currentHash = window.location.hash;
+        if (router.history.length > 0) {
+            router.history[router.history.length - 1] = currentHash;
+        }
+    }
 }
 
 /**

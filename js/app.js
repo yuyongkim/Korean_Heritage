@@ -842,18 +842,25 @@ async function renderHeritageDetail(item) {
         if (heritageUrl && heritageUrl.trim() !== '' && heritageUrl.includes('culSelectDetail.do')) {
             isOriginalUrl = true;
         } else {
-            // source_url이 없거나 메인 페이지 URL이면 기본 URL 생성
-            if (item.original_data && item.original_data.composite_key) {
-                const parts = item.original_data.composite_key.split(',');
-                if (parts.length >= 3) {
-                    heritageUrl = `https://www.heritage.go.kr/heri/cul/culSelectDetail.do?VdkVgwKey=${parts[0]},${parts[1]},${parts[2]}`;
-                    isOriginalUrl = true;
-                }
+        // source_url이 없거나 메인 페이지 URL이면 기본 URL 생성
+        if (item.original_data && item.original_data.composite_key) {
+            const parts = item.original_data.composite_key.split(',');
+            if (parts.length >= 3) {
+                heritageUrl = `https://www.heritage.go.kr/heri/cul/culSelectDetail.do?VdkVgwKey=${parts[0]},${parts[1]},${parts[2]}`;
+                isOriginalUrl = true;
             }
+        }
+        
+        // composite_key로도 URL을 만들 수 없으면 검색 URL 생성
+        if (!isOriginalUrl && item.name) {
+            const searchQuery = encodeURIComponent(item.name);
+            heritageUrl = `https://www.heritage.go.kr/main/search/searchList.do?searchKeyword=${searchQuery}`;
+            isOriginalUrl = false;
+        }
             
             // 여전히 URL이 없으면 기본 URL
             if (!heritageUrl) {
-                heritageUrl = 'https://www.heritage.go.kr/';
+                heritageUrl = 'https://www.heritage.go.kr/main/';
                 isOriginalUrl = false;
             }
         }

@@ -777,7 +777,7 @@ async function renderHeritageDetail(item) {
                 <div class="heritage-meta-label"><i class="fas fa-external-link-alt me-2"></i>출처</div>
                 <div class="heritage-meta-value">
                     <a href="https://www.heritage.go.kr/heri/cul/culSelectDetail.do?VdkVgwKey=${item.ccbaCtcd},${item.ccbaAsno},${item.ccbaKdcd}" target="_blank" class="text-primary">
-                        문화재청 바로가기 <i class="fas fa-external-link-alt fa-sm"></i>
+                        국가유산청 바로가기 <i class="fas fa-external-link-alt fa-sm"></i>
                     </a>
                 </div>
             </div>

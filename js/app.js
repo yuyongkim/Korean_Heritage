@@ -849,7 +849,12 @@ async function renderHeritageDetail(item) {
                 const parts = item.original_data.composite_key.split('-');
                 console.log('🔍 parts:', parts);
                 if (parts.length >= 3) {
-                    heritageUrl = `https://www.heritage.go.kr/heri/cul/culSelectDetail.do?VdkVgwKey=${parts[0]},${parts[1]},${parts[2]}`;
+                    // ccbaKdcd, ccbaAsno, ccbaCtcd 파라미터 형식으로 URL 생성
+                    const ccbaKdcd = parts[0];
+                    const ccbaCtcd = parts[1];
+                    const ccbaAsno = parts[2].padStart(13, '0'); // 13자리로 패딩
+                    
+                    heritageUrl = `https://www.heritage.go.kr/heri/cul/culSelectDetail.do?culPageNo=1&region=1&searchCondition=&searchCondition2=&ccbaKdcd=${ccbaKdcd}&ccbaAsno=${ccbaAsno}&ccbaCtcd=${ccbaCtcd}&ccbaCpno=${ccbaKdcd}${ccbaCtcd}${ccbaAsno}&ccbaCndt=&ccbaLcto=&stCcbaAsdt=&endCcbaAsdt=&header=view&returnUrl=%2Fheri%2Fcul%2FculSelectViewList.do&pageNo=1_1_1_0&p=multiSch&sortType=&sortOrd=&sngl=Y&s_kdcdArr=00&s_ctcdArr=00&ccbaPcd1Arr=99&ccbaGcodeArr=00`;
                     isOriginalUrl = true;
                     console.log('✅ 상세 페이지 URL 생성 성공:', heritageUrl);
                 } else {

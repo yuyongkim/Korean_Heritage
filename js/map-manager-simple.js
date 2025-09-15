@@ -1,21 +1,21 @@
 /**
  * 간단한 지도 관리 모듈
- * Leaflet을 사용한 위치 정보 표시 (최적화)
+ * Kakao Maps API를 사용한 위치 정보 표시
  */
 
 class SimpleMapManager {
     constructor() {
         this.currentMap = null;
-        this.defaultCenter = [36.5, 127.5]; // 한국 중심
+        this.defaultCenter = { lat: 37.5665, lng: 126.9780 }; // 서울 중심
         this.defaultZoom = 7;
         this.loadingTimeout = 5000; // 5초 타임아웃
     }
 
     /**
-     * 지도 표시 (간단하고 안정적인 방법)
+     * 지도 표시 (Kakao Maps API 사용)
      */
     showMap(containerId, coords, locationName = '') {
-        console.log('🗺️ 지도 표시 시작:', containerId, coords, locationName);
+        console.log('🗺️ Kakao 지도 표시 시작:', containerId, coords, locationName);
         
         const container = document.getElementById(containerId);
         if (!container) {
@@ -25,7 +25,6 @@ class SimpleMapManager {
 
         // 기존 지도 정리
         if (this.currentMap) {
-            this.currentMap.remove();
             this.currentMap = null;
         }
 
@@ -35,6 +34,34 @@ class SimpleMapManager {
                 <div class="text-center py-4 bg-light rounded">
                     <i class="fas fa-map-marked-alt fa-2x text-muted mb-2"></i>
                     <p class="mb-0 text-muted">위치 정보가 없습니다</p>
+                </div>
+            `;
+            return;
+        }
+
+        // 좌표 유효성 검사
+        const lat = parseFloat(coords.lat);
+        const lng = parseFloat(coords.lng);
+        
+        if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+            console.warn('잘못된 좌표:', lat, lng);
+            container.innerHTML = `
+                <div class="text-center py-4 bg-light rounded">
+                    <i class="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
+                    <p class="mb-0 text-muted">잘못된 좌표 정보입니다</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Kakao Maps API 로드 확인
+        if (typeof kakao === 'undefined' || !kakao.maps) {
+            console.error('Kakao Maps API가 로드되지 않음');
+            container.innerHTML = `
+                <div class="text-center py-4 bg-light rounded">
+                    <i class="fas fa-exclamation-circle fa-2x text-danger mb-2"></i>
+                    <p class="mb-0 text-muted">지도 API 로드 실패</p>
+                    <small class="text-muted">Kakao Maps API를 확인해주세요</small>
                 </div>
             `;
             return;
@@ -53,21 +80,6 @@ class SimpleMapManager {
         container.style.display = 'flex';
         container.style.alignItems = 'center';
         container.style.justifyContent = 'center';
-
-        // 좌표 유효성 검사
-        const lat = parseFloat(coords.lat);
-        const lng = parseFloat(coords.lng);
-        
-        if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-            console.warn('잘못된 좌표:', lat, lng);
-            container.innerHTML = `
-                <div class="text-center py-4 bg-light rounded">
-                    <i class="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
-                    <p class="mb-0 text-muted">잘못된 좌표 정보입니다</p>
-                </div>
-            `;
-            return;
-        }
 
         // 타임아웃 설정
         const timeoutId = setTimeout(() => {
@@ -88,16 +100,15 @@ class SimpleMapManager {
                     // 로딩 메시지 제거
                     container.innerHTML = '';
                     
-                    // 지도 생성 - 정사각형 강제
-                    this.currentMap = L.map(containerId, {
-                        center: [lat, lng],
-                        zoom: 15,
-                        zoomControl: true,
-                        attributionControl: true,
-                        scrollWheelZoom: false, // 스크롤 줌 비활성화로 성능 향상
-                        doubleClickZoom: true,
-                        dragging: true
-                    });
+                    // Kakao Maps 지도 생성
+                    const mapContainer = document.getElementById(containerId);
+                    const mapOption = {
+                        center: new kakao.maps.LatLng(lat, lng), // 지도의 중심좌표
+                        level: 3 // 지도의 확대 레벨
+                    };
+
+                    // 지도 생성
+                    this.currentMap = new kakao.maps.Map(mapContainer, mapOption);
                     
                     // 지도 크기 강제 설정
                     setTimeout(() => {
@@ -111,36 +122,41 @@ class SimpleMapManager {
                             mapElement.style.maxHeight = '300px';
                             mapElement.style.aspectRatio = '1/1';
                         }
-                        this.currentMap.invalidateSize();
+                        // Kakao Maps 크기 조정
+                        kakao.maps.event.trigger(this.currentMap, 'resize');
                     }, 100);
 
-                    // 타일 레이어 추가
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        attribution: '© OpenStreetMap',
-                        maxZoom: 18,
-                        minZoom: 10,
-                        tileSize: 256
-                    }).addTo(this.currentMap);
+                    // 마커 생성
+                    const markerPosition = new kakao.maps.LatLng(lat, lng);
+                    const marker = new kakao.maps.Marker({
+                        position: markerPosition
+                    });
 
-                    // 마커 추가
-                    const marker = L.marker([lat, lng]).addTo(this.currentMap);
+                    // 마커를 지도에 표시
+                    marker.setMap(this.currentMap);
                     
+                    // 인포윈도우 생성 (위치명이 있는 경우)
                     if (locationName) {
-                        marker.bindPopup(`
-                            <div class="text-center">
-                                <strong>${locationName}</strong><br>
-                                <small class="text-muted">${lat.toFixed(6)}, ${lng.toFixed(6)}</small>
-                            </div>
-                        `);
+                        const infowindow = new kakao.maps.InfoWindow({
+                            content: `
+                                <div style="padding: 10px; text-align: center; min-width: 150px;">
+                                    <strong>${locationName}</strong><br>
+                                    <small style="color: #666;">${lat.toFixed(6)}, ${lng.toFixed(6)}</small>
+                                </div>
+                            `
+                        });
+                        
+                        // 인포윈도우를 지도에 표시
+                        infowindow.open(this.currentMap, marker);
                     }
 
                     // 타임아웃 해제
                     clearTimeout(timeoutId);
                     
-                    console.log('✅ 지도 로딩 성공');
+                    console.log('✅ Kakao 지도 로딩 성공');
 
                 } catch (error) {
-                    console.error('지도 생성 오류:', error);
+                    console.error('Kakao 지도 생성 오류:', error);
                     clearTimeout(timeoutId);
                     container.innerHTML = `
                         <div class="text-center py-4 bg-light rounded">
@@ -169,7 +185,7 @@ class SimpleMapManager {
      */
     cleanup() {
         if (this.currentMap) {
-            this.currentMap.remove();
+            // Kakao Maps는 remove() 메서드가 없으므로 null로 설정
             this.currentMap = null;
         }
     }

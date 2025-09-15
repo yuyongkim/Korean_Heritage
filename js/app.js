@@ -1284,11 +1284,19 @@ function renderCategoryPagination(current, totalPages, totalItems) {
     let paginationHTML = '';
     
     // 이전 버튼
-    paginationHTML += `
-        <li class="page-item ${current <= 1 ? 'disabled' : ''}">
-            <a class="page-link" href="#" onclick="changeCategoryPage(${current - 1}); return false;">이전</a>
-        </li>
-    `;
+    if (current > 1) {
+        paginationHTML += `
+            <li class="page-item">
+                <a class="page-link" href="#category/${encodeURIComponent(currentCategoryName)}/${current - 1}">이전</a>
+            </li>
+        `;
+    } else {
+        paginationHTML += `
+            <li class="page-item disabled">
+                <span class="page-link">이전</span>
+            </li>
+        `;
+    }
     
     // 페이지 번호
     const maxVisible = 5;
@@ -1300,19 +1308,35 @@ function renderCategoryPagination(current, totalPages, totalItems) {
     }
     
     for (let i = startPage; i <= endPage; i++) {
-        paginationHTML += `
-            <li class="page-item ${i === current ? 'active' : ''}">
-                <a class="page-link" href="#" onclick="changeCategoryPage(${i}); return false;">${i}</a>
-            </li>
-        `;
+        if (i === current) {
+            paginationHTML += `
+                <li class="page-item active">
+                    <span class="page-link">${i}</span>
+                </li>
+            `;
+        } else {
+            paginationHTML += `
+                <li class="page-item">
+                    <a class="page-link" href="#category/${encodeURIComponent(currentCategoryName)}/${i}">${i}</a>
+                </li>
+            `;
+        }
     }
     
     // 다음 버튼
-    paginationHTML += `
-        <li class="page-item ${current >= totalPages ? 'disabled' : ''}">
-            <a class="page-link" href="#" onclick="changeCategoryPage(${current + 1}); return false;">다음</a>
-        </li>
-    `;
+    if (current < totalPages) {
+        paginationHTML += `
+            <li class="page-item">
+                <a class="page-link" href="#category/${encodeURIComponent(currentCategoryName)}/${current + 1}">다음</a>
+            </li>
+        `;
+    } else {
+        paginationHTML += `
+            <li class="page-item disabled">
+                <span class="page-link">다음</span>
+            </li>
+        `;
+    }
     
     paginationContainer.innerHTML = paginationHTML;
 }
@@ -1323,6 +1347,12 @@ function renderCategoryPagination(current, totalPages, totalItems) {
 function changeCategoryPage(page) {
     currentCategoryPage = page;
     renderCategoryContent();
+    
+    // URL 업데이트 (브라우저 히스토리에 추가)
+    const newUrl = `#category/${encodeURIComponent(currentCategoryName)}/${page}`;
+    if (window.location.hash !== newUrl) {
+        window.location.hash = newUrl;
+    }
 }
 
 // English 페이지 전역 변수

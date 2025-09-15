@@ -227,7 +227,23 @@ router.addRoute('detail', (params) => {
 router.addRoute('category', (params) => {
     router.showView('category-view');
     if (params[0] && typeof loadCategoryView === 'function') {
-        loadCategoryView(decodeURIComponent(params[0]));
+        // 페이지 번호가 있는 경우 처리
+        if (params[1]) {
+            const page = parseInt(params[1]);
+            if (page && page > 0) {
+                // 카테고리 로드 후 페이지 설정
+                loadCategoryView(decodeURIComponent(params[0]));
+                setTimeout(() => {
+                    if (typeof changeCategoryPage === 'function') {
+                        changeCategoryPage(page);
+                    }
+                }, 100);
+            } else {
+                loadCategoryView(decodeURIComponent(params[0]));
+            }
+        } else {
+            loadCategoryView(decodeURIComponent(params[0]));
+        }
     }
 });
 

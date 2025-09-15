@@ -853,7 +853,7 @@ async function renderHeritageDetail(item) {
             
             // 여전히 URL이 없으면 기본 URL
             if (!heritageUrl) {
-                heritageUrl = 'https://www.heritage.go.kr/main/';
+                heritageUrl = 'https://www.heritage.go.kr/';
                 isOriginalUrl = false;
             }
         }
@@ -863,14 +863,13 @@ async function renderHeritageDetail(item) {
         const detailText = isOriginalUrl ? '상세 정보 (원문)' : '국가유산청에서 검색';
         
         // 디버깅 로그
-        console.log('🔗 URL 생성:', {
-            heritageUrl: heritageUrl,
-            isOriginalUrl: isOriginalUrl,
-            linkText: linkText,
-            detailText: detailText,
-            source_url: item.source_url,
-            original_data: item.original_data
-        });
+        console.log('🔗 URL 생성 상세:');
+        console.log('- heritageUrl:', heritageUrl);
+        console.log('- isOriginalUrl:', isOriginalUrl);
+        console.log('- linkText:', linkText);
+        console.log('- detailText:', detailText);
+        console.log('- source_url:', item.source_url);
+        console.log('- original_data:', item.original_data);
         
         linksContainer.innerHTML = `
             <a href="${heritageUrl}" target="_blank" class="heritage-link d-block mb-2" onclick="console.log('🔗 링크 클릭:', '${heritageUrl}');">

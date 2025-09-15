@@ -29,6 +29,12 @@ class Router {
         const hash = window.location.hash.slice(1) || 'home';
         const [route, ...params] = hash.split('/');
         
+        // 현재 경로와 동일하면 무시 (무한 루프 방지)
+        if (this.currentView && this.currentView === this.getViewIdFromRoute(route)) {
+            console.log('동일한 뷰로의 중복 라우팅 무시:', route);
+            return;
+        }
+        
         // 히스토리에 현재 경로 추가 (중복 방지)
         const currentPath = hash;
         if (this.history.length === 0 || this.history[this.history.length - 1] !== currentPath) {
@@ -38,6 +44,8 @@ class Router {
                 this.history.shift();
             }
         }
+        
+        console.log('라우팅 처리:', route, params, '히스토리:', this.history.length);
         
         // 현재 뷰 숨기기
         this.hideAllViews();
@@ -62,6 +70,21 @@ class Router {
             
             this.hideLoading();
         }, 100);
+    }
+    
+    /**
+     * 라우트에서 뷰 ID 추출
+     */
+    getViewIdFromRoute(route) {
+        const routeToViewMap = {
+            'home': 'home-view',
+            'list': 'list-view',
+            'detail': 'detail-view',
+            'category': 'category-view',
+            'search': 'list-view',
+            'english': 'english-view'
+        };
+        return routeToViewMap[route] || 'home-view';
     }
     
     /**
@@ -165,10 +188,11 @@ function goBack() {
         const previousPath = router.history[router.history.length - 1];
         console.log('이전 경로로 이동:', previousPath);
         
-        if (previousPath) {
+        if (previousPath && previousPath !== '') {
             // navigate 함수를 직접 호출하지 않고 해시를 직접 변경
             window.location.hash = previousPath;
         } else {
+            // 이전 경로가 없거나 비어있으면 홈으로
             window.location.hash = 'home';
         }
     } else {
@@ -203,7 +227,23 @@ router.addRoute('detail', (params) => {
 router.addRoute('category', (params) => {
     router.showView('category-view');
     if (params[0] && typeof loadCategoryView === 'function') {
-        loadCategoryView(decodeURIComponent(params[0]));
+        // 페이지 번호가 있는 경우 처리
+        if (params[1]) {
+            const page = parseInt(params[1]);
+            if (page && page > 0) {
+                // 카테고리 로드 후 페이지 설정
+                loadCategoryView(decodeURIComponent(params[0]));
+                setTimeout(() => {
+                    if (typeof changeCategoryPage === 'function') {
+                        changeCategoryPage(page);
+                    }
+                }, 100);
+            } else {
+                loadCategoryView(decodeURIComponent(params[0]));
+            }
+        } else {
+            loadCategoryView(decodeURIComponent(params[0]));
+        }
     }
 });
 

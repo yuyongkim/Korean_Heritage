@@ -136,11 +136,11 @@
                 <h6 class="stats-title">현재 통계</h6>
                 <div class="stats-grid">
                     <div class="stat-item">
-                        <div class="stat-number" id="sidebar-total">16,175</div>
+                        <div class="stat-number" id="sidebar-total">-</div>
                         <div class="stat-label">총 문화재</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-number">87%</div>
+                        <div class="stat-number" id="sidebar-translation-rate">-</div>
                         <div class="stat-label">번역률</div>
                     </div>
                 </div>
@@ -184,25 +184,25 @@
                     <div class="row justify-content-center">
                         <div class="col-auto">
                             <div class="stat-item">
-                                <div class="stat-number">11,247</div>
+                                <div class="stat-number" id="hero-total-count">-</div>
                                 <div class="stat-label">총 문화유산</div>
                             </div>
                         </div>
                         <div class="col-auto">
                             <div class="stat-item">
-                                <div class="stat-number">87.3%</div>
+                                <div class="stat-number" id="hero-translation-count">-</div>
                                 <div class="stat-label">AI 번역 완료</div>
                             </div>
                         </div>
                         <div class="col-auto">
                             <div class="stat-item">
-                                <div class="stat-number">0.742</div>
+                                <div class="stat-number" id="hero-comet-score">-</div>
                                 <div class="stat-label">평균 COMET 점수</div>
                             </div>
                         </div>
                         <div class="col-auto">
                             <div class="stat-item">
-                                <div class="stat-number">2</div>
+                                <div class="stat-number" id="hero-language-count">-</div>
                                 <div class="stat-label">지원 언어</div>
                             </div>
                         </div>
@@ -332,10 +332,10 @@
                                     <div class="stat-icon mb-3">
                                         <i class="fas fa-language"></i>
                                     </div>
-                                    <h4 class="stat-number">87.3%</h4>
+                                    <h4 class="stat-number" id="translation-percentage">-</h4>
                                     <p class="stat-label">번역 완료율</p>
                                     <div class="progress mt-2">
-                                        <div class="progress-bar" style="width: 87.3%"></div>
+                                        <div class="progress-bar" id="translation-progress" style="width: 0%"></div>
                                     </div>
                                 </div>
                             </div>
@@ -346,7 +346,7 @@
                                     <div class="stat-icon mb-3">
                                         <i class="fas fa-robot"></i>
                                     </div>
-                                    <h4 class="stat-number">0.742</h4>
+                                    <h4 class="stat-number" id="comet-score">-</h4>
                                     <p class="stat-label">평균 COMET 점수</p>
                                     <small class="stat-description">AI 번역 품질 지수</small>
                                 </div>

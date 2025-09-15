@@ -842,21 +842,21 @@ async function renderHeritageDetail(item) {
         if (heritageUrl && heritageUrl.trim() !== '' && heritageUrl.includes('culSelectDetail.do')) {
             isOriginalUrl = true;
         } else {
-        // source_url이 없거나 메인 페이지 URL이면 기본 URL 생성
-        if (item.original_data && item.original_data.composite_key) {
-            const parts = item.original_data.composite_key.split(',');
-            if (parts.length >= 3) {
-                heritageUrl = `https://www.heritage.go.kr/heri/cul/culSelectDetail.do?VdkVgwKey=${parts[0]},${parts[1]},${parts[2]}`;
-                isOriginalUrl = true;
+            // source_url이 없거나 메인 페이지 URL이면 기본 URL 생성
+            if (item.original_data && item.original_data.composite_key) {
+                console.log('🔍 composite_key 발견:', item.original_data.composite_key);
+                const parts = item.original_data.composite_key.split(',');
+                console.log('🔍 parts:', parts);
+                if (parts.length >= 3) {
+                    heritageUrl = `https://www.heritage.go.kr/heri/cul/culSelectDetail.do?VdkVgwKey=${parts[0]},${parts[1]},${parts[2]}`;
+                    isOriginalUrl = true;
+                    console.log('✅ 상세 페이지 URL 생성 성공:', heritageUrl);
+                } else {
+                    console.log('❌ parts 길이 부족:', parts.length);
+                }
+            } else {
+                console.log('❌ composite_key 없음');
             }
-        }
-        
-        // composite_key로도 URL을 만들 수 없으면 검색 URL 생성
-        if (!isOriginalUrl && item.name) {
-            const searchQuery = encodeURIComponent(item.name);
-            heritageUrl = `https://www.heritage.go.kr/main/search/searchList.do?searchKeyword=${searchQuery}`;
-            isOriginalUrl = false;
-        }
             
             // 여전히 URL이 없으면 기본 URL
             if (!heritageUrl) {
@@ -877,6 +877,7 @@ async function renderHeritageDetail(item) {
         console.log('- detailText:', detailText);
         console.log('- source_url:', item.source_url);
         console.log('- original_data:', item.original_data);
+        console.log('- composite_key:', item.original_data?.composite_key);
         
         linksContainer.innerHTML = `
             <a href="${heritageUrl}" target="_blank" class="heritage-link d-block mb-2" onclick="console.log('🔗 링크 클릭:', '${heritageUrl}');">

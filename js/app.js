@@ -867,14 +867,16 @@ async function renderHeritageDetail(item) {
             heritageUrl: heritageUrl,
             isOriginalUrl: isOriginalUrl,
             linkText: linkText,
-            detailText: detailText
+            detailText: detailText,
+            source_url: item.source_url,
+            original_data: item.original_data
         });
         
         linksContainer.innerHTML = `
-            <a href="${heritageUrl}" target="_blank" class="heritage-link d-block mb-2">
+            <a href="${heritageUrl}" target="_blank" class="heritage-link d-block mb-2" onclick="console.log('🔗 링크 클릭:', '${heritageUrl}');">
                 <i class="fas fa-external-link-alt me-2"></i>${linkText}
             </a>
-            <a href="${heritageUrl}" target="_blank" class="heritage-link d-block mb-2">
+            <a href="${heritageUrl}" target="_blank" class="heritage-link d-block mb-2" onclick="console.log('🔗 링크 클릭:', '${heritageUrl}');">
                 <i class="fas fa-info-circle me-2"></i>${detailText}
             </a>
             <a href="#" class="heritage-link d-block mb-2" onclick="shareHeritage('${item.name}'); return false;">

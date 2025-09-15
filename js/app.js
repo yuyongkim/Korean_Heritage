@@ -845,7 +845,8 @@ async function renderHeritageDetail(item) {
             // source_url이 없거나 메인 페이지 URL이면 기본 URL 생성
             if (item.original_data && item.original_data.composite_key) {
                 console.log('🔍 composite_key 발견:', item.original_data.composite_key);
-                const parts = item.original_data.composite_key.split(',');
+                // composite_key가 '-'로 구분되어 있으므로 '-'로 split
+                const parts = item.original_data.composite_key.split('-');
                 console.log('🔍 parts:', parts);
                 if (parts.length >= 3) {
                     heritageUrl = `https://www.heritage.go.kr/heri/cul/culSelectDetail.do?VdkVgwKey=${parts[0]},${parts[1]},${parts[2]}`;

@@ -834,8 +834,24 @@ async function renderHeritageDetail(item) {
     // 관련 링크
     const linksContainer = document.getElementById('heritage-links');
     if (linksContainer) {
-        // 문화재청 상세 페이지 URL 생성
-        const heritageUrl = `https://www.heritage.go.kr/heri/cul/culSelectDetail.do?VdkVgwKey=${item.ccbaCtcd},${item.ccbaAsno},${item.ccbaKdcd}`;
+        // 문화재청 상세 페이지 URL - 원본 source_url 사용 또는 기본 URL 생성
+        let heritageUrl = item.source_url;
+        
+        // source_url이 없으면 기본 URL 생성
+        if (!heritageUrl || heritageUrl.trim() === '') {
+            // 원본 데이터에서 URL 파라미터 추출 시도
+            if (item.original_data && item.original_data.composite_key) {
+                const parts = item.original_data.composite_key.split(',');
+                if (parts.length >= 3) {
+                    heritageUrl = `https://www.heritage.go.kr/heri/cul/culSelectDetail.do?VdkVgwKey=${parts[0]},${parts[1]},${parts[2]}`;
+                }
+            }
+            
+            // 여전히 URL이 없으면 기본 URL
+            if (!heritageUrl) {
+                heritageUrl = 'https://www.heritage.go.kr';
+            }
+        }
         
         linksContainer.innerHTML = `
             <a href="${heritageUrl}" target="_blank" class="heritage-link d-block mb-2">

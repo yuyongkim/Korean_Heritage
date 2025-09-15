@@ -46,7 +46,7 @@ class DataManager {
                             location: row.ctcd_name || '',
                             korean_description: row.content || '',
                             english_description: '', // 현재 CSV에는 영문 설명이 없음
-                            source_url: '', // 현재 CSV에는 출처 URL이 없음
+                            source_url: row.source_url || '', // 원본 CSV의 source_url 사용
                             period: '', // 현재 CSV에는 시대 정보가 없음
                             designation_no: row.key_asno ? `지정번호: ${row.key_asno}` : '',
                             image_url: imageUrl,

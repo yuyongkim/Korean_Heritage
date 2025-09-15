@@ -6,6 +6,7 @@ class Router {
         this.routes = {};
         this.currentView = null;
         this.history = []; // 히스토리 스택 추가
+        this.previousHash = null; // 이전 해시 저장
         
         // 브라우저 뒤로가기/앞으로가기 이벤트 처리
         window.addEventListener('hashchange', () => this.handleRoute());
@@ -29,9 +30,10 @@ class Router {
         const hash = window.location.hash.slice(1) || 'home';
         const [route, ...params] = hash.split('/');
         
-        // 현재 경로와 동일하면 무시 (무한 루프 방지)
-        if (this.currentView && this.currentView === this.getViewIdFromRoute(route)) {
-            console.log('동일한 뷰로의 중복 라우팅 무시:', route);
+        // 현재 해시와 동일하면 무시 (무한 루프 방지)
+        const currentHash = window.location.hash.slice(1) || 'home';
+        if (this.previousHash && this.previousHash === currentHash) {
+            console.log('동일한 해시로의 중복 라우팅 무시:', currentHash);
             return;
         }
         
@@ -69,6 +71,9 @@ class Router {
             }
             
             this.hideLoading();
+            
+            // 이전 해시 업데이트
+            this.previousHash = currentHash;
         }, 100);
     }
     

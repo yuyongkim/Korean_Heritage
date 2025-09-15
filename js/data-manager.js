@@ -35,7 +35,7 @@ class DataManager {
                             imageUrl = row.imageUrl.trim();
                             // URL이 상대 경로인 경우 절대 경로로 변환
                             if (imageUrl.startsWith('/')) {
-                                imageUrl = 'http://www.khs.go.kr' + imageUrl;
+                                imageUrl = 'https://www.khs.go.kr' + imageUrl;
                             }
                         }
                         
@@ -246,7 +246,7 @@ class DataManager {
                 imageUrl = row.imageUrl.trim();
                 // URL이 상대 경로인 경우 절대 경로로 변환
                 if (imageUrl.startsWith('/')) {
-                    imageUrl = 'http://www.khs.go.kr' + imageUrl;
+                    imageUrl = 'https://www.khs.go.kr' + imageUrl;
                 }
             }
             
@@ -329,7 +329,7 @@ class DataManager {
                     imageUrl = row.imageUrl.trim();
                     // URL이 상대 경로인 경우 절대 경로로 변환
                     if (imageUrl.startsWith('/')) {
-                        imageUrl = 'http://www.khs.go.kr' + imageUrl;
+                        imageUrl = 'https://www.khs.go.kr' + imageUrl;
                     }
                 }
                 

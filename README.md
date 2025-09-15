@@ -2,6 +2,27 @@
 
 한국의 문화재 정보를 체계적으로 관리하고 다국어로 제공하는 웹 기반 디지털 아카이브 시스템입니다.
 
+## 🌐 접속 주소
+
+### 로컬 개발 환경
+```bash
+# 로컬 서버 실행
+python -m http.server 8080 --bind 0.0.0.0
+
+# 브라우저에서 접속
+http://localhost:8080
+```
+
+### 배포 환경
+- **GitHub Pages**: `https://USERNAME.github.io/korean-heritage-wiki`
+- **Netlify**: `https://your-site-name.netlify.app`
+- **Vercel**: `https://your-project.vercel.app`
+- **Firebase Hosting**: `https://your-project.web.app`
+
+### 직접 파일 접속
+- **메인 페이지**: `index.html` (자동으로 `main.html`로 리다이렉트)
+- **애플리케이션**: `main.html`
+
 ## 🌟 주요 기능
 
 ### 📊 대시보드 및 통계

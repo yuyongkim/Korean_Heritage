@@ -344,7 +344,9 @@ function renderGridView(items) {
     const container = document.getElementById('heritage-grid');
     if (!container) return;
     
-    container.innerHTML = items.map(item => `
+    container.innerHTML = items.map(item => {
+        const eraInfo = getEraInformation(item);
+        return `
         <div class="heritage-grid-item">
             <div class="card heritage-card h-100" onclick="viewHeritageDetail('${item.name}')">
                 <div class="card-img-top heritage-image">
@@ -366,13 +368,14 @@ function renderGridView(items) {
                         }
                     </p>
                     <div class="d-flex justify-content-between align-items-center">
-                        <small class="text-muted">${item.period || '시대 정보 없음'}</small>
+                        <small class="text-muted">${eraInfo || '시대 정보 없음'}</small>
                         <small class="text-primary">${item.designation_no || ''}</small>
                     </div>
                 </div>
             </div>
         </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 /**
@@ -382,7 +385,9 @@ function renderListView(items) {
     const tbody = document.getElementById('heritage-list-tbody');
     if (!tbody) return;
     
-    tbody.innerHTML = items.map(item => `
+    tbody.innerHTML = items.map(item => {
+        const eraInfo = getEraInformation(item);
+        return `
         <tr class="heritage-list-row" onclick="viewHeritageDetail('${item.name}')" style="cursor: pointer;">
             <td>
                 <div class="heritage-list-image">
@@ -404,7 +409,7 @@ function renderListView(items) {
             </td>
             <td>
                 <span class="text-muted">${item.location || '정보 없음'}</span>
-                ${item.period ? `<br><small class="text-muted">${item.period}</small>` : ''}
+                ${eraInfo ? `<br><small class="text-muted">${eraInfo}</small>` : ''}
             </td>
             <td>
                 <div class="heritage-list-desc">
@@ -420,7 +425,8 @@ function renderListView(items) {
                 </button>
             </td>
         </tr>
-    `).join('');
+        `;
+    }).join('');
 }
 
 /**
@@ -639,10 +645,30 @@ function loadHeritageDetail(name) {
 }
 
 /**
+ * 시대 정보 가져오기 (우선순위에 따라)
+ */
+function getEraInformation(item) {
+    // 우선순위: cccePd -> ccmaAsdt -> cceeAsdt
+    if (item.cccePd && item.cccePd.trim() !== '') {
+        return item.cccePd;
+    }
+    if (item.ccmaAsdt && item.ccmaAsdt.trim() !== '') {
+        return item.ccmaAsdt;
+    }
+    if (item.cceeAsdt && item.cceeAsdt.trim() !== '') {
+        return item.cceeAsdt;
+    }
+    return null;
+}
+
+/**
  * 문화재 상세 정보 렌더링
  */
 function renderHeritageDetail(item) {
     console.log('상세 페이지 렌더링 시작:', item.name);
+    
+    // 시대 정보 가져오기
+    const eraInfo = getEraInformation(item);
     
     // 헤더 영역 추가 (제목과 카테고리)
     const mainContent = document.querySelector('#detail-view .col-lg-8');
@@ -662,7 +688,7 @@ function renderHeritageDetail(item) {
                             <h1 class="heritage-title">${item.name}</h1>
                             <div class="heritage-subtitle">
                                 <span class="heritage-badge me-2">${item.category}</span>
-                                ${item.period ? `<span class="heritage-period me-2">${item.period}</span>` : ''}
+                                ${eraInfo ? `<span class="heritage-period me-2">${eraInfo}</span>` : ''}
                                 ${item.designation_no ? `<span class="heritage-designation">${item.designation_no}</span>` : ''}
                             </div>
                         </div>
@@ -736,10 +762,10 @@ function renderHeritageDetail(item) {
                 <div class="heritage-meta-value">${item.designation_no}</div>
             </div>
             ` : ''}
-            ${item.period ? `
+            ${eraInfo ? `
             <div class="heritage-meta-item d-flex">
                 <div class="heritage-meta-label"><i class="fas fa-history me-2"></i>시대</div>
-                <div class="heritage-meta-value">${item.period}</div>
+                <div class="heritage-meta-value">${eraInfo}</div>
             </div>
             ` : ''}
             <div class="heritage-meta-item d-flex">
@@ -984,7 +1010,9 @@ function renderCategoryGridView(items) {
         return;
     }
     
-    container.innerHTML = items.map(item => `
+    container.innerHTML = items.map(item => {
+        const eraInfo = getEraInformation(item);
+        return `
         <div class="heritage-grid-item">
             <div class="card heritage-card h-100" onclick="viewHeritageDetail('${item.name}')">
                 <div class="card-img-top heritage-image">
@@ -1006,13 +1034,14 @@ function renderCategoryGridView(items) {
                         }
                     </p>
                     <div class="d-flex justify-content-between align-items-center">
-                        <small class="text-muted">${item.period || '시대 정보 없음'}</small>
+                        <small class="text-muted">${eraInfo || '시대 정보 없음'}</small>
                         <small class="text-primary">${item.designation_no || ''}</small>
                     </div>
                 </div>
             </div>
         </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 /**
@@ -1035,7 +1064,9 @@ function renderCategoryListView(items) {
         return;
     }
     
-    tbody.innerHTML = items.map(item => `
+    tbody.innerHTML = items.map(item => {
+        const eraInfo = getEraInformation(item);
+        return `
         <tr class="heritage-list-row" onclick="viewHeritageDetail('${item.name}')" style="cursor: pointer;">
             <td>
                 <div class="heritage-list-image">
@@ -1051,7 +1082,7 @@ function renderCategoryListView(items) {
             <td>
                 <div class="fw-semibold text-primary">${item.name}</div>
                 ${item.designation_no ? `<small class="text-muted">${item.designation_no}</small>` : ''}
-                ${item.period ? `<br><small class="text-muted">${item.period}</small>` : ''}
+                ${eraInfo ? `<br><small class="text-muted">${eraInfo}</small>` : ''}
             </td>
             <td>
                 <span class="text-muted">${item.location || '정보 없음'}</span>
@@ -1070,7 +1101,8 @@ function renderCategoryListView(items) {
                 </button>
             </td>
         </tr>
-    `).join('');
+        `;
+    }).join('');
 }
 
 /**
@@ -1447,7 +1479,9 @@ function renderEnglishGridView(items) {
         return;
     }
     
-    container.innerHTML = items.map(item => `
+    container.innerHTML = items.map(item => {
+        const eraInfo = getEraInformation(item);
+        return `
         <div class="heritage-grid-item">
             <div class="card heritage-card h-100" onclick="viewHeritageDetail('${item.name}')">
                 <div class="card-img-top heritage-image">
@@ -1469,13 +1503,14 @@ function renderEnglishGridView(items) {
                         }
                     </p>
                     <div class="d-flex justify-content-between align-items-center">
-                        <small class="text-muted">${item.period || 'Period unknown'}</small>
+                        <small class="text-muted">${eraInfo || 'Period unknown'}</small>
                         <small class="text-primary">${item.designation_no || ''}</small>
                     </div>
                 </div>
             </div>
         </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 /**
@@ -1498,7 +1533,9 @@ function renderEnglishListView(items) {
         return;
     }
     
-    tbody.innerHTML = items.map(item => `
+    tbody.innerHTML = items.map(item => {
+        const eraInfo = getEraInformation(item);
+        return `
         <tr class="heritage-list-row" onclick="viewHeritageDetail('${item.name}')" style="cursor: pointer;">
             <td>
                 <div class="heritage-list-image">
@@ -1514,7 +1551,7 @@ function renderEnglishListView(items) {
             <td>
                 <div class="fw-semibold text-primary">${item.name}</div>
                 ${item.designation_no ? `<small class="text-muted">${item.designation_no}</small>` : ''}
-                ${item.period ? `<br><small class="text-muted">${item.period}</small>` : ''}
+                ${eraInfo ? `<br><small class="text-muted">${eraInfo}</small>` : ''}
             </td>
             <td>
                 <span class="badge category-badge category-${item.category}">${getCategoryEnglishName(item.category)}</span>
@@ -1536,7 +1573,8 @@ function renderEnglishListView(items) {
                 </button>
             </td>
         </tr>
-    `).join('');
+        `;
+    }).join('');
 }
 
 /**

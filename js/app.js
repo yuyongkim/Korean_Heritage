@@ -772,11 +772,11 @@ async function renderHeritageDetail(item) {
                 <div class="heritage-meta-label"><i class="fas fa-map-marker-alt me-2"></i>소재지</div>
                 <div class="heritage-meta-value">${item.location}</div>
             </div>
-            ${item.source_url ? `
+            ${item.ccbaCtcd && item.ccbaAsno && item.ccbaKdcd ? `
             <div class="heritage-meta-item d-flex">
                 <div class="heritage-meta-label"><i class="fas fa-external-link-alt me-2"></i>출처</div>
                 <div class="heritage-meta-value">
-                    <a href="${item.source_url}" target="_blank" class="text-primary">
+                    <a href="https://www.heritage.go.kr/heri/cul/culSelectDetail.do?VdkVgwKey=${item.ccbaCtcd},${item.ccbaAsno},${item.ccbaKdcd}" target="_blank" class="text-primary">
                         문화재청 바로가기 <i class="fas fa-external-link-alt fa-sm"></i>
                     </a>
                 </div>
@@ -834,15 +834,16 @@ async function renderHeritageDetail(item) {
     // 관련 링크
     const linksContainer = document.getElementById('heritage-links');
     if (linksContainer) {
+        // 문화재청 상세 페이지 URL 생성
+        const heritageUrl = `https://www.heritage.go.kr/heri/cul/culSelectDetail.do?VdkVgwKey=${item.ccbaCtcd},${item.ccbaAsno},${item.ccbaKdcd}`;
+        
         linksContainer.innerHTML = `
-            <a href="${item.source_url || 'https://www.heritage.go.kr'}" target="_blank" class="heritage-link d-block mb-2">
+            <a href="${heritageUrl}" target="_blank" class="heritage-link d-block mb-2">
                 <i class="fas fa-external-link-alt me-2"></i>문화재청 홈페이지
             </a>
-            ${item.source_url ? `
-                <a href="${item.source_url}" target="_blank" class="heritage-link d-block mb-2">
-                    <i class="fas fa-info-circle me-2"></i>상세 정보 (원문)
-                </a>
-            ` : ''}
+            <a href="${heritageUrl}" target="_blank" class="heritage-link d-block mb-2">
+                <i class="fas fa-info-circle me-2"></i>상세 정보 (원문)
+            </a>
             <a href="#" class="heritage-link d-block mb-2" onclick="shareHeritage('${item.name}'); return false;">
                 <i class="fas fa-share me-2"></i>공유하기
             </a>

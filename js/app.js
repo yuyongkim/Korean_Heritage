@@ -862,6 +862,14 @@ async function renderHeritageDetail(item) {
         const linkText = isOriginalUrl ? '문화재청 상세 페이지' : '국가유산청 홈페이지';
         const detailText = isOriginalUrl ? '상세 정보 (원문)' : '국가유산청에서 검색';
         
+        // 디버깅 로그
+        console.log('🔗 URL 생성:', {
+            heritageUrl: heritageUrl,
+            isOriginalUrl: isOriginalUrl,
+            linkText: linkText,
+            detailText: detailText
+        });
+        
         linksContainer.innerHTML = `
             <a href="${heritageUrl}" target="_blank" class="heritage-link d-block mb-2">
                 <i class="fas fa-external-link-alt me-2"></i>${linkText}

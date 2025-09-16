@@ -360,11 +360,11 @@ function renderGridView(items) {
                         <span class="badge category-badge category-${item.category}">${item.category}</span>
                         <small class="text-muted">${item.location}</small>
                     </div>
-                    <h6 class="card-title">${item.name}</h6>
+                    <h6 class="card-title">${dataManager.currentLanguage === 'ko' ? item.name : (item.name_en || item.name)}</h6>
                     <p class="card-text text-truncate-2">
                         ${dataManager.currentLanguage === 'ko' 
-                            ? (item.korean_description ? item.korean_description.substring(0, 100) + '...' : '설명 없음')
-                            : (item.english_description ? item.english_description.substring(0, 100) + '...' : '영문 설명 준비 중...')
+                            ? (item.content ? item.content.substring(0, 100) + '...' : '설명 없음')
+                            : (item.content_en ? item.content_en.substring(0, 100) + '...' : '영문 설명 준비 중...')
                         }
                     </p>
                     <div class="d-flex justify-content-between align-items-center">
@@ -401,7 +401,7 @@ function renderListView(items) {
                 </div>
             </td>
             <td>
-                <div class="fw-semibold text-primary">${item.name}</div>
+                <div class="fw-semibold text-primary">${dataManager.currentLanguage === 'ko' ? item.name : (item.name_en || item.name)}</div>
                 ${item.designation_no ? `<small class="text-muted">${item.designation_no}</small>` : ''}
             </td>
             <td>
@@ -414,8 +414,8 @@ function renderListView(items) {
             <td>
                 <div class="heritage-list-desc">
                     ${dataManager.currentLanguage === 'ko' 
-                        ? (item.korean_description ? item.korean_description.substring(0, 150) + '...' : '설명 없음')
-                        : (item.english_description ? item.english_description.substring(0, 150) + '...' : '영문 설명 준비 중...')
+                        ? (item.content ? item.content.substring(0, 150) + '...' : '설명 없음')
+                        : (item.content_en ? item.content_en.substring(0, 150) + '...' : '영문 설명 준비 중...')
                     }
                 </div>
             </td>
@@ -685,7 +685,7 @@ async function renderHeritageDetail(item) {
                 <div class="container-fluid">
                     <div class="row align-items-center">
                         <div class="col">
-                            <h1 class="heritage-title">${item.name}</h1>
+                            <h1 class="heritage-title">${dataManager.currentLanguage === 'ko' ? item.name : (item.name_en || item.name)}</h1>
                             <div class="heritage-subtitle">
                                 <span class="heritage-badge me-2">${item.category}</span>
                                 ${eraInfo ? `<span class="heritage-period me-2">${eraInfo}</span>` : ''}
@@ -854,10 +854,7 @@ async function renderHeritageDetail(item) {
                     const ccbaCtcd = parts[1];
                     const ccbaAsno = parts[2].padStart(13, '0'); // 13자리로 패딩
                     
-                    // ccbaCpno는 ccbaKdcd + ccbaCtcd + ccbaAsno 형식이지만 길이가 다름
-                    const ccbaCpno = `${ccbaKdcd}${ccbaCtcd}${ccbaAsno}`;
-                    console.log('🔍 URL 파라미터:', { ccbaKdcd, ccbaCtcd, ccbaAsno, ccbaCpno });
-                    heritageUrl = `https://www.heritage.go.kr/heri/cul/culSelectDetail.do?culPageNo=1&region=1&searchCondition=&searchCondition2=&ccbaKdcd=${ccbaKdcd}&ccbaAsno=${ccbaAsno}&ccbaCtcd=${ccbaCtcd}&ccbaCpno=${ccbaCpno}&ccbaCndt=&ccbaLcto=&stCcbaAsdt=&endCcbaAsdt=&header=view&returnUrl=%2Fheri%2Fcul%2FculSelectViewList.do&pageNo=1_1_1_0&p=multiSch&sortType=&sortOrd=&sngl=Y&s_kdcdArr=00&s_ctcdArr=00&ccbaPcd1Arr=99&ccbaGcodeArr=00`;
+                    heritageUrl = `https://www.heritage.go.kr/heri/cul/culSelectDetail.do?culPageNo=1&region=1&searchCondition=&searchCondition2=&ccbaKdcd=${ccbaKdcd}&ccbaAsno=${ccbaAsno}&ccbaCtcd=${ccbaCtcd}&ccbaCpno=${ccbaKdcd}${ccbaCtcd}${ccbaAsno}&ccbaCndt=&ccbaLcto=&stCcbaAsdt=&endCcbaAsdt=&header=view&returnUrl=%2Fheri%2Fcul%2FculSelectViewList.do&pageNo=1_1_1_0&p=multiSch&sortType=&sortOrd=&sngl=Y&s_kdcdArr=00&s_ctcdArr=00&ccbaPcd1Arr=99&ccbaGcodeArr=00`;
                     isOriginalUrl = true;
                     console.log('✅ 상세 페이지 URL 생성 성공:', heritageUrl);
                 } else {
@@ -919,8 +916,8 @@ function updateHeritageDescription(item) {
     
     const isKorean = dataManager.currentLanguage === 'ko';
     const description = isKorean 
-        ? (item.content || item.korean_description || '설명이 없습니다.')
-        : (item.english_description || '영문 설명을 준비 중입니다.');
+        ? (item.content || '설명이 없습니다.')
+        : (item.content_en || '영문 설명을 준비 중입니다.');
     
     // 줄바꿈 처리 및 문단 나누기
     let processedDescription = description
@@ -1092,11 +1089,11 @@ function renderCategoryGridView(items) {
                         <span class="badge category-badge category-${item.category}">${item.category}</span>
                         <small class="text-muted">${item.location || '지역 정보 없음'}</small>
                     </div>
-                    <h6 class="card-title">${item.name}</h6>
+                    <h6 class="card-title">${dataManager.currentLanguage === 'ko' ? item.name : (item.name_en || item.name)}</h6>
                     <p class="card-text text-truncate-2">
                         ${dataManager.currentLanguage === 'ko' 
-                            ? (item.korean_description ? item.korean_description.substring(0, 100) + '...' : '설명 없음')
-                            : (item.english_description ? item.english_description.substring(0, 100) + '...' : '영문 설명 준비 중...')
+                            ? (item.content ? item.content.substring(0, 100) + '...' : '설명 없음')
+                            : (item.content_en ? item.content_en.substring(0, 100) + '...' : '영문 설명 준비 중...')
                         }
                     </p>
                     <div class="d-flex justify-content-between align-items-center">
@@ -1146,7 +1143,7 @@ function renderCategoryListView(items) {
                 </div>
             </td>
             <td>
-                <div class="fw-semibold text-primary">${item.name}</div>
+                <div class="fw-semibold text-primary">${dataManager.currentLanguage === 'ko' ? item.name : (item.name_en || item.name)}</div>
                 ${item.designation_no ? `<small class="text-muted">${item.designation_no}</small>` : ''}
                 ${eraInfo ? `<br><small class="text-muted">${eraInfo}</small>` : ''}
             </td>
@@ -1156,8 +1153,8 @@ function renderCategoryListView(items) {
             <td>
                 <div class="heritage-list-desc">
                     ${dataManager.currentLanguage === 'ko' 
-                        ? (item.korean_description ? item.korean_description.substring(0, 150) + '...' : '설명 없음')
-                        : (item.english_description ? item.english_description.substring(0, 150) + '...' : '영문 설명 준비 중...')
+                        ? (item.content ? item.content.substring(0, 150) + '...' : '설명 없음')
+                        : (item.content_en ? item.content_en.substring(0, 150) + '...' : '영문 설명 준비 중...')
                     }
                 </div>
             </td>
@@ -1615,7 +1612,7 @@ function renderEnglishListView(items) {
                 </div>
             </td>
             <td>
-                <div class="fw-semibold text-primary">${item.name}</div>
+                <div class="fw-semibold text-primary">${dataManager.currentLanguage === 'ko' ? item.name : (item.name_en || item.name)}</div>
                 ${item.designation_no ? `<small class="text-muted">${item.designation_no}</small>` : ''}
                 ${eraInfo ? `<br><small class="text-muted">${eraInfo}</small>` : ''}
             </td>
@@ -1993,3 +1990,45 @@ function addToFavorites(heritageName) {
         alert('즐겨찾기 추가에 실패했습니다.');
     }
 }
+
+/**
+ * 메인 언어 토글 이벤트 설정
+ */
+function setupMainLanguageToggle() {
+    const langButtons = document.querySelectorAll('input[name="lang"]');
+    langButtons.forEach(button => {
+        button.addEventListener('change', (e) => {
+            const language = e.target.id === 'lang-ko' ? 'ko' : 'en';
+            console.log('언어 변경:', language);
+            
+            // i18n 시스템에 언어 변경 알림
+            if (window.i18n) {
+                i18n.setLanguage(language);
+            }
+            
+            // dataManager에도 언어 설정
+            if (window.dataManager) {
+                dataManager.currentLanguage = language;
+            }
+            
+            // 현재 뷰 새로고침
+            const currentHash = window.location.hash.slice(1) || 'home';
+            const [route] = currentHash.split('/');
+            
+            setTimeout(() => {
+                if (route === 'home' && typeof updateDashboard === 'function') {
+                    updateDashboard();
+                } else if (route === 'list' && typeof loadHeritageList === 'function') {
+                    loadHeritageList();
+                } else if (route === 'category' && typeof renderCategoryContent === 'function') {
+                    renderCategoryContent();
+                }
+            }, 100);
+        });
+    });
+}
+
+// DOM 로드 완료 후 언어 토글 이벤트 설정
+document.addEventListener('DOMContentLoaded', function() {
+    setupMainLanguageToggle();
+});

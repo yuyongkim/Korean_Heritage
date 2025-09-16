@@ -72,7 +72,48 @@ http://localhost:8080
 name,key_asno,key_kdcd,key_ctcd,longitude,latitude,collected_at,composite_key,kdcd_name,ctcd_name,content,imageUrl,content_length,has_image,detail_collected_at,api_success,api_error,english_description
 서울 숭례문,10000000,11,11,126.975312652739,37.559975221378,2025-09-13T06:35:01.196603,11-11-10000000,국보,서울특별시,"조선시대 한양도성의 정문...","https://example.com/image.jpg",1500,true,2025-09-13T06:35:01.196603,true,,Sungnyemun Gate, the main gate of Hanyangdoseong Fortress...
 ```
+# Korean Heritage Translation Project
 
+## 📊 프로젝트 현황
+
+```mermaid
+mindmap
+  root((Korean Heritage<br/>Translation))
+    [완료작업]
+      데이터정제
+        7109개완료
+        복합데이터제거
+        허깅페이스업로드
+      Solar Mini테스트
+        30개완료
+        0.03달러비용
+        토큰측정완료
+    [현재진행]
+      원본보호
+        heritage-data.js
+        홈페이지연동중
+      결과분석
+        CSV파일생성
+        품질비용비교
+    [다음단계]
+      Solar Pro2테스트
+        0.06달러예상
+        Reasoning비교
+      Qwen3비교
+        RunPod예산필요
+        성능측정
+      대량번역
+        16656개전체
+        최적모델선정
+    [예산현황]
+      Upstage
+        10달러충분
+      RunPod
+        부족상태
+      전체예상
+        15-25달러
+```
+        
 **중요한 필드:**
 - `name`: 문화재명 (한국어)
 - `content`: 한국어 설명
@@ -240,13 +281,13 @@ name,category,location,korean_description,english_description,period,designation
 ## 🔧 향후 개발 계획
 
 ### Phase 2
-- [ ] 지도 통합 (Kakao Map API)
-- [ ] 이미지 업로드 기능
+- [v] 지도 통합 (Kakao Map API)
+- [v] 이미지 업로드 기능
 - [ ] 데이터 백업/복원 기능
 - [ ] 사용자 즐겨찾기 시스템
 
 ### Phase 3  
-- [ ] 백엔드 API 연동
+- [v] 백엔드 API 연동
 - [ ] 사용자 인증 시스템
 - [ ] 협업 편집 기능
 - [ ] AI 번역 품질 개선

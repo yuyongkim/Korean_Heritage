@@ -1682,9 +1682,12 @@ class DataManager {
             // 한글 설명 표시
             descriptionElement.innerHTML = this.formatDescription(currentItem.content || '설명이 없습니다.');
         } else {
-            // 영어 설명 표시
-            const englishContent = currentItem.content_en || this.generateEnglishDescription(currentItem);
-            descriptionElement.innerHTML = this.formatDescription(englishContent);
+            // 영어 설명 표시 - content_en이 있으면 사용, 없으면 fallback 메시지 표시
+            if (currentItem.content_en && currentItem.content_en.trim() !== '') {
+                descriptionElement.innerHTML = this.formatDescription(currentItem.content_en);
+            } else {
+                descriptionElement.innerHTML = this.formatDescription('영문 설명을 준비 중입니다.');
+            }
         }
     }
     
@@ -1703,7 +1706,12 @@ class DataManager {
                     if (isKorean) {
                         descriptionElement.textContent = item.content || '설명이 없습니다.';
                     } else {
-                        descriptionElement.textContent = item.content_en || this.generateEnglishDescription(item);
+                        // 영어 설명 표시 - content_en이 있으면 사용, 없으면 fallback 메시지 표시
+                        if (item.content_en && item.content_en.trim() !== '') {
+                            descriptionElement.textContent = item.content_en;
+                        } else {
+                            descriptionElement.textContent = '영문 설명을 준비 중입니다.';
+                        }
                     }
                 }
             }
@@ -1720,7 +1728,12 @@ class DataManager {
                     if (isKorean) {
                         descriptionCell.textContent = item.content || '설명이 없습니다.';
                     } else {
-                        descriptionCell.textContent = item.content_en || this.generateEnglishDescription(item);
+                        // 영어 설명 표시 - content_en이 있으면 사용, 없으면 fallback 메시지 표시
+                        if (item.content_en && item.content_en.trim() !== '') {
+                            descriptionCell.textContent = item.content_en;
+                        } else {
+                            descriptionCell.textContent = '영문 설명을 준비 중입니다.';
+                        }
                     }
                 }
             }

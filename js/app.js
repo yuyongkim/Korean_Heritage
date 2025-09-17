@@ -731,15 +731,9 @@ function updateHeritageDescription(item) {
     
     const isKorean = dataManager.currentLanguage === 'ko';
     
-    // 테스트용 하드코딩 (서울 숭례문만)
-    let testContentEn = '';
-    if (item.name === '서울 숭례문') {
-        testContentEn = 'FUCK YOU TEST - This is a hardcoded English description for Seoul Sungnyemun Gate. It is the main southern gate of Hanseongdosong, the fortress wall of Seoul during the Joseon Dynasty.';
-    }
-    
     const description = isKorean 
         ? item.korean_description 
-        : (testContentEn || item.english_description || '영문 설명을 준비 중입니다.');
+        : (item.english_description || '영문 설명을 준비 중입니다.');
     
     // 문단 나누기
     const paragraphs = description.split('.').filter(p => p.trim().length > 0);

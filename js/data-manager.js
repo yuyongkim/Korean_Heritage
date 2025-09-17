@@ -45,7 +45,7 @@ class DataManager {
                             category: row.kdcd_name || '',
                             location: row.ctcd_name || '',
                             korean_description: row.content || '',
-                            english_description: '', // 현재 CSV에는 영문 설명이 없음
+                            english_description: row.content_en || '', // 번역된 영어 설명 사용
                             source_url: '', // 현재 CSV에는 출처 URL이 없음
                             period: '', // 현재 CSV에는 시대 정보가 없음
                             designation_no: row.key_asno ? `지정번호: ${row.key_asno}` : '',
@@ -248,7 +248,7 @@ class DataManager {
                 category: row.kdcd_name || '',
                 location: row.ctcd_name || '',
                 korean_description: row.content || '',
-                english_description: '', // 현재 CSV에는 영문 설명이 없음
+                english_description: row.content_en || '', // 번역된 영어 설명 사용
                 source_url: '', // 현재 CSV에는 출처 URL이 없음
                 period: '', // 현재 CSV에는 시대 정보가 없음
                 designation_no: row.key_asno ? `지정번호: ${row.key_asno}` : '',
@@ -331,7 +331,7 @@ class DataManager {
                     category: row.kdcd_name || '',
                     location: row.ctcd_name || '',
                     korean_description: row.content || '',
-                    english_description: '', // 현재 CSV에는 영문 설명이 없음
+                    english_description: row.content_en || '', // 번역된 영어 설명 사용
                     source_url: '', // 현재 CSV에는 출처 URL이 없음
                     period: '', // 현재 CSV에는 시대 정보가 없음
                     designation_no: row.key_asno ? `지정번호: ${row.key_asno}` : '',

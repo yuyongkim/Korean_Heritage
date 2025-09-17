@@ -419,7 +419,7 @@ function renderGridView(items) {
         const eraInfo = getEraInformation(item);
         return `
         <div class="heritage-grid-item">
-            <div class="card heritage-card h-100" data-item-id="${item.id || item.name}" onclick="viewHeritageDetail('${item.name}')">
+            <div class="card heritage-card h-100" data-item-id="${item.original_data?.composite_key || item.id || item.name}" onclick="viewHeritageDetail('${item.name}')">
                 <div class="card-img-top heritage-image">
                     ${item.image_url ? 
                         `<img src="${item.image_url}" alt="${item.name}" onerror="this.style.display='none'; this.parentElement.classList.add('no-image')">` : 
@@ -459,7 +459,7 @@ function renderListView(items) {
     tbody.innerHTML = items.map(item => {
         const eraInfo = getEraInformation(item);
         return `
-        <tr class="heritage-list-row" data-item-id="${item.id || item.name}" onclick="viewHeritageDetail('${item.name}')" style="cursor: pointer;">
+        <tr class="heritage-list-row" data-item-id="${item.original_data?.composite_key || item.id || item.name}" onclick="viewHeritageDetail('${item.name}')" style="cursor: pointer;">
             <td>
                 <div class="heritage-list-image">
                     ${item.image_url ? 
@@ -1149,7 +1149,7 @@ function renderCategoryGridView(items) {
         const eraInfo = getEraInformation(item);
         return `
         <div class="heritage-grid-item">
-            <div class="card heritage-card h-100" data-item-id="${item.id || item.name}" onclick="viewHeritageDetail('${item.name}')">
+            <div class="card heritage-card h-100" data-item-id="${item.original_data?.composite_key || item.id || item.name}" onclick="viewHeritageDetail('${item.name}')">
                 <div class="card-img-top heritage-image">
                     ${item.image_url ? 
                         `<img src="${item.image_url}" alt="${item.name}" onerror="this.style.display='none'; this.parentElement.classList.add('no-image')">` : 
@@ -1202,7 +1202,7 @@ function renderCategoryListView(items) {
     tbody.innerHTML = items.map(item => {
         const eraInfo = getEraInformation(item);
         return `
-        <tr class="heritage-list-row" data-item-id="${item.id || item.name}" onclick="viewHeritageDetail('${item.name}')" style="cursor: pointer;">
+        <tr class="heritage-list-row" data-item-id="${item.original_data?.composite_key || item.id || item.name}" onclick="viewHeritageDetail('${item.name}')" style="cursor: pointer;">
             <td>
                 <div class="heritage-list-image">
                     ${item.image_url ? 

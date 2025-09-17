@@ -1661,28 +1661,24 @@ class DataManager {
         const currentView = document.querySelector('.view:not([style*="display: none"])');
         if (currentView) {
             if (currentView.id === 'detail-view') {
-                this.updateDetailLanguage();
+                this.updateDetailLanguage(this.currentLanguage);
             } else if (currentView.id === 'list-view') {
-                this.updateListLanguage();
+                this.updateListLanguage(this.currentLanguage);
             }
         }
     }
     
-    updateDetailLanguage() {
+    updateDetailLanguage(lang) {
         const currentItem = this.currentDetailItem;
         if (!currentItem) return;
         
         const descriptionElement = document.getElementById('heritage-description');
         if (!descriptionElement) return;
         
-        // 현재 선택된 언어 확인
-        const isKorean = this.currentLanguage === 'ko';
-        
-        if (isKorean) {
-            // 한글 설명 표시
+        // 전달받은 lang 값으로 한/영 여부 판단
+        if (lang === 'ko') {
             descriptionElement.innerHTML = this.formatDescription(currentItem.content || '설명이 없습니다.');
         } else {
-            // 영어 설명 표시 - content_en이 있으면 사용, 없으면 fallback 메시지 표시
             if (currentItem.content_en && currentItem.content_en.trim() !== '') {
                 descriptionElement.innerHTML = this.formatDescription(currentItem.content_en);
             } else {
@@ -1691,9 +1687,45 @@ class DataManager {
         }
     }
     
-    updateListLanguage() {
+    /**
+     * 설명 텍스트 포맷팅
+     */
+    formatDescription(text) {
+        if (!text) return '';
+        
+        // 줄바꿈 처리 및 문단 나누기
+        let processedText = text
+            .replace(/\r\n/g, '\n')  // Windows 줄바꿈 처리
+            .replace(/\r/g, '\n')    // Mac 줄바꿈 처리
+            .replace(/\n\s*\n/g, '\n\n')  // 연속된 줄바꿈 정리
+            .trim();
+        
+        // 문단별로 나누기 (빈 줄 기준)
+        const paragraphs = processedText.split('\n\n').filter(p => p.trim().length > 0);
+        
+        return paragraphs.map(p => {
+            // 문단 내 줄바꿈을 <br>로 변환
+            let formattedParagraph = p.trim().replace(/\n/g, '<br>');
+            
+            // 숫자와 단위 사이의 줄바꿈 방지 (예: 1.54m, 1.4m 등)
+            formattedParagraph = formattedParagraph.replace(/(\d+\.?\d*)\s*<br>\s*([a-zA-Z가-힣]+)/g, '$1$2');
+            
+            // 일반적인 줄바꿈 패턴 처리 (한글 단어 사이)
+            formattedParagraph = formattedParagraph.replace(/([가-힣])\s*<br>\s*([가-힣])/g, '$1 $2');
+            
+            // 문장 끝 마침표 후 줄바꿈 처리 (자연스러운 문단 구분)
+            formattedParagraph = formattedParagraph.replace(/([가-힣]\.)\s*<br>\s*([가-힣])/g, '$1 $2');
+            
+            // 연속된 공백 정리
+            formattedParagraph = formattedParagraph.replace(/\s+/g, ' ');
+            
+            return `<p>${formattedParagraph}</p>`;
+        }).join('');
+    }
+    
+    updateListLanguage(lang) {
         // 현재 표시된 문화재 목록의 설명을 언어에 맞게 업데이트
-        const isKorean = this.currentLanguage === 'ko';
+        const isKorean = lang === 'ko';
         
         // 그리드 뷰 업데이트
         const gridItems = document.querySelectorAll('#heritage-grid .heritage-card');
@@ -1701,7 +1733,8 @@ class DataManager {
             const descriptionElement = card.querySelector('.heritage-description');
             if (descriptionElement) {
                 const itemId = card.dataset.itemId;
-                const item = this.heritageData.find(h => h.id === itemId);
+                // composite_key로 아이템 찾기
+                const item = this.heritageData.find(h => h.original_data?.composite_key === itemId);
                 if (item) {
                     if (isKorean) {
                         descriptionElement.textContent = item.content || '설명이 없습니다.';
@@ -1723,7 +1756,8 @@ class DataManager {
             const descriptionCell = row.querySelector('.heritage-description');
             if (descriptionCell) {
                 const itemId = row.dataset.itemId;
-                const item = this.heritageData.find(h => h.id === itemId);
+                // composite_key로 아이템 찾기
+                const item = this.heritageData.find(h => h.original_data?.composite_key === itemId);
                 if (item) {
                     if (isKorean) {
                         descriptionCell.textContent = item.content || '설명이 없습니다.';

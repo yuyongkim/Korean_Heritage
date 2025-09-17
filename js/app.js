@@ -105,6 +105,57 @@ function setupEventListeners() {
             }
         });
     }
+    
+    // 언어 토글 버튼 이벤트 리스너
+    const langToggleButtons = document.querySelectorAll('.lang-toggle-btn');
+    langToggleButtons.forEach(button => {
+        button.addEventListener('click', (e) => {
+            const selectedLang = e.target.getAttribute('data-lang');
+            
+            // 모든 언어 토글 버튼에서 'active' 클래스 제거
+            langToggleButtons.forEach(btn => btn.classList.remove('active'));
+            
+            // 클릭된 버튼에 'active' 클래스 추가
+            e.target.classList.add('active');
+            
+            console.log('언어 변경:', selectedLang);
+            
+            // i18n 시스템에 언어 변경 알림
+            if (window.i18n && typeof window.i18n.setLanguage === 'function') {
+                window.i18n.setLanguage(selectedLang);
+            }
+            
+            // dataManager에도 언어 설정
+            if (window.dataManager) {
+                window.dataManager.currentLanguage = selectedLang;
+            }
+            
+            // dataManager 함수들 호출
+            if (window.dataManager && typeof window.dataManager.updateDetailLanguage === 'function') {
+                window.dataManager.updateDetailLanguage(selectedLang);
+            }
+            if (window.dataManager && typeof window.dataManager.updateListLanguage === 'function') {
+                window.dataManager.updateListLanguage(selectedLang);
+            }
+            
+            // 현재 뷰 새로고침
+            const currentHash = window.location.hash.slice(1) || 'home';
+            const [route] = currentHash.split('/');
+            
+            setTimeout(() => {
+                if (route === 'home' && typeof updateDashboard === 'function') {
+                    updateDashboard();
+                } else if (route === 'list' && typeof loadHeritageList === 'function') {
+                    loadHeritageList();
+                } else if (route === 'category' && typeof renderCategoryContent === 'function') {
+                    renderCategoryContent();
+                } else if (route === 'detail' && window.dataManager && window.dataManager.currentDetailItem) {
+                    // 상세 페이지에서 언어 변경 시 설명 업데이트
+                    updateHeritageDescription(window.dataManager.currentDetailItem);
+                }
+            }, 100);
+        });
+    });
 }
 
 /**
@@ -956,13 +1007,11 @@ function updateHeritageDescription(item) {
  * 상세 페이지 언어 토글 설정
  */
 function setupDetailLanguageToggle(item) {
-    const detailLangButtons = document.querySelectorAll('input[name="detail-lang"]');
-    detailLangButtons.forEach(button => {
-        button.addEventListener('change', (e) => {
-            dataManager.currentLanguage = e.target.id === 'detail-lang-ko' ? 'ko' : 'en';
-            updateHeritageDescription(item);
-        });
-    });
+    // 언어 토글은 이제 전역 이벤트 리스너에서 처리됨
+    // 상세 페이지에서 언어 변경 시 설명 업데이트를 위한 콜백 설정
+    if (window.dataManager) {
+        window.dataManager.currentDetailItem = item;
+    }
 }
 
 // 카테고리 페이지 전역 변수
@@ -1993,45 +2042,3 @@ function addToFavorites(heritageName) {
         alert('즐겨찾기 추가에 실패했습니다.');
     }
 }
-
-/**
- * 메인 언어 토글 이벤트 설정
- */
-function setupMainLanguageToggle() {
-    const langButtons = document.querySelectorAll('input[name="lang"]');
-    langButtons.forEach(button => {
-        button.addEventListener('change', (e) => {
-            const language = e.target.id === 'lang-ko' ? 'ko' : 'en';
-            console.log('언어 변경:', language);
-            
-            // i18n 시스템에 언어 변경 알림
-            if (window.i18n) {
-                i18n.setLanguage(language);
-            }
-            
-            // dataManager에도 언어 설정
-            if (window.dataManager) {
-                dataManager.currentLanguage = language;
-            }
-            
-            // 현재 뷰 새로고침
-            const currentHash = window.location.hash.slice(1) || 'home';
-            const [route] = currentHash.split('/');
-            
-            setTimeout(() => {
-                if (route === 'home' && typeof updateDashboard === 'function') {
-                    updateDashboard();
-                } else if (route === 'list' && typeof loadHeritageList === 'function') {
-                    loadHeritageList();
-                } else if (route === 'category' && typeof renderCategoryContent === 'function') {
-                    renderCategoryContent();
-                }
-            }, 100);
-        });
-    });
-}
-
-// DOM 로드 완료 후 언어 토글 이벤트 설정
-document.addEventListener('DOMContentLoaded', function() {
-    setupMainLanguageToggle();
-});

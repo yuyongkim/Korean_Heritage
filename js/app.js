@@ -106,36 +106,30 @@ function setupEventListeners() {
         });
     }
     
-    // 언어 토글 버튼 이벤트 리스너
-    const langToggleButtons = document.querySelectorAll('.lang-toggle-btn');
-    langToggleButtons.forEach(button => {
+    // 글로벌 UI 언어 토글 버튼 이벤트 리스너 (사이드바)
+    const globalLangToggleButtons = document.querySelectorAll('.global-lang-toggle');
+    globalLangToggleButtons.forEach(button => {
         button.addEventListener('click', (e) => {
             const selectedLang = e.target.getAttribute('data-lang');
             
-            // 모든 언어 토글 버튼에서 'active' 클래스 제거
-            langToggleButtons.forEach(btn => btn.classList.remove('active'));
+            // 모든 글로벌 언어 토글 버튼에서 'active' 클래스 제거
+            globalLangToggleButtons.forEach(btn => btn.classList.remove('active'));
             
             // 클릭된 버튼에 'active' 클래스 추가
             e.target.classList.add('active');
             
-            console.log('언어 변경:', selectedLang);
+            console.log('글로벌 UI 언어 변경:', selectedLang);
             
-            // i18n 시스템에 언어 변경 알림
-            if (window.i18n && typeof window.i18n.setLanguage === 'function') {
+            // i18n 시스템에 언어 변경 알림 (전체 UI 언어 변경)
+            if (window.i18n && typeof window.i18n.changeLanguage === 'function') {
+                window.i18n.changeLanguage(selectedLang);
+            } else if (window.i18n && typeof window.i18n.setLanguage === 'function') {
                 window.i18n.setLanguage(selectedLang);
             }
             
             // dataManager에도 언어 설정
             if (window.dataManager) {
                 window.dataManager.currentLanguage = selectedLang;
-            }
-            
-            // dataManager 함수들 호출
-            if (window.dataManager && typeof window.dataManager.updateDetailLanguage === 'function') {
-                window.dataManager.updateDetailLanguage(selectedLang);
-            }
-            if (window.dataManager && typeof window.dataManager.updateListLanguage === 'function') {
-                window.dataManager.updateListLanguage(selectedLang);
             }
             
             // 현재 뷰 새로고침
@@ -149,11 +143,37 @@ function setupEventListeners() {
                     loadHeritageList();
                 } else if (route === 'category' && typeof renderCategoryContent === 'function') {
                     renderCategoryContent();
-                } else if (route === 'detail' && window.dataManager && window.dataManager.currentDetailItem) {
-                    // 상세 페이지에서 언어 변경 시 설명 업데이트
-                    updateHeritageDescription(window.dataManager.currentDetailItem);
                 }
             }, 100);
+        });
+    });
+    
+    // 컨텐츠 언어 토글 버튼 이벤트 리스너 (상세 뷰)
+    const contentLangToggleButtons = document.querySelectorAll('.content-lang-toggle');
+    contentLangToggleButtons.forEach(button => {
+        button.addEventListener('click', (e) => {
+            const selectedLang = e.target.getAttribute('data-lang');
+            
+            // 모든 컨텐츠 언어 토글 버튼에서 'active' 클래스 제거
+            contentLangToggleButtons.forEach(btn => btn.classList.remove('active'));
+            
+            // 클릭된 버튼에 'active' 클래스 추가
+            e.target.classList.add('active');
+            
+            console.log('컨텐츠 언어 변경:', selectedLang);
+            
+            // dataManager 함수들만 호출 (UI 언어는 변경하지 않음)
+            if (window.dataManager && typeof window.dataManager.updateDetailLanguage === 'function') {
+                window.dataManager.updateDetailLanguage(selectedLang);
+            }
+            if (window.dataManager && typeof window.dataManager.updateListLanguage === 'function') {
+                window.dataManager.updateListLanguage(selectedLang);
+            }
+            
+            // 상세 페이지에서 언어 변경 시 설명 업데이트
+            if (window.dataManager && window.dataManager.currentDetailItem) {
+                updateHeritageDescription(window.dataManager.currentDetailItem);
+            }
         });
     });
 }

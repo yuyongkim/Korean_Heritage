@@ -9,6 +9,7 @@ class DataManager {
         this.locations = new Set();
         this.isLoaded = false;
         this.currentLanguage = 'ko';
+        this.currentDetailItem = null;
         
         this.setupLanguageToggle();
     }
@@ -1668,11 +1669,62 @@ class DataManager {
     }
     
     updateDetailLanguage() {
-        // 상세 페이지 언어 업데이트 (추후 구현)
+        const currentItem = this.currentDetailItem;
+        if (!currentItem) return;
+        
+        const descriptionElement = document.getElementById('heritage-description');
+        if (!descriptionElement) return;
+        
+        // 현재 선택된 언어 확인
+        const isKorean = this.currentLanguage === 'ko';
+        
+        if (isKorean) {
+            // 한글 설명 표시
+            descriptionElement.innerHTML = this.formatDescription(currentItem.content || '설명이 없습니다.');
+        } else {
+            // 영어 설명 표시
+            const englishContent = currentItem.content_en || this.generateEnglishDescription(currentItem);
+            descriptionElement.innerHTML = this.formatDescription(englishContent);
+        }
     }
     
     updateListLanguage() {
-        // 목록 페이지 언어 업데이트 (추후 구현)
+        // 현재 표시된 문화재 목록의 설명을 언어에 맞게 업데이트
+        const isKorean = this.currentLanguage === 'ko';
+        
+        // 그리드 뷰 업데이트
+        const gridItems = document.querySelectorAll('#heritage-grid .heritage-card');
+        gridItems.forEach(card => {
+            const descriptionElement = card.querySelector('.heritage-description');
+            if (descriptionElement) {
+                const itemId = card.dataset.itemId;
+                const item = this.heritageData.find(h => h.id === itemId);
+                if (item) {
+                    if (isKorean) {
+                        descriptionElement.textContent = item.content || '설명이 없습니다.';
+                    } else {
+                        descriptionElement.textContent = item.content_en || this.generateEnglishDescription(item);
+                    }
+                }
+            }
+        });
+        
+        // 리스트 뷰 업데이트
+        const listItems = document.querySelectorAll('#heritage-list-tbody tr');
+        listItems.forEach(row => {
+            const descriptionCell = row.querySelector('.heritage-description');
+            if (descriptionCell) {
+                const itemId = row.dataset.itemId;
+                const item = this.heritageData.find(h => h.id === itemId);
+                if (item) {
+                    if (isKorean) {
+                        descriptionCell.textContent = item.content || '설명이 없습니다.';
+                    } else {
+                        descriptionCell.textContent = item.content_en || this.generateEnglishDescription(item);
+                    }
+                }
+            }
+        });
     }
 
     /**

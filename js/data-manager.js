@@ -21,12 +21,19 @@ class DataManager {
         
         console.log('🔄 데이터 로드 시작...');
         
+        // IndexedDB 강제 초기화 (새로운 데이터 로드를 위해)
+        try {
+            await this.clearData();
+            console.log('🗑️ IndexedDB 초기화 완료');
+        } catch (error) {
+            console.log('IndexedDB 초기화 실패:', error);
+        }
+        
         // 방법 1: JavaScript 데이터 로드 시도 (최우선)
         try {
             console.log('방법 1: JavaScript 데이터 로드 시도');
-            if (typeof getHeritageData === 'function') {
-                const jsData = getHeritageData();
-                if (jsData && Array.isArray(jsData) && jsData.length > 0) {
+            if (typeof HERITAGE_DATA !== 'undefined' && Array.isArray(HERITAGE_DATA) && HERITAGE_DATA.length > 0) {
+                const jsData = HERITAGE_DATA;
                     // JavaScript 데이터를 내부 형식으로 변환
                     this.heritageData = jsData.map((row, index) => {
                         // 이미지 URL 처리

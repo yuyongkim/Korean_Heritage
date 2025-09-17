@@ -21,14 +21,6 @@ class DataManager {
         
         console.log('🔄 데이터 로드 시작...');
         
-        // IndexedDB 강제 초기화 (새로운 데이터 로드를 위해)
-        try {
-            await this.clearData();
-            console.log('🗑️ IndexedDB 초기화 완료');
-        } catch (error) {
-            console.log('IndexedDB 초기화 실패:', error);
-        }
-        
         // 방법 1: JavaScript 데이터 로드 시도 (최우선)
         try {
             console.log('방법 1: JavaScript 데이터 로드 시도');

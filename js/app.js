@@ -348,7 +348,7 @@ function renderGridView(items) {
         const eraInfo = getEraInformation(item);
         return `
         <div class="heritage-grid-item">
-            <div class="card heritage-card h-100" onclick="viewHeritageDetail('${item.name}')">
+            <div class="card heritage-card h-100" data-item-id="${item.id || item.name}" onclick="viewHeritageDetail('${item.name}')">
                 <div class="card-img-top heritage-image">
                     ${item.image_url ? 
                         `<img src="${item.image_url}" alt="${item.name}" onerror="this.style.display='none'; this.parentElement.classList.add('no-image')">` : 
@@ -361,7 +361,7 @@ function renderGridView(items) {
                         <small class="text-muted">${item.location}</small>
                     </div>
                     <h6 class="card-title">${dataManager.currentLanguage === 'ko' ? item.name : (item.name_en || item.name)}</h6>
-                    <p class="card-text text-truncate-2">
+                    <p class="card-text text-truncate-2 heritage-description">
                         ${dataManager.currentLanguage === 'ko' 
                             ? (item.content ? item.content.substring(0, 100) + '...' : '설명 없음')
                             : (item.content_en ? item.content_en.substring(0, 100) + '...' : '영문 설명 준비 중...')
@@ -388,7 +388,7 @@ function renderListView(items) {
     tbody.innerHTML = items.map(item => {
         const eraInfo = getEraInformation(item);
         return `
-        <tr class="heritage-list-row" onclick="viewHeritageDetail('${item.name}')" style="cursor: pointer;">
+        <tr class="heritage-list-row" data-item-id="${item.id || item.name}" onclick="viewHeritageDetail('${item.name}')" style="cursor: pointer;">
             <td>
                 <div class="heritage-list-image">
                     ${item.image_url ? 
@@ -412,7 +412,7 @@ function renderListView(items) {
                 ${eraInfo ? `<br><small class="text-muted">${eraInfo}</small>` : ''}
             </td>
             <td>
-                <div class="heritage-list-desc">
+                <div class="heritage-list-desc heritage-description">
                     ${dataManager.currentLanguage === 'ko' 
                         ? (item.content ? item.content.substring(0, 150) + '...' : '설명 없음')
                         : (item.content_en ? item.content_en.substring(0, 150) + '...' : '영문 설명 준비 중...')
@@ -666,6 +666,9 @@ function getEraInformation(item) {
  */
 async function renderHeritageDetail(item) {
     console.log('상세 페이지 렌더링 시작:', item.name);
+    
+    // 현재 상세 아이템 설정 (언어 토글용)
+    dataManager.currentDetailItem = item;
     
     // 시대 정보 가져오기
     const eraInfo = getEraInformation(item);
@@ -1077,7 +1080,7 @@ function renderCategoryGridView(items) {
         const eraInfo = getEraInformation(item);
         return `
         <div class="heritage-grid-item">
-            <div class="card heritage-card h-100" onclick="viewHeritageDetail('${item.name}')">
+            <div class="card heritage-card h-100" data-item-id="${item.id || item.name}" onclick="viewHeritageDetail('${item.name}')">
                 <div class="card-img-top heritage-image">
                     ${item.image_url ? 
                         `<img src="${item.image_url}" alt="${item.name}" onerror="this.style.display='none'; this.parentElement.classList.add('no-image')">` : 
@@ -1090,7 +1093,7 @@ function renderCategoryGridView(items) {
                         <small class="text-muted">${item.location || '지역 정보 없음'}</small>
                     </div>
                     <h6 class="card-title">${dataManager.currentLanguage === 'ko' ? item.name : (item.name_en || item.name)}</h6>
-                    <p class="card-text text-truncate-2">
+                    <p class="card-text text-truncate-2 heritage-description">
                         ${dataManager.currentLanguage === 'ko' 
                             ? (item.content ? item.content.substring(0, 100) + '...' : '설명 없음')
                             : (item.content_en ? item.content_en.substring(0, 100) + '...' : '영문 설명 준비 중...')
@@ -1130,7 +1133,7 @@ function renderCategoryListView(items) {
     tbody.innerHTML = items.map(item => {
         const eraInfo = getEraInformation(item);
         return `
-        <tr class="heritage-list-row" onclick="viewHeritageDetail('${item.name}')" style="cursor: pointer;">
+        <tr class="heritage-list-row" data-item-id="${item.id || item.name}" onclick="viewHeritageDetail('${item.name}')" style="cursor: pointer;">
             <td>
                 <div class="heritage-list-image">
                     ${item.image_url ? 
@@ -1151,7 +1154,7 @@ function renderCategoryListView(items) {
                 <span class="text-muted">${item.location || '정보 없음'}</span>
             </td>
             <td>
-                <div class="heritage-list-desc">
+                <div class="heritage-list-desc heritage-description">
                     ${dataManager.currentLanguage === 'ko' 
                         ? (item.content ? item.content.substring(0, 150) + '...' : '설명 없음')
                         : (item.content_en ? item.content_en.substring(0, 150) + '...' : '영문 설명 준비 중...')

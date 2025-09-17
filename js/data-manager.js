@@ -45,7 +45,7 @@ class DataManager {
                             category: row.kdcd_name || '',
                             location: row.ctcd_name || '',
                             korean_description: row.content || '',
-                            english_description: '', // 현재 CSV에는 영문 설명이 없음
+                            content_en: '', // 현재 CSV에는 영문 설명이 없음
                             source_url: row.source_url || '', // 원본 CSV의 source_url 사용
                             period: '', // 현재 CSV에는 시대 정보가 없음
                             designation_no: row.key_asno ? `지정번호: ${row.key_asno}` : '',
@@ -256,7 +256,7 @@ class DataManager {
                 category: row.kdcd_name || '',
                 location: row.ctcd_name || '',
                 korean_description: row.content || '',
-                english_description: '', // 현재 CSV에는 영문 설명이 없음
+                content_en: '', // 현재 CSV에는 영문 설명이 없음
                 source_url: '', // 현재 CSV에는 출처 URL이 없음
                 period: '', // 현재 CSV에는 시대 정보가 없음
                 designation_no: row.key_asno ? `지정번호: ${row.key_asno}` : '',
@@ -339,7 +339,7 @@ class DataManager {
                     category: row.kdcd_name || '',
                     location: row.ctcd_name || '',
                     korean_description: row.content || '',
-                    english_description: '', // 현재 CSV에는 영문 설명이 없음
+                    content_en: '', // 현재 CSV에는 영문 설명이 없음
                     source_url: '', // 현재 CSV에는 출처 URL이 없음
                     period: '', // 현재 CSV에는 시대 정보가 없음
                     designation_no: row.key_asno ? `지정번호: ${row.key_asno}` : '',
@@ -501,7 +501,7 @@ class DataManager {
                     image_url: item.image_url,
                     content: item.content ? item.content.substring(0, 50) + '...' : '',
                     korean_description: item.korean_description ? item.korean_description.substring(0, 50) + '...' : '',
-                    english_description: item.english_description ? item.english_description.substring(0, 50) + '...' : '',
+                    content_en: item.content_en ? item.content_en.substring(0, 50) + '...' : '',
                     longitude: item.longitude,
                     latitude: item.latitude
                 }));
@@ -644,7 +644,7 @@ class DataManager {
                     category: item.category,
                     location: item.location,
                     korean_description: item.korean_description,
-                    english_description: item.english_description,
+                    content_en: item.content_en,
                     source_url: item.source_url,
                     period: item.period,
                     designation_no: item.designation_no,
@@ -693,7 +693,7 @@ class DataManager {
                 category: "국보",
                 location: "서울특별시",
                 korean_description: "원각사는 지금의 탑골공원 자리에 있었던 절로, 조선 세조 11년(1465)에 세웠다. 조선시대의 숭유억불정책 속에서도 중요한 사찰로 보호되어 오다가 1504년 연산군이 이 절을 '연방원(聯芳院)'이라는 이름의 기생집으로 만들어 승려들을 내보냄으로써 절은 없어지게 되었다. 이 탑은 조선시대의 석탑으로는 유일한 형태로, 높이는 약 12m이다. 대리석으로 만들어졌으며 탑 구석구석에 표현된 화려한 조각이 대리석의 회백색과 잘 어울려 더욱 아름답게 보인다.",
-                english_description: "Wongaksa Temple whose precincts once housed this stone was established in 1465 at the current location of Tapgol Park in Downtown Seoul. The temple continued to thrive as a state institution even after the adoption of anti-Buddhist policies by the Joseon Dynasty, but was eventually turned into a gisaeng house called Yeonbangwon by King Yeonsangun in 1504. This stone pagoda is unique among those built during the Joseon period, standing about 12 meters tall. Made of marble, the pagoda displays exquisite carvings throughout that harmonize beautifully with the grayish-white color of the marble.",
+                content_en: "Wongaksa Temple whose precincts once housed this stone was established in 1465 at the current location of Tapgol Park in Downtown Seoul. The temple continued to thrive as a state institution even after the adoption of anti-Buddhist policies by the Joseon Dynasty, but was eventually turned into a gisaeng house called Yeonbangwon by King Yeonsangun in 1504. This stone pagoda is unique among those built during the Joseon period, standing about 12 meters tall. Made of marble, the pagoda displays exquisite carvings throughout that harmonize beautifully with the grayish-white color of the marble.",
                 source_url: "http://www.heritage.go.kr/heri/cul/culSelectDetail.do?culPageNo=1&region=1&searchCondition=1&searchKeyword=원각사지&ccbaCpno=2113800860000&ccbaKdcd=11&ccbaCtcd=13",
                 period: "조선시대",
                 designation_no: "국보 제2호",
@@ -706,7 +706,7 @@ class DataManager {
                 category: "국보",
                 location: "전국",
                 korean_description: "훈민정음은 1443년(세종 25) 조선 제4대 왕인 세종이 창제한 우리나라 고유의 문자이다. 세종은 중국 문자를 사용하던 당시의 현실을 안타깝게 여겨, 우리말의 표기에 적합한 문자 체계를 완성하였다. 훈민정음 해례본은 1446년에 간행된 것으로, 새로 만든 28자의 자형과 그 사용법을 자세히 설명하고 있다.",
-                english_description: "Hunminjeongeum is the original name of Hangeul, the Korean alphabet created by King Sejong the Great in 1443. Feeling sorry for the people who could not express their thoughts and feelings in writing due to the difficulty of Chinese characters, King Sejong created an easy writing system suitable for Korean language. The Hunminjeongeum Haerye edition published in 1446 contains detailed explanations of the 28 letters and their usage.",
+                content_en: "Hunminjeongeum is the original name of Hangeul, the Korean alphabet created by King Sejong the Great in 1443. Feeling sorry for the people who could not express their thoughts and feelings in writing due to the difficulty of Chinese characters, King Sejong created an easy writing system suitable for Korean language. The Hunminjeongeum Haerye edition published in 1446 contains detailed explanations of the 28 letters and their usage.",
                 source_url: "http://www.heritage.go.kr/heri/cul/culSelectDetail.do?ccbaCpno=1132970700000",
                 period: "조선시대",
                 designation_no: "국보 제70호",
@@ -719,7 +719,7 @@ class DataManager {
                 category: "보물", 
                 location: "경상북도",
                 korean_description: "불국사 다보탑은 통일신라시대인 751년(경덕왕 10)에 건립된 것으로 추정되는 석탑이다. 높이 10.4m의 이 탑은 독특하고 화려한 장식으로 유명하며, 같은 경내에 있는 석가탑과 대조를 이루고 있다. 다보탑은 『법화경』의 다보여래 신앙을 바탕으로 건립되었으며, 복잡하면서도 아름다운 구조로 통일신라 석탑 예술의 절정을 보여준다.",
-                english_description: "Dabotap Pagoda at Bulguksa Temple is estimated to have been built in 751 during the Unified Silla period. Standing 10.4 meters tall, this pagoda is famous for its unique and ornate decorations, contrasting with the simpler Seokgatap Pagoda in the same temple grounds. Dabotap was built based on the faith of Prabhutaratna Buddha from the Lotus Sutra, showcasing the pinnacle of Unified Silla pagoda art with its complex yet beautiful structure.",
+                content_en: "Dabotap Pagoda at Bulguksa Temple is estimated to have been built in 751 during the Unified Silla period. Standing 10.4 meters tall, this pagoda is famous for its unique and ornate decorations, contrasting with the simpler Seokgatap Pagoda in the same temple grounds. Dabotap was built based on the faith of Prabhutaratna Buddha from the Lotus Sutra, showcasing the pinnacle of Unified Silla pagoda art with its complex yet beautiful structure.",
                 source_url: "http://www.heritage.go.kr/heri/cul/culSelectDetail.do?ccbaCpno=1132020200000",
                 period: "통일신라",
                 designation_no: "보물 제20호",
@@ -732,7 +732,7 @@ class DataManager {
                 category: "사적",
                 location: "경상북도",
                 korean_description: "첨성대는 신라시대의 천문관측대로, 선덕여왕(재위 632~647) 때 건립된 것으로 추정된다. 높이 9.17m의 이 석조 건물은 동양에서 현존하는 가장 오래된 천문대이다. 27단의 석재로 쌓아 올린 원통형 구조물로, 신라인들의 뛰어난 과학 기술과 천문학 지식을 보여주는 귀중한 유산이다.",
-                english_description: "Cheomseongdae is an astronomical observatory from the Silla period, believed to have been built during the reign of Queen Seondeok (632-647). This 9.17-meter-tall stone structure is the oldest existing observatory in East Asia. Built with 27 layers of stone in a cylindrical form, it represents the advanced scientific technology and astronomical knowledge of the Silla people.",
+                content_en: "Cheomseongdae is an astronomical observatory from the Silla period, believed to have been built during the reign of Queen Seondeok (632-647). This 9.17-meter-tall stone structure is the oldest existing observatory in East Asia. Built with 27 layers of stone in a cylindrical form, it represents the advanced scientific technology and astronomical knowledge of the Silla people.",
                 source_url: "http://www.heritage.go.kr/heri/cul/culSelectDetail.do?ccbaCpno=1315400310000",
                 period: "신라시대",
                 designation_no: "사적 제31호",
@@ -745,7 +745,7 @@ class DataManager {
                 category: "명승",
                 location: "제주특별자치도",
                 korean_description: "한라산은 제주도 중앙에 위치한 해발 1,950m의 우리나라 최고봉이다. 화산활동으로 형성된 이 산은 정상에 백록담이라는 분화구호를 가지고 있으며, 고도에 따라 다양한 식생대를 이루고 있다. 아고산대 식물과 고산식물이 분포하여 학술적 가치가 높고, 웅장하고 아름다운 자연경관을 자랑한다.",
-                english_description: "Hallasan Mountain, located in the center of Jeju Island, is South Korea's highest peak at 1,950 meters above sea level. This mountain, formed by volcanic activity, has a crater lake called Baengnokdam at its summit and features diverse vegetation zones according to altitude. It has high academic value due to the distribution of subalpine and alpine plants, and boasts magnificent and beautiful natural scenery.",
+                content_en: "Hallasan Mountain, located in the center of Jeju Island, is South Korea's highest peak at 1,950 meters above sea level. This mountain, formed by volcanic activity, has a crater lake called Baengnokdam at its summit and features diverse vegetation zones according to altitude. It has high academic value due to the distribution of subalpine and alpine plants, and boasts magnificent and beautiful natural scenery.",
                 source_url: "http://www.heritage.go.kr/heri/cul/culSelectDetail.do?ccbaCpno=1572600980000",
                 period: "자연유산",
                 designation_no: "명승 제98호",
@@ -758,7 +758,7 @@ class DataManager {
                 category: "천연기념물",
                 location: "전라남도",
                 korean_description: "진돗개는 진도에서 자연적으로 번식해온 우리나라 토종개로, 충성심이 강하고 영리하여 예로부터 사랑받아 왔다. 주인에 대한 충성심과 귀소본능이 뛰어나며, 사냥개로서의 능력도 우수하다. 모색에 따라 황구(황색)와 백구(흰색)로 나뉘며, 우리나라 고유의 견종으로서의 가치를 인정받고 있다.",
-                english_description: "The Jindo dog is Korea's native breed that has naturally bred on Jindo Island. Known for strong loyalty and intelligence, it has been beloved since ancient times. It excels in loyalty to its master and homing instinct, and also has excellent abilities as a hunting dog. Divided into Hwanggu (yellow) and Baekgu (white) according to coat color, it is recognized for its value as Korea's unique dog breed.",
+                content_en: "The Jindo dog is Korea's native breed that has naturally bred on Jindo Island. Known for strong loyalty and intelligence, it has been beloved since ancient times. It excels in loyalty to its master and homing instinct, and also has excellent abilities as a hunting dog. Divided into Hwanggu (yellow) and Baekgu (white) according to coat color, it is recognized for its value as Korea's unique dog breed.",
                 source_url: "http://www.heritage.go.kr/heri/cul/culSelectDetail.do?ccbaCpno=1472053000000",
                 period: "자연유산",
                 designation_no: "천연기념물 제53호",
@@ -824,7 +824,7 @@ class DataManager {
             const matchesQuery = !query || 
                 item.name.toLowerCase().includes(query.toLowerCase()) ||
                 item.korean_description.toLowerCase().includes(query.toLowerCase()) ||
-                (item.english_description && item.english_description.toLowerCase().includes(query.toLowerCase()));
+                (item.content_en && item.content_en.toLowerCase().includes(query.toLowerCase()));
             
             const matchesCategory = !categoryFilter || item.category === categoryFilter;
             const matchesLocation = !locationFilter || item.location === locationFilter;
@@ -957,7 +957,7 @@ class DataManager {
         let score = 0;
         if (item.content && item.content.trim()) score += 1;
         if (item.image_url && item.image_url.trim()) score += 1;
-        if (item.english_description && item.english_description.trim()) score += 1;
+        if (item.content_en && item.content_en.trim()) score += 1;
         if (item.coords && item.coords.lat && item.coords.lng) score += 1;
         return score;
     }
@@ -1731,8 +1731,8 @@ class DataManager {
         let generatedCount = 0;
         
         this.heritageData.forEach(item => {
-            if (!item.english_description || item.english_description.trim() === '') {
-                item.english_description = this.generateEnglishDescription(item);
+            if (!item.content_en || item.content_en.trim() === '') {
+                item.content_en = this.generateEnglishDescription(item);
                 generatedCount++;
             }
         });

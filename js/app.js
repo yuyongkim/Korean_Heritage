@@ -139,7 +139,7 @@ function updateDashboard() {
     // 번역 완료율 계산 (영어 설명이 있는 항목 비율)
     const totalItems = dataManager.heritageData.length;
     const translatedItems = dataManager.heritageData.filter(item => 
-        item.english_description && item.english_description.trim() !== ''
+        item.content_en && item.content_en.trim() !== ''
     ).length;
     const translationRate = totalItems > 0 ? Math.round((translatedItems / totalItems) * 100) : 0;
     
@@ -1560,9 +1560,9 @@ function renderEnglishGridView(items) {
                     </div>
                     <h6 class="card-title">${item.name}</h6>
                     <p class="card-text text-truncate-2">
-                        ${item.english_description && item.english_description.trim() 
-                            ? item.english_description.substring(0, 100) + '...' 
-                            : (item.korean_description ? '[Korean] ' + item.korean_description.substring(0, 80) + '...' : 'Description not available')
+                        ${item.content_en && item.content_en.trim() 
+                            ? item.content_en.substring(0, 100) + '...' 
+                            : (item.content ? '[Korean] ' + item.content.substring(0, 80) + '...' : 'Description not available')
                         }
                     </p>
                     <div class="d-flex justify-content-between align-items-center">
@@ -1624,9 +1624,9 @@ function renderEnglishListView(items) {
             </td>
             <td>
                 <div class="heritage-list-desc">
-                    ${item.english_description && item.english_description.trim()
-                        ? item.english_description.substring(0, 150) + '...'
-                        : (item.korean_description ? '[Korean] ' + item.korean_description.substring(0, 120) + '...' : 'Description not available')
+                    ${item.content_en && item.content_en.trim()
+                        ? item.content_en.substring(0, 150) + '...'
+                        : (item.content ? '[Korean] ' + item.content.substring(0, 120) + '...' : 'Description not available')
                     }
                 </div>
             </td>

@@ -735,10 +735,20 @@ function updateHeritageDescription(item) {
         ? item.korean_description 
         : (item.english_description || '영문 설명을 준비 중입니다.');
     
-    // 문단 나누기
-    const paragraphs = description.split('.').filter(p => p.trim().length > 0);
+    // 문단 나누기 - 숫자와 단위 분리 방지
+    let processedDescription = description
+        .replace(/\n/g, '<br>')  // 기존 줄바꿈을 <br>로 변환
+        .replace(/(\d+\.?\d*)\s*<br>\s*([a-zA-Z가-힣]+)/g, '$1$2')  // 숫자와 단위 사이 줄바꿈 제거
+        .replace(/([가-힣])\s*<br>\s*([가-힣])/g, '$1 $2')  // 한글 단어 사이 줄바꿈을 공백으로
+        .replace(/([가-힣]\.)\s*<br>\s*([가-힣])/g, '$1 $2')  // 문장 끝과 다음 문장 시작 사이 줄바꿈 제거
+        .replace(/\s+/g, ' ');  // 연속된 공백을 하나로
     
-    container.innerHTML = paragraphs.map(p => `<p>${p.trim()}.</p>`).join('');
+    // 문장 단위로 나누기 (숫자.숫자 패턴 제외)
+    const sentences = processedDescription
+        .split(/(?<!\d)\.(?!\d)/)  // 숫자가 아닌 점에서만 분리
+        .filter(s => s.trim().length > 0);
+    
+    container.innerHTML = sentences.map(s => `<p>${s.trim()}.</p>`).join('');
 }
 
 /**

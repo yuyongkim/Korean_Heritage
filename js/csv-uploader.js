@@ -31,7 +31,7 @@ class CSVUploader {
                                 <div class="alert alert-info">
                                     <h6><i class="fas fa-info-circle me-2"></i>업로드 가이드</h6>
                                     <ul class="mb-0">
-                                        <li>CSV 파일 형식: <code>name, category, location, korean_description, english_description, source_url</code></li>
+                                        <li>CSV 파일 형식: <code>name, category, location, korean_description, content_en, source_url</code></li>
                                         <li>파일 크기 제한: 최대 50MB</li>
                                         <li>인코딩: UTF-8 권장</li>
                                         <li>예상 처리 시간: 10,000건 기준 약 30초</li>
@@ -376,7 +376,7 @@ class CSVUploader {
                     category: row.kdcd_name || '',
                     location: row.ctcd_name || '',
                     korean_description: row.content || '',
-                    english_description: '', // 현재 CSV에는 영문 설명이 없음
+                    content_en: '', // 현재 CSV에는 영문 설명이 없음
                     source_url: row.source_url || '', // 원본 CSV의 source_url 사용
                     period: '', // 현재 CSV에는 시대 정보가 없음
                     designation_no: row.key_asno ? `지정번호: ${row.key_asno}` : '',
@@ -454,7 +454,7 @@ class CSVUploader {
         ];
 
         return items.map(item => {
-            if (!item.english_description || item.english_description.trim() === '') {
+            if (!item.content_en || item.content_en.trim() === '') {
                 const category = categoryTranslations[item.category] || item.category;
                 const location = item.location || 'Unknown location';
                 const name = item.name;
@@ -463,7 +463,7 @@ class CSVUploader {
                 const hash = this.simpleHash(name);
                 const templateIndex = hash % templates.length;
                 
-                item.english_description = templates[templateIndex](name, category, location);
+                item.content_en = templates[templateIndex](name, category, location);
             }
             return item;
         });

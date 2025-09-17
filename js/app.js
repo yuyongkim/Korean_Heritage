@@ -170,10 +170,10 @@ function setupEventListeners() {
                 window.dataManager.updateListLanguage(selectedLang);
             }
             
-            // 상세 페이지에서 언어 변경 시 설명 업데이트
-            if (window.dataManager && window.dataManager.currentDetailItem) {
-                updateHeritageDescription(window.dataManager.currentDetailItem);
-            }
+            // 상세 페이지에서 언어 변경 시 설명 업데이트 (dataManager가 이미 처리하므로 제거)
+            // if (window.dataManager && window.dataManager.currentDetailItem) {
+            //     updateHeritageDescription(window.dataManager.currentDetailItem);
+            // }
         });
     });
 }

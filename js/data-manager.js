@@ -1669,6 +1669,8 @@ class DataManager {
     }
     
     updateDetailLanguage(lang) {
+        debugger; // <-- 이 줄을 추가해주세요!
+
         const currentItem = this.currentDetailItem;
         if (!currentItem) return;
         

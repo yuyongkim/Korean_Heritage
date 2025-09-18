@@ -169,7 +169,11 @@ router.addRoute('category', (params) => {
 router.addRoute('search', (params) => {
     router.showView('list-view');
     if (params[0] && typeof performSearch === 'function') {
-        performSearch(decodeURIComponent(params[0]));
+        const query = decodeURIComponent(params[0]);
+        // URL에서 검색 옵션 추출
+        const urlParams = new URLSearchParams(window.location.search);
+        const searchOption = urlParams.get('option') || 'title+description';
+        performSearch(query, searchOption);
     }
 });
 

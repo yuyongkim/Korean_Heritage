@@ -10,7 +10,38 @@ class DataManager {
         this.isLoaded = false;
         this.currentLanguage = 'ko';
         
+        // 이벤트 시스템 초기화
+        this.eventListeners = {
+            dataLoaded: [],
+            dataUpdated: [],
+            statisticsChanged: []
+        };
+        
         this.setupLanguageToggle();
+    }
+    
+    /**
+     * 이벤트 리스너 추가
+     */
+    addEventListener(event, callback) {
+        if (this.eventListeners[event]) {
+            this.eventListeners[event].push(callback);
+        }
+    }
+    
+    /**
+     * 이벤트 발생
+     */
+    emit(event, data = null) {
+        if (this.eventListeners[event]) {
+            this.eventListeners[event].forEach(callback => {
+                try {
+                    callback(data);
+                } catch (error) {
+                    console.error(`이벤트 리스너 오류 (${event}):`, error);
+                }
+            });
+        }
     }
     
     /**
@@ -79,6 +110,18 @@ class DataManager {
                 
                 this.processData();
                 this.isLoaded = true;
+                
+                // 데이터 로딩 완료 이벤트 발생
+                this.emit('dataLoaded', this.heritageData);
+                
+                // 데이터 로딩 완료 후 대시보드 업데이트
+                if (typeof updateDashboard === 'function') {
+                    updateDashboard();
+                }
+                
+                // 로딩 완료 알림 표시
+                this.showDataLoadedNotification();
+                
                 return this.heritageData;
             }
         } catch (jsError) {
@@ -96,6 +139,15 @@ class DataManager {
                     
                     this.processData();
                     this.isLoaded = true;
+                    
+                    // 데이터 로딩 완료 이벤트 발생
+                    this.emit('dataLoaded', this.heritageData);
+                    
+                    // 데이터 로딩 완료 후 대시보드 업데이트
+                    if (typeof updateDashboard === 'function') {
+                        updateDashboard();
+                    }
+                    
                     return this.heritageData;
                 }
             } catch (indexedError) {
@@ -114,6 +166,15 @@ class DataManager {
             
             this.processData();
             this.isLoaded = true;
+            
+            // 데이터 로딩 완료 이벤트 발생
+            this.emit('dataLoaded', this.heritageData);
+            
+            // 데이터 로딩 완료 후 대시보드 업데이트
+            if (typeof updateDashboard === 'function') {
+                updateDashboard();
+            }
+            
             return this.heritageData;
             
         } catch (autoCsvError) {
@@ -159,6 +220,12 @@ class DataManager {
                         if (this.heritageData && this.heritageData.length > 0) {
                     this.processData();
                     this.isLoaded = true;
+                    
+                    // 데이터 로딩 완료 후 대시보드 업데이트
+                    if (typeof updateDashboard === 'function') {
+                        updateDashboard();
+                    }
+                    
                     return this.heritageData;
                         }
                 }
@@ -179,6 +246,12 @@ class DataManager {
                     
                     this.processData();
                     this.isLoaded = true;
+                    
+                    // 데이터 로딩 완료 후 대시보드 업데이트
+                    if (typeof updateDashboard === 'function') {
+                        updateDashboard();
+                    }
+                    
                     return this.heritageData;
                     
                 } catch (csvError) {
@@ -193,6 +266,12 @@ class DataManager {
             
             this.processData();
             this.isLoaded = true;
+            
+            // 데이터 로딩 완료 후 대시보드 업데이트
+            if (typeof updateDashboard === 'function') {
+                updateDashboard();
+            }
+            
             return this.heritageData;
         }
             }
@@ -622,6 +701,44 @@ class DataManager {
     }
     
     /**
+     * 데이터 로딩 완료 알림
+     */
+    showDataLoadedNotification() {
+        // 기존 알림 제거
+        const existingNotification = document.querySelector('.data-loaded-notification');
+        if (existingNotification) {
+            existingNotification.remove();
+        }
+        
+        // 새 알림 생성
+        const notification = document.createElement('div');
+        notification.className = 'data-loaded-notification alert alert-info alert-dismissible fade show';
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            min-width: 300px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        `;
+        notification.innerHTML = `
+            <i class="fas fa-database me-2"></i>
+            <strong>데이터 로딩 완료!</strong><br>
+            <small>${this.heritageData.length.toLocaleString()}개의 문화재 데이터가 로딩되었습니다.</small>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // 5초 후 자동 제거
+        setTimeout(() => {
+            if (notification && notification.parentNode) {
+                notification.remove();
+            }
+        }, 5000);
+    }
+    
+    /**
      * 데이터베이스에 문화재 데이터 추가
      */
     async addHeritageData(items) {
@@ -836,7 +953,22 @@ class DataManager {
      * 카테고리별 문화재 가져오기
      */
     getByCategory(category) {
-        return this.heritageData.filter(item => item.category === category);
+        return this.heritageData.filter(item => {
+            // 우선순위: kdcd_name > category > 코드 기반 매핑
+            let itemCategory = item.kdcd_name || item.category;
+            if (!itemCategory && item.key_kdcd) {
+                const codeMapping = {
+                    '11': '국보', '12': '보물', '13': '사적', '14': '명승',
+                    '15': '천연기념물', '16': '국가무형문화재', '17': '국가민속문화재',
+                    '21': '시도유형문화재', '22': '시도기념물', '23': '시도민속문화재',
+                    '31': '시도무형문화재', '79': '문화재자료', '80': '등록문화재'
+                };
+                itemCategory = codeMapping[item.key_kdcd] || `미분류코드${item.key_kdcd}`;
+            }
+            if (!itemCategory) itemCategory = '미분류';
+            
+            return itemCategory === category;
+        });
     }
     
     /**
@@ -849,16 +981,45 @@ class DataManager {
             locations: new Set()
         };
         
+        console.log('📊 통계 계산 시작, 총 데이터:', this.heritageData.length);
+        
         // 실제 데이터 기반으로 통계 수집
         this.heritageData.forEach(item => {
-            const category = item.kdcd_name || item.category || '미분류';
+            // 카테고리 통계 (우선순위: kdcd_name > category > 코드 기반)
+            let category = item.kdcd_name || item.category;
+            if (!category && item.key_kdcd) {
+                const codeMapping = {
+                    '11': '국보', '12': '보물', '13': '사적', '14': '명승',
+                    '15': '천연기념물', '16': '국가무형문화재', '17': '국가민속문화재',
+                    '21': '시도유형문화재', '22': '시도기념물', '23': '시도민속문화재',
+                    '31': '시도무형문화재', '79': '문화재자료', '80': '등록문화재'
+                };
+                category = codeMapping[item.key_kdcd] || `미분류코드${item.key_kdcd}`;
+            }
+            if (!category) category = '미분류';
+            
             stats.categories[category] = (stats.categories[category] || 0) + 1;
             
-            const location = item.ctcd_name || item.location;
+            // 지역 통계
+            let location = item.ctcd_name || item.location;
+            if (!location && item.key_ctcd) {
+                const regionMapping = {
+                    '11': '서울특별시', '21': '부산광역시', '22': '대구광역시',
+                    '23': '인천광역시', '24': '광주광역시', '25': '대전광역시',
+                    '26': '울산광역시', '29': '세종특별자치시',
+                    '31': '경기도', '32': '강원특별자치도', '33': '충청북도',
+                    '34': '충청남도', '35': '전북특별자치도', '36': '전라남도',
+                    '37': '경상북도', '38': '경상남도', '39': '제주특별자치도'
+                };
+                location = regionMapping[item.key_ctcd] || `미분류지역${item.key_ctcd}`;
+            }
             if (location) {
                 stats.locations.add(location);
             }
         });
+        
+        console.log('📊 카테고리별 통계:', stats.categories);
+        console.log('📊 지역 수:', stats.locations.size);
         
         return {
             ...stats,

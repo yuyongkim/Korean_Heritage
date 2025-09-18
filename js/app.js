@@ -54,20 +54,34 @@ console.log('전역 객체들 확인:', {
 function setupEventListeners() {
     // 글로벌 검색
     const globalSearch = document.getElementById('globalSearch');
+    const searchOption = document.getElementById('searchOption');
+    
     if (globalSearch) {
         globalSearch.addEventListener('input', debounce((e) => {
             const query = e.target.value.trim();
+            const searchType = searchOption ? searchOption.value : 'title+description';
             if (query) {
-                performGlobalSearch(query);
+                performGlobalSearch(query, searchType);
             }
         }, 300));
         
         globalSearch.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 const query = e.target.value.trim();
+                const searchType = searchOption ? searchOption.value : 'title+description';
                 if (query) {
                     router.navigate(`search/${encodeURIComponent(query)}`);
                 }
+            }
+        });
+    }
+    
+    // 검색 옵션 변경 시 즉시 검색 실행
+    if (searchOption) {
+        searchOption.addEventListener('change', () => {
+            const query = globalSearch ? globalSearch.value.trim() : '';
+            if (query) {
+                performGlobalSearch(query, searchOption.value);
             }
         });
     }
@@ -237,9 +251,10 @@ function loadHeritageList(searchQuery = '') {
     const query = searchQuery || document.getElementById('globalSearch')?.value || '';
     const categoryFilter = document.getElementById('category-filter')?.value || '';
     const locationFilter = document.getElementById('location-filter')?.value || '';
+    const searchOption = document.getElementById('searchOption')?.value || 'title+description';
     
     // 검색 및 필터링
-    const results = dataManager.search(query, categoryFilter, locationFilter);
+    const results = dataManager.search(query, categoryFilter, locationFilter, searchOption);
     
     // 페이지네이션
     const totalPages = Math.ceil(results.length / itemsPerPage);
@@ -1565,17 +1580,26 @@ function changeEnglishPage(page) {
 /**
  * 글로벌 검색 수행
  */
-function performGlobalSearch(query) {
-    // 검색 결과를 목록 뷰에 표시
-    router.navigate(`search/${encodeURIComponent(query)}`);
+function performGlobalSearch(query, searchOption = 'title+description') {
+    // 검색 옵션을 URL에 포함하여 전달
+    const encodedQuery = encodeURIComponent(query);
+    const encodedOption = encodeURIComponent(searchOption);
+    router.navigate(`search/${encodedQuery}?option=${encodedOption}`);
 }
 
 /**
  * 검색 수행 (라우터에서 호출)
  */
-function performSearch(query) {
+function performSearch(query, searchOption = 'title+description') {
     currentPage = 1;
     document.getElementById('globalSearch').value = query;
+    
+    // 검색 옵션 드롭다운 업데이트
+    const searchOptionSelect = document.getElementById('searchOption');
+    if (searchOptionSelect) {
+        searchOptionSelect.value = searchOption;
+    }
+    
     loadHeritageList(query);
 }
 

@@ -919,12 +919,23 @@ class DataManager {
     /**
      * 검색 및 필터링
      */
-    search(query = '', categoryFilter = '', locationFilter = '') {
+    search(query = '', categoryFilter = '', locationFilter = '', searchOption = 'title+description') {
         this.filteredData = this.heritageData.filter(item => {
-            const matchesQuery = !query || 
-                item.name.toLowerCase().includes(query.toLowerCase()) ||
-                item.korean_description.toLowerCase().includes(query.toLowerCase()) ||
-                (item.english_description && item.english_description.toLowerCase().includes(query.toLowerCase()));
+            let matchesQuery = true;
+            
+            if (query) {
+                const queryLower = query.toLowerCase();
+                
+                if (searchOption === 'title') {
+                    // 제목만 검색
+                    matchesQuery = item.name.toLowerCase().includes(queryLower);
+                } else if (searchOption === 'title+description') {
+                    // 제목 + 상세 설명 검색
+                    matchesQuery = item.name.toLowerCase().includes(queryLower) ||
+                        item.korean_description.toLowerCase().includes(queryLower) ||
+                        (item.english_description && item.english_description.toLowerCase().includes(queryLower));
+                }
+            }
             
             const matchesCategory = !categoryFilter || item.category === categoryFilter;
             const matchesLocation = !locationFilter || item.location === locationFilter;

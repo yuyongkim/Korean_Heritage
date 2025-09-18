@@ -25,6 +25,20 @@ console.log('전역 객체들 확인:', {
     // 초기 통계 표시
     console.log('현재 총 문화재 수:', dataManager.heritageData.length);
     
+    // 대시보드 업데이트
+    updateDashboard();
+    
+    // 데이터 변경 이벤트 리스너 설정
+    dataManager.addEventListener('dataLoaded', (data) => {
+        console.log('📊 데이터 로딩 완료 이벤트 수신:', data.length, '개 항목');
+        updateDashboard();
+    });
+    
+    dataManager.addEventListener('dataUpdated', (data) => {
+        console.log('📊 데이터 업데이트 이벤트 수신');
+        updateDashboard();
+    });
+    
     // 이벤트 리스너 설정
     setupEventListeners();
     
@@ -93,6 +107,12 @@ function setupEventListeners() {
  * 대시보드 업데이트
  */
 function updateDashboard() {
+    // 데이터가 로딩되지 않았으면 대기
+    if (!dataManager || !dataManager.isLoaded || !dataManager.heritageData || dataManager.heritageData.length === 0) {
+        console.log('📊 데이터가 아직 로딩되지 않음, 대시보드 업데이트 대기');
+        return;
+    }
+    
     const stats = dataManager.getStatistics();
     
     console.log('📊 대시보드 업데이트:', stats);
@@ -106,6 +126,17 @@ function updateDashboard() {
     // 카테고리별 통계
     updateElement('site-count', (stats.categories['사적'] || 0) + (stats.categories['명승'] || 0));
     updateElement('natural-count', stats.categories['천연기념물'] || 0);
+    
+    // 탐색 카드 카운트 업데이트
+    updateElement('explore-national-count', (stats.categories['국보'] || 0) + '건');
+    updateElement('explore-treasure-count', (stats.categories['보물'] || 0) + '건');
+    updateElement('explore-historic-count', (stats.categories['사적'] || 0) + '건');
+    updateElement('explore-scenic-count', (stats.categories['명승'] || 0) + '건');
+    updateElement('explore-natural-count', (stats.categories['천연기념물'] || 0) + '건');
+    updateElement('explore-intangible-count', (stats.categories['국가무형문화재'] || 0) + '건');
+    
+    // 사이드바 통계 업데이트
+    updateElement('sidebar-total', stats.total);
     
     // 4축 필터링 시스템 업데이트
     if (dataManager && typeof dataManager.updateFilters === 'function') {

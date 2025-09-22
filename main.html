@@ -87,6 +87,32 @@
                         </a></li>
                     </ul>
                 </li>
+
+                <!-- 미분류 항목 메뉴 -->
+                <li class="menu-item">
+                    <div class="menu-label">
+                        <i class="fas fa-question-circle"></i>
+                        <span>미분류 항목</span>
+                    </div>
+                    <ul class="submenu">
+                        <li><a href="#unclassified/sido-type" class="submenu-link">
+                            <i class="fas fa-landmark"></i><span>시도유형문화재</span>
+                            <span class="badge bg-primary ms-2" id="sido-type-count">로딩 중...</span>
+                        </a></li>
+                        <li><a href="#unclassified/sido-folklore" class="submenu-link">
+                            <i class="fas fa-theater-masks"></i><span>시도민속문화재</span>
+                            <span class="badge bg-primary ms-2" id="sido-folklore-count">로딩 중...</span>
+                        </a></li>
+                        <li><a href="#unclassified/cultural-data" class="submenu-link">
+                            <i class="fas fa-book"></i><span>문화재자료</span>
+                            <span class="badge bg-primary ms-2" id="cultural-data-count">로딩 중...</span>
+                        </a></li>
+                        <li><a href="#unclassified/others" class="submenu-link">
+                            <i class="fas fa-ellipsis-h"></i><span>기타 미분류</span>
+                            <span class="badge bg-warning text-dark ms-2" id="others-count">로딩 중...</span>
+                        </a></li>
+                    </ul>
+                </li>
             </ul>
             
             <!-- 통계 요약 -->
@@ -638,6 +664,87 @@
             <!-- 카테고리 페이지네이션 -->
             <nav class="mt-4">
                 <ul id="category-pagination" class="pagination justify-content-center">
+                    <!-- 동적으로 생성됨 -->
+                </ul>
+            </nav>
+        </div>
+
+        <!-- 미분류 항목 뷰 -->
+        <div id="unclassified-view" class="view" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 id="unclassified-title">미분류 항목</h2>
+                <button class="btn btn-outline-secondary" onclick="goBack()">
+                    <i class="fas fa-arrow-left"></i> 뒤로가기
+                </button>
+            </div>
+            
+            <!-- 미분류 항목 페이지 컨트롤 -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="text-muted">총 <span id="unclassified-count">0</span>건</span>
+                    
+                    <!-- 미분류 타입별 필터 -->
+                    <select id="unclassified-type-filter" class="form-select form-select-sm" style="width: auto;">
+                        <option value="sido-type">시도유형문화재</option>
+                        <option value="sido-folklore">시도민속문화재</option>
+                        <option value="cultural-data">문화재자료</option>
+                        <option value="others">기타 미분류</option>
+                    </select>
+                </div>
+                
+                <div class="d-flex gap-2">
+                    <!-- 뷰 모드 전환 버튼 -->
+                    <div class="btn-group" role="group" aria-label="뷰 모드 선택">
+                        <input type="radio" class="btn-check" name="unclassified-view-mode" id="unclassified-grid-btn" autocomplete="off" checked>
+                        <label class="btn btn-outline-primary btn-sm" for="unclassified-grid-btn" title="그리드 뷰">
+                            <i class="fas fa-th"></i>
+                        </label>
+                        
+                        <input type="radio" class="btn-check" name="unclassified-view-mode" id="unclassified-list-btn" autocomplete="off">
+                        <label class="btn btn-outline-primary btn-sm" for="unclassified-list-btn" title="리스트 뷰">
+                            <i class="fas fa-list"></i>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 미분류 항목 정보 알림 -->
+            <div class="alert alert-info mb-4" role="alert">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>미분류 항목 안내</strong><br>
+                <small>이 항목들은 시도지정문화재나 문화재자료 등으로 분류된 항목들입니다. 
+                각각의 특성에 따라 적절한 관리가 필요합니다.</small>
+            </div>
+            
+            <!-- 그리드 뷰 컨테이너 -->
+            <div id="unclassified-grid" style="display: block;">
+                <!-- 동적으로 생성됨 -->
+            </div>
+            
+            <!-- 리스트 뷰 컨테이너 -->
+            <div id="unclassified-table" style="display: none;">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 100px;">이미지</th>
+                                <th>문화재명</th>
+                                <th>현재 분류</th>
+                                <th>지역</th>
+                                <th>설명</th>
+                                <th style="width: 100px;">상세보기</th>
+                            </tr>
+                        </thead>
+                        <tbody id="unclassified-list-tbody">
+                            <!-- 동적으로 생성됨 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- 미분류 항목 페이지네이션 -->
+            <nav class="mt-4">
+                <ul id="unclassified-pagination" class="pagination justify-content-center">
                     <!-- 동적으로 생성됨 -->
                 </ul>
             </nav>

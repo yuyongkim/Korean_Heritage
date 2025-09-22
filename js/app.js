@@ -152,6 +152,9 @@ function updateDashboard() {
     // 사이드바 통계 업데이트
     updateElement('sidebar-total', stats.total);
     
+    // 미분류 항목 통계 업데이트
+    updateUnclassifiedStats();
+    
     // 4축 필터링 시스템 업데이트
     if (dataManager && typeof dataManager.updateFilters === 'function') {
         dataManager.updateFilters();
@@ -1575,6 +1578,382 @@ function renderEnglishPagination(current, totalPages, totalItems) {
 function changeEnglishPage(page) {
     currentEnglishPage = page;
     renderEnglishContent();
+}
+
+// 미분류 항목 페이지 전역 변수
+let currentUnclassifiedPage = 1;
+let currentUnclassifiedData = [];
+let currentUnclassifiedType = 'all';
+
+/**
+ * 미분류 항목 뷰 로드
+ */
+function loadUnclassifiedView(type = 'sido-type') {
+    console.log('미분류 항목 뷰 로드:', type);
+    currentUnclassifiedType = type;
+    currentUnclassifiedPage = 1;
+    
+    // 미분류 항목 필터링
+    const allItems = dataManager.heritageData;
+    let filteredItems = [];
+    
+    if (type === 'sido-type') {
+        // 시도유형문화재
+        filteredItems = allItems.filter(item => 
+            item.kdcd_name === '시도유형문화재'
+        );
+    } else if (type === 'sido-folklore') {
+        // 시도민속문화재
+        filteredItems = allItems.filter(item => 
+            item.kdcd_name === '시도민속문화재'
+        );
+    } else if (type === 'cultural-data') {
+        // 문화재자료
+        filteredItems = allItems.filter(item => 
+            item.kdcd_name === '문화재자료'
+        );
+    } else if (type === 'others') {
+        // 기타 미분류 (실제로 분류가 안된 것들)
+        filteredItems = allItems.filter(item => 
+            item.kdcd_name === '미분류' || item.ctcd_name === '미분류' || 
+            item.category === '미분류' || item.location === '미분류'
+        );
+    }
+    
+    console.log('미분류 항목 데이터:', type, '→', filteredItems.length, '건');
+    currentUnclassifiedData = filteredItems;
+    
+    // 제목 업데이트
+    const titleElement = document.getElementById('unclassified-title');
+    if (titleElement) {
+        const titles = {
+            'sido-type': '시도유형문화재',
+            'sido-folklore': '시도민속문화재',
+            'cultural-data': '문화재자료',
+            'others': '기타 미분류 항목'
+        };
+        titleElement.textContent = titles[type] || '미분류 항목';
+    }
+    
+    // 카운트 업데이트
+    updateUnclassifiedCount(filteredItems.length);
+    
+    // 컨텐츠 렌더링
+    renderUnclassifiedContent();
+    
+    // 이벤트 리스너 설정
+    setupUnclassifiedEventListeners();
+}
+
+/**
+ * 미분류 항목 컨텐츠 렌더링
+ */
+function renderUnclassifiedContent() {
+    console.log('미분류 항목 컨텐츠 렌더링 시작:', currentUnclassifiedData.length, '건');
+    
+    // 페이지네이션
+    const totalPages = Math.ceil(currentUnclassifiedData.length / itemsPerPage);
+    const startIndex = (currentUnclassifiedPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const pageData = currentUnclassifiedData.slice(startIndex, endIndex);
+    
+    // 카운트 업데이트
+    updateUnclassifiedCount(currentUnclassifiedData.length);
+    
+    // 뷰 모드에 따라 렌더링
+    const isGridView = document.getElementById('unclassified-grid-btn')?.checked !== false;
+    
+    if (isGridView) {
+        renderUnclassifiedGridView(pageData);
+        document.getElementById('unclassified-grid').style.display = 'block';
+        document.getElementById('unclassified-table').style.display = 'none';
+    } else {
+        renderUnclassifiedListView(pageData);
+        document.getElementById('unclassified-grid').style.display = 'none';
+        document.getElementById('unclassified-table').style.display = 'block';
+    }
+    
+    // 페이지네이션 렌더링
+    renderUnclassifiedPagination(currentUnclassifiedPage, totalPages, currentUnclassifiedData.length);
+}
+
+/**
+ * 미분류 항목 그리드 뷰 렌더링
+ */
+function renderUnclassifiedGridView(items) {
+    const container = document.getElementById('unclassified-grid');
+    console.log('미분류 그리드 뷰 렌더링:', items.length, '건', 'container:', !!container);
+    if (!container) {
+        console.error('unclassified-grid 컨테이너를 찾을 수 없음!');
+        return;
+    }
+    
+    if (items.length === 0) {
+        container.innerHTML = `
+            <div class="col-12 text-center py-5">
+                <div class="empty-state">
+                    <i class="fas fa-question-circle fa-3x text-muted mb-3"></i>
+                    <h4>미분류 항목이 없습니다</h4>
+                    <p class="text-muted">모든 항목이 적절히 분류되었습니다.</p>
+                </div>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = items.map(item => `
+        <div class="heritage-grid-item">
+            <div class="card heritage-card h-100" onclick="viewHeritageDetail('${item.name}')">
+                <div class="card-img-top heritage-image">
+                    ${item.image_url ? 
+                        `<img src="${item.image_url}" alt="${item.name}" onerror="this.style.display='none'; this.parentElement.classList.add('no-image')">` : 
+                        `<div class="no-image-placeholder"><i class="fas fa-image"></i><span>이미지 없음</span></div>`
+                    }
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge bg-warning text-dark">미분류</span>
+                        <small class="text-muted">${item.location || '지역 정보 없음'}</small>
+                    </div>
+                    <h6 class="card-title">${item.name}</h6>
+                    <p class="card-text text-truncate-2">
+                        ${dataManager.currentLanguage === 'ko' 
+                            ? (item.korean_description ? item.korean_description.substring(0, 100) + '...' : '설명 없음')
+                            : (item.english_description ? item.english_description.substring(0, 100) + '...' : '영문 설명 준비 중...')
+                        }
+                    </p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">${item.period || '시대 정보 없음'}</small>
+                        <small class="text-primary">${item.designation_no || ''}</small>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-warning">
+                            <i class="fas fa-exclamation-triangle me-1"></i>
+                            ${getUnclassifiedReason(item)}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+/**
+ * 미분류 항목 리스트 뷰 렌더링
+ */
+function renderUnclassifiedListView(items) {
+    const tbody = document.getElementById('unclassified-list-tbody');
+    if (!tbody) return;
+    
+    if (items.length === 0) {
+        tbody.innerHTML = `
+            <tr><td colspan="6" class="text-center py-5">
+                <div class="empty-state">
+                    <i class="fas fa-question-circle fa-2x text-muted mb-2"></i>
+                    <h5>미분류 항목이 없습니다</h5>
+                    <p class="text-muted mb-0">모든 항목이 적절히 분류되었습니다.</p>
+                </div>
+            </td></tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = items.map(item => `
+        <tr class="heritage-list-row" onclick="viewHeritageDetail('${item.name}')" style="cursor: pointer;">
+            <td>
+                <div class="heritage-list-image">
+                    ${item.image_url ? 
+                        `<img src="${item.image_url}" alt="${item.name}" class="rounded" style="width: 60px; height: 60px; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : 
+                        ''
+                    }
+                    <div class="no-image-mini ${item.image_url ? 'd-none' : 'd-flex'}" style="width: 60px; height: 60px; background: #f8f9fa; border-radius: 0.375rem; align-items: center; justify-content: center; color: #6c757d; font-size: 0.8rem;">
+                        <i class="fas fa-image"></i>
+                    </div>
+                </div>
+            </td>
+            <td>
+                <div class="fw-semibold text-primary">${item.name}</div>
+                ${item.designation_no ? `<small class="text-muted">${item.designation_no}</small>` : ''}
+                ${item.period ? `<br><small class="text-muted">${item.period}</small>` : ''}
+            </td>
+            <td>
+                <span class="badge bg-warning text-dark">미분류</span>
+                <br><small class="text-warning">${getUnclassifiedReason(item)}</small>
+            </td>
+            <td>
+                <span class="text-muted">${item.location || '정보 없음'}</span>
+            </td>
+            <td>
+                <div class="heritage-list-desc">
+                    ${dataManager.currentLanguage === 'ko' 
+                        ? (item.korean_description ? item.korean_description.substring(0, 150) + '...' : '설명 없음')
+                        : (item.english_description ? item.english_description.substring(0, 150) + '...' : '영문 설명 준비 중...')
+                    }
+                </div>
+            </td>
+            <td>
+                <button class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation(); viewHeritageDetail('${item.name}')">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+/**
+ * 미분류 이유 반환
+ */
+function getUnclassifiedReason(item) {
+    const reasons = [];
+    
+    if (item.kdcd_name === '미분류' || item.category === '미분류') {
+        reasons.push('카테고리 미분류');
+    }
+    
+    if (item.ctcd_name === '미분류' || item.location === '미분류') {
+        reasons.push('지역 미분류');
+    }
+    
+    return reasons.join(', ') || '분류 정보 없음';
+}
+
+/**
+ * 미분류 항목 카운트 업데이트
+ */
+function updateUnclassifiedCount(count) {
+    const countElement = document.getElementById('unclassified-count');
+    if (countElement) {
+        countElement.textContent = count.toLocaleString();
+    }
+}
+
+/**
+ * 미분류 항목 페이지 이벤트 리스너 설정
+ */
+function setupUnclassifiedEventListeners() {
+    // 뷰 모드 전환
+    const gridBtn = document.getElementById('unclassified-grid-btn');
+    const listBtn = document.getElementById('unclassified-list-btn');
+    
+    if (gridBtn && listBtn) {
+        gridBtn.addEventListener('change', () => {
+            if (gridBtn.checked) {
+                renderUnclassifiedContent();
+            }
+        });
+        
+        listBtn.addEventListener('change', () => {
+            if (listBtn.checked) {
+                renderUnclassifiedContent();
+            }
+        });
+    }
+    
+    // 타입 필터
+    const typeFilter = document.getElementById('unclassified-type-filter');
+    if (typeFilter) {
+        typeFilter.addEventListener('change', () => {
+            currentUnclassifiedPage = 1; // 첫 페이지로 리셋
+            loadUnclassifiedView(typeFilter.value);
+        });
+    }
+}
+
+/**
+ * 미분류 항목 페이지네이션 렌더링
+ */
+function renderUnclassifiedPagination(current, totalPages, totalItems) {
+    const paginationContainer = document.getElementById('unclassified-pagination');
+    if (!paginationContainer || totalPages <= 1) {
+        if (paginationContainer) paginationContainer.innerHTML = '';
+        return;
+    }
+    
+    let paginationHTML = '';
+    
+    // 이전 버튼
+    paginationHTML += `
+        <li class="page-item ${current <= 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="changeUnclassifiedPage(${current - 1}); return false;">이전</a>
+        </li>
+    `;
+    
+    // 페이지 번호
+    const maxVisible = 5;
+    let startPage = Math.max(1, current - Math.floor(maxVisible / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+    
+    if (endPage - startPage + 1 < maxVisible) {
+        startPage = Math.max(1, endPage - maxVisible + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        paginationHTML += `
+            <li class="page-item ${i === current ? 'active' : ''}">
+                <a class="page-link" href="#" onclick="changeUnclassifiedPage(${i}); return false;">${i}</a>
+            </li>
+        `;
+    }
+    
+    // 다음 버튼
+    paginationHTML += `
+        <li class="page-item ${current >= totalPages ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="changeUnclassifiedPage(${current + 1}); return false;">다음</a>
+        </li>
+    `;
+    
+    paginationContainer.innerHTML = paginationHTML;
+}
+
+/**
+ * 미분류 항목 페이지 변경
+ */
+function changeUnclassifiedPage(page) {
+    currentUnclassifiedPage = page;
+    renderUnclassifiedContent();
+}
+
+/**
+ * 미분류 항목 통계 업데이트
+ */
+function updateUnclassifiedStats() {
+    if (!dataManager || !dataManager.heritageData) return;
+    
+    const allItems = dataManager.heritageData;
+    
+    // 시도유형문화재 수
+    const sidoTypeCount = allItems.filter(item => 
+        item.kdcd_name === '시도유형문화재'
+    ).length;
+    
+    // 시도민속문화재 수
+    const sidoFolkloreCount = allItems.filter(item => 
+        item.kdcd_name === '시도민속문화재'
+    ).length;
+    
+    // 문화재자료 수
+    const culturalDataCount = allItems.filter(item => 
+        item.kdcd_name === '문화재자료'
+    ).length;
+    
+    // 기타 미분류 수 (실제로 분류가 안된 것들)
+    const othersCount = allItems.filter(item => 
+        item.kdcd_name === '미분류' || item.ctcd_name === '미분류' || 
+        item.category === '미분류' || item.location === '미분류'
+    ).length;
+    
+    // 사이드바 배지 업데이트
+    updateElement('sido-type-count', sidoTypeCount);
+    updateElement('sido-folklore-count', sidoFolkloreCount);
+    updateElement('cultural-data-count', culturalDataCount);
+    updateElement('others-count', othersCount);
+    
+    console.log('미분류 항목 통계 업데이트:', {
+        시도유형문화재: sidoTypeCount,
+        시도민속문화재: sidoFolkloreCount,
+        문화재자료: culturalDataCount,
+        기타미분류: othersCount
+    });
 }
 
 /**

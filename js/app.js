@@ -1588,7 +1588,7 @@ let currentUnclassifiedType = 'all';
 /**
  * 미분류 항목 뷰 로드
  */
-function loadUnclassifiedView(type = 'all') {
+function loadUnclassifiedView(type = 'sido-type') {
     console.log('미분류 항목 뷰 로드:', type);
     currentUnclassifiedType = type;
     currentUnclassifiedPage = 1;
@@ -1597,21 +1597,26 @@ function loadUnclassifiedView(type = 'all') {
     const allItems = dataManager.heritageData;
     let filteredItems = [];
     
-    if (type === 'all') {
-        // 모든 미분류 항목 (카테고리 또는 지역이 미분류인 것들)
+    if (type === 'sido-type') {
+        // 시도유형문화재
         filteredItems = allItems.filter(item => 
-            (item.kdcd_name === '미분류' || item.ctcd_name === '미분류' || 
-             item.category === '미분류' || item.location === '미분류')
+            item.kdcd_name === '시도유형문화재'
         );
-    } else if (type === 'category') {
-        // 미분류 카테고리만
+    } else if (type === 'sido-folklore') {
+        // 시도민속문화재
         filteredItems = allItems.filter(item => 
-            item.kdcd_name === '미분류' || item.category === '미분류'
+            item.kdcd_name === '시도민속문화재'
         );
-    } else if (type === 'region') {
-        // 미분류 지역만
+    } else if (type === 'cultural-data') {
+        // 문화재자료
         filteredItems = allItems.filter(item => 
-            item.ctcd_name === '미분류' || item.location === '미분류'
+            item.kdcd_name === '문화재자료'
+        );
+    } else if (type === 'others') {
+        // 기타 미분류 (실제로 분류가 안된 것들)
+        filteredItems = allItems.filter(item => 
+            item.kdcd_name === '미분류' || item.ctcd_name === '미분류' || 
+            item.category === '미분류' || item.location === '미분류'
         );
     }
     
@@ -1622,9 +1627,10 @@ function loadUnclassifiedView(type = 'all') {
     const titleElement = document.getElementById('unclassified-title');
     if (titleElement) {
         const titles = {
-            'all': '전체 미분류 항목',
-            'category': '미분류 카테고리',
-            'region': '미분류 지역'
+            'sido-type': '시도유형문화재',
+            'sido-folklore': '시도민속문화재',
+            'cultural-data': '문화재자료',
+            'others': '기타 미분류 항목'
         };
         titleElement.textContent = titles[type] || '미분류 항목';
     }
@@ -1915,31 +1921,38 @@ function updateUnclassifiedStats() {
     
     const allItems = dataManager.heritageData;
     
-    // 전체 미분류 항목 수
-    const allUnclassified = allItems.filter(item => 
-        (item.kdcd_name === '미분류' || item.ctcd_name === '미분류' || 
-         item.category === '미분류' || item.location === '미분류')
+    // 시도유형문화재 수
+    const sidoTypeCount = allItems.filter(item => 
+        item.kdcd_name === '시도유형문화재'
     ).length;
     
-    // 미분류 카테고리 수
-    const unclassifiedCategory = allItems.filter(item => 
-        item.kdcd_name === '미분류' || item.category === '미분류'
+    // 시도민속문화재 수
+    const sidoFolkloreCount = allItems.filter(item => 
+        item.kdcd_name === '시도민속문화재'
     ).length;
     
-    // 미분류 지역 수
-    const unclassifiedRegion = allItems.filter(item => 
-        item.ctcd_name === '미분류' || item.location === '미분류'
+    // 문화재자료 수
+    const culturalDataCount = allItems.filter(item => 
+        item.kdcd_name === '문화재자료'
+    ).length;
+    
+    // 기타 미분류 수 (실제로 분류가 안된 것들)
+    const othersCount = allItems.filter(item => 
+        item.kdcd_name === '미분류' || item.ctcd_name === '미분류' || 
+        item.category === '미분류' || item.location === '미분류'
     ).length;
     
     // 사이드바 배지 업데이트
-    updateElement('unclassified-all-count', allUnclassified);
-    updateElement('unclassified-category-count', unclassifiedCategory);
-    updateElement('unclassified-region-count', unclassifiedRegion);
+    updateElement('sido-type-count', sidoTypeCount);
+    updateElement('sido-folklore-count', sidoFolkloreCount);
+    updateElement('cultural-data-count', culturalDataCount);
+    updateElement('others-count', othersCount);
     
     console.log('미분류 항목 통계 업데이트:', {
-        전체: allUnclassified,
-        카테고리: unclassifiedCategory,
-        지역: unclassifiedRegion
+        시도유형문화재: sidoTypeCount,
+        시도민속문화재: sidoFolkloreCount,
+        문화재자료: culturalDataCount,
+        기타미분류: othersCount
     });
 }
 

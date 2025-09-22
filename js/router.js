@@ -183,3 +183,12 @@ router.addRoute('english', () => {
         loadEnglishView();
     }
 });
+
+router.addRoute('unclassified', (params) => {
+    router.showView('unclassified-view');
+    if (params[0] && typeof loadUnclassifiedView === 'function') {
+        loadUnclassifiedView(params[0]);
+    } else if (typeof loadUnclassifiedView === 'function') {
+        loadUnclassifiedView('all');
+    }
+});

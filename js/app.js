@@ -5,19 +5,44 @@
 // 전역 변수
 let currentPage = 1;
 const itemsPerPage = 20;
+let isLoading = false; // 🚨 중요: 전역 로딩 상태 추적
 
 /**
  * 애플리케이션 초기화
  */
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('애플리케이션 시작...');
-console.log('전역 객체들 확인:', {
-    dataManager: typeof dataManager,
-    router: typeof router,
-    i18n: typeof i18n,
-    imageResolver: typeof imageResolver,
-    mapManager: typeof mapManager
-});
+    console.log('🚀 애플리케이션 시작...');
+    console.log('전역 객체들 확인:', {
+        dataManager: typeof dataManager,
+        router: typeof router,
+        i18n: typeof i18n,
+        imageResolver: typeof imageResolver,
+        mapManager: typeof mapManager
+    });
+    
+    // 🚨 중요: 디버깅을 위한 전역 상태 로깅 함수
+    window.logCurrentState = function() {
+        console.log('=== 현재 상태 ===');
+        console.log('현재 페이지:', currentPage);
+        console.log('로딩 중:', isLoading);
+        console.log('URL 해시:', window.location.hash);
+        console.log('라우터 로딩 중:', router.isLoading);
+        console.log('데이터 매니저 로딩 중:', dataManager.isLoading);
+        console.log('데이터 로드됨:', dataManager.isLoaded);
+        console.log('총 데이터 수:', dataManager.heritageData?.length || 0);
+        console.log('=================');
+    };
+    
+    // 🚨 중요: 페이지 로딩 타임아웃 설정 (10초)
+    window.setLoadingTimeout = function() {
+        setTimeout(() => {
+            if (isLoading) {
+                console.error('⚠️ 10초 타임아웃: 강제로 로딩 상태 해제');
+                isLoading = false;
+                showErrorMessage('페이지 로딩이 너무 오래 걸립니다. 새로고침을 시도해보세요.');
+            }
+        }, 10000);
+    };
     
     // 데이터 로드 (로컬 스토리지 우선)
     await dataManager.loadData();
@@ -47,10 +72,16 @@ console.log('전역 객체들 확인:', {
     // 이벤트 리스너 설정
     setupEventListeners();
     
+    // 🚨 중요: 해시 변경 이벤트 디버깅
+    window.addEventListener('hashchange', () => {
+        console.log('🔗 Hash 변경됨:', window.location.hash);
+        logCurrentState();
+    });
+    
     // 초기 라우팅
     router.handleRoute();
     
-    console.log('애플리케이션 초기화 완료');
+    console.log('✅ 애플리케이션 초기화 완료');
 });
 
 /**
@@ -265,25 +296,57 @@ function toggleViewMode(mode) {
  * 문화재 목록 로드
  */
 function loadHeritageList(searchQuery = '') {
+    // 🚨 중요: 데이터 매니저 로딩 상태 확인
+    if (dataManager.isLoading) {
+        console.log('데이터 매니저가 로딩 중입니다. 잠시 후 다시 시도합니다.');
+        setTimeout(() => loadHeritageList(searchQuery), 500);
+        return;
+    }
+    
     const query = searchQuery || document.getElementById('globalSearch')?.value || '';
     const categoryFilter = document.getElementById('category-filter')?.value || '';
     const locationFilter = document.getElementById('location-filter')?.value || '';
     const searchOption = document.getElementById('searchOption')?.value || 'title+description';
     
-    // 검색 및 필터링
-    const results = dataManager.search(query, categoryFilter, locationFilter, searchOption);
+    console.log('문화재 목록 로드 시작:', { query, categoryFilter, locationFilter, currentPage });
     
-    // 페이지네이션
-    const totalPages = Math.ceil(results.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const pageData = results.slice(startIndex, endIndex);
-    
-    // 목록 렌더링
-    renderHeritageList(pageData);
-    
-    // 페이지네이션 렌더링
-    renderPagination(currentPage, totalPages, results.length);
+    try {
+        // 검색 및 필터링
+        const results = dataManager.search(query, categoryFilter, locationFilter, searchOption);
+        
+        // 🚨 중요: 빈 결과 처리
+        if (!results || results.length === 0) {
+            console.log('검색 결과가 없습니다');
+            renderHeritageList([]);
+            renderPagination(1, 1, 0);
+            return;
+        }
+        
+        // 페이지네이션
+        const totalPages = Math.ceil(results.length / itemsPerPage);
+        
+        // 🚨 중요: 페이지 범위 검증
+        if (currentPage > totalPages && totalPages > 0) {
+            console.warn(`현재 페이지(${currentPage})가 총 페이지수(${totalPages})를 초과합니다. 첫 페이지로 이동합니다.`);
+            currentPage = 1;
+        }
+        
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const pageData = results.slice(startIndex, endIndex);
+        
+        console.log(`페이지 데이터 로드 완료: ${pageData.length}개 항목 (${currentPage}/${totalPages})`);
+        
+        // 목록 렌더링
+        renderHeritageList(pageData);
+        
+        // 페이지네이션 렌더링
+        renderPagination(currentPage, totalPages, results.length);
+        
+    } catch (error) {
+        console.error('문화재 목록 로드 오류:', error);
+        showErrorMessage('문화재 목록을 불러오는 중 오류가 발생했습니다.');
+    }
 }
 
 /**
@@ -1313,8 +1376,39 @@ function renderCategoryPagination(current, totalPages, totalItems) {
  * 카테고리 페이지 변경
  */
 function changeCategoryPage(page) {
+    // 🚨 중요: 로딩 중이면 무시
+    if (isLoading) {
+        console.log('이미 로딩 중이므로 카테고리 페이지 변경 무시:', page);
+        return;
+    }
+    
+    // 🚨 중요: 페이지 번호 유효성 검사
+    if (page < 1 || isNaN(page)) {
+        console.warn('유효하지 않은 카테고리 페이지 번호:', page);
+        return;
+    }
+    
+    // 🚨 중요: 현재 페이지와 동일하면 무시
+    if (page === currentCategoryPage) {
+        console.log('현재 카테고리 페이지와 동일하므로 무시:', page);
+        return;
+    }
+    
+    console.log(`카테고리 페이지 변경: ${currentCategoryPage} -> ${page}`);
     currentCategoryPage = page;
-    renderCategoryContent();
+    isLoading = true;
+    
+    // 🚨 중요: 로딩 타임아웃 설정
+    setLoadingTimeout();
+    
+    try {
+        renderCategoryContent();
+    } catch (error) {
+        console.error('카테고리 페이지 로딩 오류:', error);
+        showErrorMessage('카테고리 페이지를 불러오는 중 오류가 발생했습니다.');
+    } finally {
+        isLoading = false;
+    }
 }
 
 // English 페이지 전역 변수
@@ -1635,8 +1729,39 @@ function renderEnglishPagination(current, totalPages, totalItems) {
  * English 페이지 변경
  */
 function changeEnglishPage(page) {
+    // 🚨 중요: 로딩 중이면 무시
+    if (isLoading) {
+        console.log('이미 로딩 중이므로 English 페이지 변경 무시:', page);
+        return;
+    }
+    
+    // 🚨 중요: 페이지 번호 유효성 검사
+    if (page < 1 || isNaN(page)) {
+        console.warn('유효하지 않은 English 페이지 번호:', page);
+        return;
+    }
+    
+    // 🚨 중요: 현재 페이지와 동일하면 무시
+    if (page === currentEnglishPage) {
+        console.log('현재 English 페이지와 동일하므로 무시:', page);
+        return;
+    }
+    
+    console.log(`English 페이지 변경: ${currentEnglishPage} -> ${page}`);
     currentEnglishPage = page;
-    renderEnglishContent();
+    isLoading = true;
+    
+    // 🚨 중요: 로딩 타임아웃 설정
+    setLoadingTimeout();
+    
+    try {
+        renderEnglishContent();
+    } catch (error) {
+        console.error('English 페이지 로딩 오류:', error);
+        showErrorMessage('English 페이지를 불러오는 중 오류가 발생했습니다.');
+    } finally {
+        isLoading = false;
+    }
 }
 
 // 미분류 항목 페이지 전역 변수
@@ -1968,8 +2093,39 @@ function renderUnclassifiedPagination(current, totalPages, totalItems) {
  * 미분류 항목 페이지 변경
  */
 function changeUnclassifiedPage(page) {
+    // 🚨 중요: 로딩 중이면 무시
+    if (isLoading) {
+        console.log('이미 로딩 중이므로 미분류 페이지 변경 무시:', page);
+        return;
+    }
+    
+    // 🚨 중요: 페이지 번호 유효성 검사
+    if (page < 1 || isNaN(page)) {
+        console.warn('유효하지 않은 미분류 페이지 번호:', page);
+        return;
+    }
+    
+    // 🚨 중요: 현재 페이지와 동일하면 무시
+    if (page === currentUnclassifiedPage) {
+        console.log('현재 미분류 페이지와 동일하므로 무시:', page);
+        return;
+    }
+    
+    console.log(`미분류 페이지 변경: ${currentUnclassifiedPage} -> ${page}`);
     currentUnclassifiedPage = page;
-    renderUnclassifiedContent();
+    isLoading = true;
+    
+    // 🚨 중요: 로딩 타임아웃 설정
+    setLoadingTimeout();
+    
+    try {
+        renderUnclassifiedContent();
+    } catch (error) {
+        console.error('미분류 페이지 로딩 오류:', error);
+        showErrorMessage('미분류 페이지를 불러오는 중 오류가 발생했습니다.');
+    } finally {
+        isLoading = false;
+    }
 }
 
 /**
@@ -2112,10 +2268,40 @@ function resetFilters() {
  * 페이지 변경
  */
 function changePage(page) {
-    if (page < 1) return;
+    // 🚨 중요: 로딩 중이면 무시
+    if (isLoading) {
+        console.log('이미 로딩 중이므로 페이지 변경 무시:', page);
+        return;
+    }
+    
+    // 🚨 중요: 페이지 번호 유효성 검사
+    if (page < 1 || isNaN(page)) {
+        console.warn('유효하지 않은 페이지 번호:', page);
+        return;
+    }
+    
+    // 🚨 중요: 현재 페이지와 동일하면 무시
+    if (page === currentPage) {
+        console.log('현재 페이지와 동일하므로 무시:', page);
+        return;
+    }
+    
+    console.log(`페이지 변경: ${currentPage} -> ${page}`);
     currentPage = page;
-    loadHeritageList();
-    window.scrollTo(0, 0);
+    isLoading = true;
+    
+    // 🚨 중요: 로딩 타임아웃 설정
+    setLoadingTimeout();
+    
+    try {
+        loadHeritageList();
+        window.scrollTo(0, 0);
+    } catch (error) {
+        console.error('페이지 로딩 오류:', error);
+        showErrorMessage('페이지를 불러오는 중 오류가 발생했습니다.');
+    } finally {
+        isLoading = false;
+    }
 }
 
 /**
@@ -2196,6 +2382,42 @@ function openImageModal(imageUrl, title) {
 // 이미지 업로드 요청
 function requestImageUpload(heritageName) {
     alert(`"${heritageName}"의 이미지를 업로드하려면 관리자에게 문의하세요.\n\n이미지 업로드 기능은 추후 구현 예정입니다.`);
+}
+
+// 🚨 중요: 에러 메시지 표시 함수
+function showErrorMessage(message) {
+    // 기존 에러 메시지 제거
+    const existingError = document.querySelector('.error-message');
+    if (existingError) {
+        existingError.remove();
+    }
+    
+    // 새 에러 메시지 생성
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error-message alert alert-danger alert-dismissible fade show';
+    errorDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        min-width: 300px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    `;
+    errorDiv.innerHTML = `
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <strong>오류 발생</strong><br>
+        <small>${message}</small>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(errorDiv);
+    
+    // 5초 후 자동 제거
+    setTimeout(() => {
+        if (errorDiv && errorDiv.parentNode) {
+            errorDiv.remove();
+        }
+    }, 5000);
 }
 
 // 이벤트 방지

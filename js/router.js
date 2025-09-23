@@ -33,6 +33,12 @@ class Router {
      * 🚀 최적화된 라우팅 처리 (파라미터 파싱 개선)
      */
     handleRoute() {
+        // 🚨 중복 실행 방지
+        if (this.isNavigating) {
+            console.log('⏳ 이미 라우팅 진행 중, 무시');
+            return;
+        }
+
         // 🚀 parseHash로 라우트와 파라미터 추출
         const { route, params } = this.parseHash();
         
@@ -41,6 +47,8 @@ class Router {
         // 🚀 라우트 존재 확인
         if (this.routes[route]) {
             console.log(`✅ 라우트 '${route}' 핸들러 찾음, 실행 중...`);
+            this.isNavigating = true;
+            
             try {
                 // ✅ 파라미터를 확실히 전달
                 this.routes[route](params);
@@ -51,6 +59,11 @@ class Router {
                 if (route !== 'home') {
                     this.navigate('home');
                 }
+            } finally {
+                // 🚨 중요: 라우팅 완료 후 플래그 해제
+                setTimeout(() => {
+                    this.isNavigating = false;
+                }, 100);
             }
         } else {
             console.error(`❌ 알 수 없는 라우트: ${route}`, '사용 가능한 라우트:', Object.keys(this.routes));
@@ -565,12 +578,14 @@ router.addRoute('category', async (params) => {
             if (page > 1) {
                 console.log(`🔄 카테고리 페이지 ${page}로 이동`);
                 if (typeof window.changeCategoryPage === 'function') {
-                    // 페이지 변경 전에 현재 카테고리 설정 확인
-                    if (window.currentCategoryName === params.category) {
-                        window.changeCategoryPage(page);
-                    } else {
-                        console.warn('⚠️ 카테고리 이름 불일치, 페이지 변경 무시');
-                    }
+                    // 🚨 중요: 카테고리 로드 완료 후 잠시 대기
+                    setTimeout(() => {
+                        if (window.currentCategoryName === params.category) {
+                            window.changeCategoryPage(page);
+                        } else {
+                            console.warn('⚠️ 카테고리 이름 불일치, 페이지 변경 무시');
+                        }
+                    }, 100);
                 }
             }
         } else if (typeof loadCategoryView === 'function') {

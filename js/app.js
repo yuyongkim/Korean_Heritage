@@ -1142,10 +1142,12 @@ async function loadCategoryView(category) {
     // 컨텐츠 렌더링
     renderCategoryContent();
     
-    // 🖼️ 카테고리 이미지 미리 로드 (다음 페이지들)
+    // 🖼️ 카테고리 이미지 미리 로드 (다음 페이지들) - CORS 문제 고려
     setTimeout(() => {
         const nextPages = allItems.slice(20, 60); // 2-3페이지
         if (nextPages.length > 0) {
+            // 🚨 중요: CORS 문제로 인한 실패를 고려하여 배치 크기 줄임
+            imageCacheManager.preloadBatchSize = 10; // 배치 크기 줄임
             imageCacheManager.preloadImages(nextPages);
         }
     }, 1000);
@@ -1277,7 +1279,7 @@ function renderCategoryGridView(items) {
             <div class="card heritage-card h-100" onclick="viewHeritageDetail('${item.name}')">
                 <div class="card-img-top heritage-image">
                     ${item.image_url ? 
-                        `<img src="${imageCacheManager.getCachedImageUrl(item.image_url)}" alt="${item.name}" onerror="this.style.display='none'; this.parentElement.classList.add('no-image'); this.parentElement.innerHTML='<div class=\"no-image-placeholder\"><i class=\"fas fa-image\"></i><span>이미지 없음</span></div>';" crossorigin="anonymous">` : 
+                        `<img src="${imageCacheManager.getCachedImageUrl(item.image_url)}" alt="${item.name}" onerror="this.style.display='none'; this.parentElement.classList.add('no-image'); this.parentElement.innerHTML='<div class=\"no-image-placeholder\"><i class=\"fas fa-image\"></i><span>이미지 없음</span></div>';" onload="this.style.display='block';" crossorigin="anonymous">` : 
                         `<div class="no-image-placeholder"><i class="fas fa-image"></i><span>이미지 없음</span></div>`
                     }
                 </div>

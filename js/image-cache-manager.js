@@ -13,7 +13,7 @@ class ImageCacheManager {
     }
 
     /**
-     * 이미지 미리 로드
+     * 이미지 미리 로드 (CORS 문제 고려)
      */
     async preloadImages(items, startIndex = 0, count = null) {
         const endIndex = count ? startIndex + count : items.length;
@@ -21,7 +21,9 @@ class ImageCacheManager {
         
         console.log(`🖼️ 이미지 미리 로드 시작: ${itemsToPreload.length}개`);
         
-        const batches = this._createBatches(itemsToPreload, this.preloadBatchSize);
+        // 🚨 중요: CORS 문제로 인한 실패를 고려하여 배치 크기 동적 조정
+        const batchSize = Math.min(this.preloadBatchSize, 10);
+        const batches = this._createBatches(itemsToPreload, batchSize);
         
         for (let i = 0; i < batches.length; i++) {
             const batch = batches[i];
@@ -31,7 +33,7 @@ class ImageCacheManager {
             
             // 배치 간 지연 (브라우저 블로킹 방지)
             if (i < batches.length - 1) {
-                await this._delay(this.preloadDelay);
+                await this._delay(this.preloadDelay * 2); // 지연 시간 증가
             }
         }
         
@@ -58,7 +60,7 @@ class ImageCacheManager {
     }
 
     /**
-     * 단일 이미지 미리 로드
+     * 단일 이미지 미리 로드 (CORS 문제 해결)
      */
     async _preloadSingleImage(item) {
         if (!item.image_url || this.preloadedImages.has(item.image_url)) {
@@ -74,6 +76,9 @@ class ImageCacheManager {
             }
         } catch (error) {
             console.warn(`❌ 이미지 로드 실패: ${item.name}`, error);
+            // 🚨 중요: 실패한 이미지도 원본 URL로 캐시하여 재시도 방지
+            this.cache.set(item.image_url, item.image_url);
+            this.preloadedImages.add(item.image_url);
         }
     }
 

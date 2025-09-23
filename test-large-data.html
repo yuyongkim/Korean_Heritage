@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>대용량 데이터 로딩 테스트</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .loading { background-color: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+    </style>
+</head>
+<body>
+    <h1>🏛️ 대용량 문화재 데이터 로딩 테스트</h1>
+    <div id="status" class="status loading">로딩 중...</div>
+    <div id="data-info"></div>
+    <div id="progress"></div>
+    
+    <script>
+        console.log('🚀 대용량 데이터 로딩 테스트 시작...');
+        
+        const startTime = Date.now();
+        let loadTime = 0;
+        
+        // 로딩 상태 업데이트
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+        
+        // 진행률 업데이트
+        function updateProgress(message) {
+            const progressDiv = document.getElementById('progress');
+            progressDiv.innerHTML += `<div>${new Date().toLocaleTimeString()}: ${message}</div>`;
+        }
+        
+        updateStatus('대용량 JavaScript 파일 로딩 중...', 'loading');
+        updateProgress('스크립트 태그 생성 중...');
+        
+        // 동적으로 대용량 스크립트 로드
+        const script = document.createElement('script');
+        script.src = 'js/heritage-data-complete-20250917_031007.js';
+        
+        script.onload = () => {
+            loadTime = Date.now() - startTime;
+            updateProgress(`✅ 스크립트 로드 완료 (${loadTime}ms)`);
+            
+            if (typeof HERITAGE_DATA !== 'undefined' && Array.isArray(HERITAGE_DATA)) {
+                updateStatus(`✅ 대용량 데이터 로드 성공! (${HERITAGE_DATA.length.toLocaleString()}개 항목)`, 'success');
+                
+                // 데이터 정보 표시
+                const dataInfo = document.getElementById('data-info');
+                dataInfo.innerHTML = `
+                    <h3>📊 데이터 정보</h3>
+                    <p><strong>총 항목 수:</strong> ${HERITAGE_DATA.length.toLocaleString()}개</p>
+                    <p><strong>로딩 시간:</strong> ${loadTime}ms (${(loadTime/1000).toFixed(2)}초)</p>
+                    <p><strong>첫 번째 항목:</strong> ${HERITAGE_DATA[0]?.name || '없음'}</p>
+                    <p><strong>마지막 항목:</strong> ${HERITAGE_DATA[HERITAGE_DATA.length-1]?.name || '없음'}</p>
+                    
+                    <h4>📈 카테고리별 분포</h4>
+                    <div id="category-stats"></div>
+                `;
+                
+                // 카테고리별 통계 계산
+                const categoryStats = {};
+                HERITAGE_DATA.forEach(item => {
+                    const category = item.kdcd_name || '미분류';
+                    categoryStats[category] = (categoryStats[category] || 0) + 1;
+                });
+                
+                const categoryStatsDiv = document.getElementById('category-stats');
+                Object.entries(categoryStats)
+                    .sort(([,a], [,b]) => b - a)
+                    .forEach(([category, count]) => {
+                        categoryStatsDiv.innerHTML += `<p>${category}: ${count.toLocaleString()}개</p>`;
+                    });
+                
+                updateProgress(`✅ 데이터 분석 완료 - ${Object.keys(categoryStats).length}개 카테고리`);
+                
+                // DataManager 테스트
+                updateProgress('DataManager 클래스 테스트 중...');
+                if (typeof DataManager !== 'undefined') {
+                    updateProgress('✅ DataManager 클래스 사용 가능');
+                    
+                    const dm = new DataManager();
+                    dm.loadData().then(() => {
+                        updateProgress(`✅ DataManager 로드 성공: ${dm.heritageData.length.toLocaleString()}개 항목`);
+                        updateStatus(`🎉 모든 테스트 완료! (총 ${loadTime}ms)`, 'success');
+                    }).catch(error => {
+                        updateProgress(`❌ DataManager 로드 실패: ${error.message}`);
+                        updateStatus('⚠️ DataManager 테스트 실패', 'error');
+                    });
+                } else {
+                    updateProgress('❌ DataManager 클래스 없음');
+                    updateStatus('⚠️ DataManager 클래스를 찾을 수 없습니다', 'error');
+                }
+                
+            } else {
+                updateStatus('❌ HERITAGE_DATA 변수를 찾을 수 없습니다', 'error');
+                updateProgress('❌ HERITAGE_DATA 변수 없음');
+            }
+        };
+        
+        script.onerror = () => {
+            updateStatus('❌ 대용량 JavaScript 파일 로드 실패', 'error');
+            updateProgress('❌ 스크립트 로드 실패');
+        };
+        
+        updateProgress('스크립트 태그를 DOM에 추가 중...');
+        document.head.appendChild(script);
+    </script>
+</body>
+</html>

@@ -1,3 +1,13 @@
+// 🚨 긴급 성능 복구 - 과도한 로깅 제거
+// 🔥 1단계: 로깅 레벨 조정 (모든 파일 상단에 추가)
+const DEBUG_MODE = false; // 🚨 false로 설정하여 로깅 비활성화
+
+function debugLog(...args) {
+    if (DEBUG_MODE) {
+        console.log(...args);
+    }
+}
+
 /**
  * 메인 애플리케이션 - 뷰 컨트롤러 및 이벤트 핸들러
  */
@@ -14,34 +24,33 @@ class AppController {
         this.isUpdating = false;
         this.lastUpdateData = null;
         this.updateTimeout = null;
+        this.DEBOUNCE_TIME = 300; // 300ms로 증가
     }
 
     // 🚀 디바운스된 업데이트 시스템
-    async scheduleUpdate(updateType, data) {
-        // 동일한 데이터로 업데이트 요청 시 무시
+    scheduleUpdate(updateType, data) {
+        // 🚨 동일한 데이터 체크 강화
         const dataHash = this._hashData(data);
         if (this.lastUpdateData === dataHash) {
-            console.log('🔄 동일한 데이터, 업데이트 스킵');
-            return;
+            return; // 완전히 무시
         }
 
         this.updateQueue.add(updateType);
         
-        // 100ms 디바운스
+        // 🚨 디바운싱 강화
         clearTimeout(this.updateTimeout);
         this.updateTimeout = setTimeout(() => {
             this._processUpdateQueue(data, dataHash);
-        }, 100);
+        }, this.DEBOUNCE_TIME);
     }
 
     async _processUpdateQueue(data, dataHash) {
         if (this.isUpdating) {
-            console.log('⏳ 이미 업데이트 중, 대기');
             return;
         }
 
         this.isUpdating = true;
-        console.log('🔄 업데이트 큐 처리:', Array.from(this.updateQueue));
+        debugLog('🔄 업데이트 큐 처리:', Array.from(this.updateQueue));
 
         try {
             // 🚀 한 번에 모든 업데이트 처리
@@ -58,10 +67,10 @@ class AppController {
             }
 
             this.lastUpdateData = dataHash;
-            console.log('✅ 모든 업데이트 완료');
+            debugLog('✅ 모든 업데이트 완료');
             
         } catch (error) {
-            console.error('❌ 업데이트 에러:', error);
+            debugLog('❌ 업데이트 에러:', error);
         } finally {
             this.updateQueue.clear();
             this.isUpdating = false;
@@ -113,8 +122,8 @@ const appController = new AppController();
  * 애플리케이션 초기화
  */
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('🚀 애플리케이션 시작...');
-    console.log('전역 객체들 확인:', {
+    debugLog('🚀 애플리케이션 시작...');
+    debugLog('전역 객체들 확인:', {
         dataManager: typeof dataManager,
         router: typeof router,
         i18n: typeof i18n,
@@ -150,7 +159,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await dataManager.loadData();
     
     // 초기 통계 표시
-    console.log('현재 총 문화재 수:', dataManager.heritageData.length);
+    debugLog('현재 총 문화재 수:', dataManager.heritageData.length);
     
     // 🚀 최적화된 대시보드 업데이트
     appController.updateDashboard(dataManager.heritageData);
@@ -176,14 +185,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // 🚨 중요: 해시 변경 이벤트 디버깅
     window.addEventListener('hashchange', () => {
-        console.log('🔗 Hash 변경됨:', window.location.hash);
+        debugLog('🔗 Hash 변경됨:', window.location.hash);
         logCurrentState();
     });
     
     // 초기 라우팅
     router.handleRoute();
     
-    console.log('✅ 애플리케이션 초기화 완료');
+    debugLog('✅ 애플리케이션 초기화 완료');
 });
 
 /**
@@ -2599,6 +2608,62 @@ window.addEventListener('error', (event) => {
     console.error('전역 에러 캐치:', event.error);
     showErrorMessage('예상치 못한 오류가 발생했습니다.');
 });
+
+// 🔥 5단계: 페이지네이션 URL 생성 수정 (app.js)
+function createPageUrl(newPage) {
+    const currentHash = window.location.hash.slice(1) || 'home';
+    
+    // 🚨 간단하고 빠른 URL 생성
+    if (currentHash.includes('category/')) {
+        const categoryPart = currentHash.split('/page/')[0]; // 기존 페이지 부분 제거
+        return `${categoryPart}/page/${newPage}`;
+    } else if (currentHash === 'home' || currentHash === '') {
+        return `home?page=${newPage}`;
+    } else {
+        return `${currentHash}?page=${newPage}`;
+    }
+}
+
+// 🔥 6단계: 성능 모니터링 함수
+window.performanceCheck = function() {
+    const start = performance.now();
+    
+    // 기본 동작 테스트
+    router.parseHash();
+    
+    const end = performance.now();
+    console.log(`⚡ 라우팅 성능: ${(end - start).toFixed(2)}ms`);
+    
+    // 메모리 사용량 체크
+    if (performance.memory) {
+        const memory = performance.memory;
+        console.log(`🧠 메모리: ${(memory.usedJSHeapSize / 1024 / 1024).toFixed(2)}MB`);
+    }
+    
+    // 데이터 로드 상태
+    console.log(`📊 캐시된 데이터: ${window.dataManager?.cachedData?.length || 0}개`);
+};
+
+// 🔥 7단계: 긴급 성능 복구 함수
+window.emergencyPerformanceFix = function() {
+    console.log('🚨 긴급 성능 복구 시작...');
+    
+    // 모든 타이머 클리어
+    for (let i = 1; i < 99999; i++) window.clearTimeout(i);
+    for (let i = 1; i < 99999; i++) window.clearInterval(i);
+    
+    // 불필요한 이벤트 리스너 제거
+    const newBody = document.body.cloneNode(true);
+    document.body.parentNode.replaceChild(newBody, document.body);
+    
+    // 캐시 클리어
+    if (window.dataManager) {
+        window.dataManager.lastStatsUpdate = 0;
+    }
+    
+    console.log('✅ 긴급 성능 복구 완료');
+    location.reload(); // 최후의 수단
+};
 
 // 🔥 안전한 라우팅 함수 래퍼
 function safeExecute(fn, fallback = null) {

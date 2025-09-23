@@ -5,9 +5,8 @@ class Router {
     constructor() {
         this.routes = {};
         this.currentView = null;
-        this.history = []; // 히스토리 스택 추가
-        this.previousHash = null; // 이전 해시 저장
-        this.isLoading = false; // 🚨 중요: 로딩 상태 추적
+        this.currentRoute = null;
+        this.isNavigating = false;
         
         // 브라우저 뒤로가기/앞으로가기 이벤트 처리
         window.addEventListener('hashchange', () => this.handleRoute());
@@ -25,78 +24,79 @@ class Router {
     }
     
     /**
-     * 현재 URL 해시를 기반으로 라우팅 처리
+     * 🚀 최적화된 라우팅 처리 (파라미터 파싱 개선)
      */
     handleRoute() {
         const hash = window.location.hash.slice(1) || 'home';
-        const [route, ...params] = hash.split('/');
+        const { route, params } = this.parseHash();
         
-        // 현재 해시와 동일하면 무시 (무한 루프 방지)
-        const currentHash = window.location.hash.slice(1) || 'home';
-        if (this.previousHash && this.previousHash === currentHash) {
-            console.log('동일한 해시로의 중복 라우팅 무시:', currentHash);
+        // 🚀 중복 네비게이션 방지
+        if (this.isNavigating) {
+            console.log('⏳ 이미 네비게이션 진행 중, 무시');
             return;
         }
-        
-        // 🚨 중요: 로딩 상태 확인 (이미 로딩 중이면 리턴)
-        if (this.isLoading) {
-            console.log('이미 로딩 중이므로 라우팅 무시:', currentHash);
+
+        // 🚀 동일한 라우트로의 이동 체크 (파라미터 포함)
+        const newRouteKey = hash;
+        if (this.currentRoute === newRouteKey) {
+            console.log('🔄 동일한 라우트, 무시:', newRouteKey);
             return;
         }
-        
-        // 🚨 중요: 로딩 상태 설정
-        this.isLoading = true;
-        
-        // 히스토리에 현재 경로 추가 (중복 방지)
-        const currentPath = hash;
-        if (this.history.length === 0 || this.history[this.history.length - 1] !== currentPath) {
-            this.history.push(currentPath);
-            // 히스토리 크기 제한 (최대 50개)
-            if (this.history.length > 50) {
-                this.history.shift();
+
+        this.isNavigating = true;
+        this.currentRoute = newRouteKey;
+
+        try {
+            console.log(`🎯 라우트 실행: ${route}`, params);
+            
+            if (this.routes[route]) {
+                this.routes[route](params);
+            } else {
+                console.warn(`❌ 알 수 없는 라우트: ${route}`);
+                this.navigate('home');
             }
+        } catch (error) {
+            console.error('❌ 라우팅 에러:', error);
+            this.navigate('home');
+        } finally {
+            this.isNavigating = false;
         }
+    }
+
+    /**
+     * 🚀 해시 파싱 (파라미터 및 쿼리 파라미터 지원)
+     */
+    parseHash() {
+        const hash = window.location.hash.slice(1) || 'home';
+        const [route, ...paramParts] = hash.split('/');
         
-        console.log('라우팅 처리:', route, params, '히스토리:', this.history.length);
+        // 🚀 파라미터 파싱 개선
+        const params = {};
+        const paramString = paramParts.join('/');
         
-        // 현재 뷰 숨기기
-        this.hideAllViews();
-        
-        // 로딩 표시
-        this.showLoading();
-        
-        // 라우트 처리
-        setTimeout(() => {
-            try {
-                if (this.routes[route]) {
-                    console.log('라우트 실행:', route, params);
-                    try {
-                        this.routes[route](params);
-                    } catch (routeError) {
-                        console.error(`❌ 라우트 ${route} 실행 실패:`, routeError);
-                        this.showErrorMessage('페이지 로딩 중 오류가 발생했습니다.');
-                        if (route !== 'home') {
-                            window.location.hash = '#home';
-                        }
-                    }
-                } else {
-                    // 알 수 없는 라우트에 대한 처리
-                    console.warn('알 수 없는 라우트:', route);
-                    this.showRouteNotFound(route);
+        // URL 파라미터 파싱 (예: category/국보/page/2)
+        if (paramString) {
+            const parts = paramString.split('/');
+            for (let i = 0; i < parts.length; i += 2) {
+                if (parts[i] && parts[i + 1] !== undefined) {
+                    params[parts[i]] = decodeURIComponent(parts[i + 1]);
                 }
-                this.updateNavigation(route);
-            } catch (error) {
-                console.error('라우팅 오류:', error);
-                this.showRouteError(error);
-            } finally {
-                // 🚨 중요: 로딩 상태 해제 (성공/실패 관계없이)
-                this.isLoading = false;
-                this.hideLoading();
-                
-                // 이전 해시 업데이트
-                this.previousHash = currentHash;
             }
-        }, 100);
+        }
+
+        // 🚀 쿼리 파라미터도 파싱 (예: #home?page=2&category=국보)
+        const queryStart = hash.indexOf('?');
+        if (queryStart !== -1) {
+            const queryString = hash.slice(queryStart + 1);
+            const urlParams = new URLSearchParams(queryString);
+            
+            for (const [key, value] of urlParams) {
+                params[key] = decodeURIComponent(value);
+            }
+        }
+
+        console.log(`🛣️ 라우팅 파싱: ${route}`, params);
+        return { route, params };
     }
     
     /**
@@ -115,24 +115,23 @@ class Router {
     }
     
     /**
-     * 프로그래매틱 네비게이션
+     * 🚀 최적화된 프로그래매틱 네비게이션
      */
     navigate(path) {
-        // 🚨 중요: 로딩 중이면 무시
-        if (this.isLoading) {
-            console.log('로딩 중이므로 네비게이션 무시:', path);
+        // 🚀 중복 네비게이션 방지
+        if (this.isNavigating) {
+            console.log('⏳ 이미 네비게이션 진행 중, 무시');
             return;
         }
-        
-        // 경로가 현재 경로와 같으면 무시
+
+        // 🚀 동일한 라우트로의 이동 체크
         const currentHash = window.location.hash.slice(1) || 'home';
         if (currentHash === path) {
-            console.log('동일한 경로로의 네비게이션 무시:', path);
+            console.log('🔄 동일한 경로, 무시:', path);
             return;
         }
         
-        // 디버깅을 위한 로그
-        console.log('라우터 네비게이션:', currentHash, '->', path);
+        console.log(`🛣️ 라우터 네비게이션: ${currentHash} -> ${path}`);
         
         // 해시 변경으로 라우팅 트리거
         window.location.hash = path;
@@ -356,26 +355,28 @@ router.addRoute('detail', async (params) => {
 router.addRoute('category', (params) => {
     console.log('카테고리 라우트 실행:', params);
     router.showView('category-view');
-    if (params[0] && typeof loadCategoryView === 'function') {
-        const categoryName = decodeURIComponent(params[0]);
-        console.log('카테고리 로드:', categoryName);
+    
+    // 🚀 개선된 파라미터 처리
+    const categoryName = params.category || params[0];
+    const page = params.page || params[1];
+    
+    if (categoryName && typeof loadCategoryView === 'function') {
+        const decodedCategory = decodeURIComponent(categoryName);
+        console.log('카테고리 로드:', decodedCategory);
+        
+        // 카테고리 로드
+        loadCategoryView(decodedCategory);
         
         // 페이지 번호가 있는 경우 처리
-        if (params[1]) {
-            const page = parseInt(params[1]);
-            if (page && page > 0) {
-                // 카테고리 로드 후 페이지 설정
-                loadCategoryView(categoryName);
+        if (page) {
+            const pageNum = parseInt(page);
+            if (pageNum && pageNum > 0) {
                 setTimeout(() => {
                     if (typeof changeCategoryPage === 'function') {
-                        changeCategoryPage(page);
+                        changeCategoryPage(pageNum);
                     }
                 }, 100);
-            } else {
-                loadCategoryView(categoryName);
             }
-        } else {
-            loadCategoryView(categoryName);
         }
     } else {
         console.error('카테고리 파라미터가 없거나 loadCategoryView 함수가 없습니다');

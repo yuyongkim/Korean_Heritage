@@ -13,7 +13,7 @@ class ImageCacheManager {
     }
 
     /**
-     * 이미지 미리 로드
+     * 이미지 미리 로드 (CORS 문제 고려)
      */
     async preloadImages(items, startIndex = 0, count = null) {
         const endIndex = count ? startIndex + count : items.length;
@@ -21,7 +21,9 @@ class ImageCacheManager {
         
         console.log(`🖼️ 이미지 미리 로드 시작: ${itemsToPreload.length}개`);
         
-        const batches = this._createBatches(itemsToPreload, this.preloadBatchSize);
+        // 🚨 중요: CORS 문제로 인한 실패를 고려하여 배치 크기 동적 조정
+        const batchSize = Math.min(this.preloadBatchSize, 10);
+        const batches = this._createBatches(itemsToPreload, batchSize);
         
         for (let i = 0; i < batches.length; i++) {
             const batch = batches[i];
@@ -31,7 +33,7 @@ class ImageCacheManager {
             
             // 배치 간 지연 (브라우저 블로킹 방지)
             if (i < batches.length - 1) {
-                await this._delay(this.preloadDelay);
+                await this._delay(this.preloadDelay * 2); // 지연 시간 증가
             }
         }
         
@@ -58,7 +60,7 @@ class ImageCacheManager {
     }
 
     /**
-     * 단일 이미지 미리 로드
+     * 단일 이미지 미리 로드 (CORS 문제 해결)
      */
     async _preloadSingleImage(item) {
         if (!item.image_url || this.preloadedImages.has(item.image_url)) {
@@ -74,34 +76,45 @@ class ImageCacheManager {
             }
         } catch (error) {
             console.warn(`❌ 이미지 로드 실패: ${item.name}`, error);
+            // 🚨 중요: 실패한 이미지도 원본 URL로 캐시하여 재시도 방지
+            this.cache.set(item.image_url, item.image_url);
+            this.preloadedImages.add(item.image_url);
         }
     }
 
     /**
-     * 이미지 로드
+     * 이미지 로드 (CORS 문제 해결)
      */
     _loadImage(url) {
         return new Promise((resolve, reject) => {
             const img = new Image();
             
             img.onload = () => {
-                // 이미지를 캔버스로 변환하여 base64로 저장
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                
-                canvas.width = img.width;
-                canvas.height = img.height;
-                ctx.drawImage(img, 0, 0);
-                
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                resolve(dataUrl);
+                try {
+                    // 이미지를 캔버스로 변환하여 base64로 저장
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                    resolve(dataUrl);
+                } catch (error) {
+                    // CORS 문제로 캔버스 접근 실패 시 원본 URL 반환
+                    console.warn('⚠️ CORS 문제로 캔버스 접근 실패, 원본 URL 사용:', url);
+                    resolve(url);
+                }
             };
             
-            img.onerror = () => {
-                reject(new Error('이미지 로드 실패'));
+            img.onerror = (error) => {
+                console.warn('❌ 이미지 로드 실패:', url, error);
+                // 이미지 로드 실패 시 기본 이미지나 원본 URL 반환
+                resolve(url);
             };
             
-            // CORS 문제 방지
+            // CORS 설정 (서버에서 허용하지 않을 수 있음)
             img.crossOrigin = 'anonymous';
             img.src = url;
         });

@@ -1,3 +1,13 @@
+// 🚨 긴급 성능 복구 - 과도한 로깅 제거
+// 🔥 1단계: 로깅 레벨 조정 (모든 파일 상단에 추가)
+const DEBUG_MODE = false; // 🚨 false로 설정하여 로깅 비활성화
+
+function debugLog(...args) {
+    if (DEBUG_MODE) {
+        console.log(...args);
+    }
+}
+
 /**
  * 데이터 관리자 - CSV 로딩 및 데이터 처리 (성능 최적화)
  */
@@ -16,6 +26,10 @@ class DataManager {
         this.loadPromise = null;
         this.lastLoadTime = 0;
         this.cacheTimeout = 5 * 60 * 1000; // 5분 캐시 유효시간
+        
+        // 🚨 통계 업데이트 스로틀링
+        this.lastStatsUpdate = 0;
+        this.STATS_THROTTLE = 1000; // 1초에 한 번만 통계 업데이트
         
         // 이벤트 시스템 초기화
         this.eventListeners = {
@@ -55,31 +69,20 @@ class DataManager {
      * 🚀 최적화된 데이터 로드 (캐싱 시스템)
      */
     async loadData() {
-        // 🚀 이미 캐시된 데이터가 있고 유효하면 즉시 반환
-        if (this.cachedData && this.cachedData.length > 0 && this._isCacheValid()) {
-            console.log('🚀 캐시된 데이터 사용:', this.cachedData.length, '개 항목');
-            this.heritageData = this.cachedData;
-            this.isLoaded = true;
+        // 🚀 캐시된 데이터가 있으면 즉시 반환 (로깅 최소화)
+        if (this.cachedData && this.cachedData.length > 0) {
             return this.cachedData;
         }
 
-        // 🚀 이미 로딩 중이면 기존 프로미스 반환 (중복 방지)
         if (this.isLoading && this.loadPromise) {
-            console.log('⏳ 기존 로딩 프로세스 대기 중...');
             return await this.loadPromise;
         }
 
-        // 🚀 새로운 로딩 시작
-        console.log('🔄 새로운 데이터 로드 시작...');
         this.isLoading = true;
         this.loadPromise = this._performDataLoad();
 
         try {
             this.cachedData = await this.loadPromise;
-            this.heritageData = this.cachedData;
-            this.isLoaded = true;
-            this.lastLoadTime = Date.now();
-            console.log('✅ 데이터 로딩 및 캐싱 완료:', this.cachedData.length, '개 항목');
             return this.cachedData;
         } finally {
             this.isLoading = false;
@@ -107,11 +110,11 @@ class DataManager {
 
         for (const method of methods) {
             try {
-                console.log(`🔄 ${method.name} 데이터 로드 시도...`);
+                debugLog(`🔄 ${method.name} 데이터 로드 시도...`);
                 const data = await method.fn();
                 
                 if (data && Array.isArray(data) && data.length > 0) {
-                    console.log(`✅ ${method.name} 성공: ${data.length}개 항목`);
+                    debugLog(`✅ ${method.name} 성공: ${data.length}개 항목`);
                     
                     // 🚀 성공한 데이터는 다른 저장소에도 백업
                     this._backupToStorage(data, method.name);
@@ -206,7 +209,7 @@ class DataManager {
             item && item.name && item.name.trim() !== ''
         );
         
-        console.log(`🔍 데이터 검증: ${data.length} -> ${validatedData.length}개 항목`);
+        debugLog(`🔍 데이터 검증: ${data.length} -> ${validatedData.length}개 항목`);
         
         // 데이터 처리
         this.processData();
@@ -252,7 +255,7 @@ class DataManager {
      * 🚀 캐시 무효화 (새 데이터 업로드 시 사용)
      */
     invalidateCache() {
-        console.log('🔄 데이터 캐시 무효화');
+        debugLog('🔄 데이터 캐시 무효화');
         this.cachedData = null;
         this.isLoaded = false;
         this.lastLoadTime = 0;
@@ -263,16 +266,16 @@ class DataManager {
      */
     async loadLargeHeritageData() {
         try {
-            console.log('대용량 JavaScript 데이터 로드 시작...');
+            debugLog('대용량 JavaScript 데이터 로드 시작...');
             
             // 동적으로 스크립트 로드
             return new Promise((resolve, reject) => {
                 const script = document.createElement('script');
                 script.src = 'js/heritage-data-complete-20250917_031007.js';
                 script.onload = () => {
-                    console.log('✅ 대용량 JavaScript 파일 로드 완료');
+                    debugLog('✅ 대용량 JavaScript 파일 로드 완료');
                     if (typeof HERITAGE_DATA !== 'undefined' && Array.isArray(HERITAGE_DATA)) {
-                        console.log('✅ HERITAGE_DATA 변수 확인:', HERITAGE_DATA.length, '개 항목');
+                        debugLog('✅ HERITAGE_DATA 변수 확인:', HERITAGE_DATA.length, '개 항목');
                         
                         // 데이터 변환
                         const rawData = HERITAGE_DATA.map((row, index) => {
@@ -323,7 +326,7 @@ class DataManager {
                         // 데이터 검증 및 정제
                         this.heritageData = this.processLoadedData(rawData);
                         
-                        console.log('✅ 대용량 데이터 변환 완료:', this.heritageData.length, '개 항목');
+                        debugLog('✅ 대용량 데이터 변환 완료:', this.heritageData.length, '개 항목');
                         resolve(this.heritageData);
                     } else {
                         reject(new Error('HERITAGE_DATA 변수를 찾을 수 없습니다'));
@@ -1052,6 +1055,19 @@ class DataManager {
     }
     
     /**
+     * 🚨 통계 업데이트 스로틀링
+     */
+    updateStats(data) {
+        const now = Date.now();
+        if (now - this.lastStatsUpdate < this.STATS_THROTTLE) {
+            return; // 너무 빠른 업데이트 무시
+        }
+        this.lastStatsUpdate = now;
+        
+        // 기존 통계 계산 로직...
+    }
+
+    /**
      * 통계 정보 가져오기
      */
     getStatistics() {
@@ -1061,7 +1077,7 @@ class DataManager {
             locations: new Set()
         };
         
-        console.log('📊 통계 계산 시작, 총 데이터:', this.heritageData.length);
+        debugLog('📊 통계 계산 시작, 총 데이터:', this.heritageData.length);
         
         // 실제 데이터 기반으로 통계 수집
         this.heritageData.forEach(item => {
@@ -1098,8 +1114,8 @@ class DataManager {
             }
         });
         
-        console.log('📊 카테고리별 통계:', stats.categories);
-        console.log('📊 지역 수:', stats.locations.size);
+        debugLog('📊 카테고리별 통계:', stats.categories);
+        debugLog('📊 지역 수:', stats.locations.size);
         
         // 통계 업데이트 이벤트 발생
         this.emit('statisticsChanged', stats);

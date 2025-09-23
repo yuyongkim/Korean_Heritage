@@ -1,3 +1,13 @@
+// 🚨 긴급 성능 복구 - 과도한 로깅 제거
+// 🔥 1단계: 로깅 레벨 조정 (모든 파일 상단에 추가)
+const DEBUG_MODE = false; // 🚨 false로 설정하여 로깅 비활성화
+
+function debugLog(...args) {
+    if (DEBUG_MODE) {
+        console.log(...args);
+    }
+}
+
 /**
  * SPA 라우터 - URL 해시 기반 페이지 라우팅
  */
@@ -7,6 +17,8 @@ class Router {
         this.currentView = null;
         this.currentRoute = null;
         this.isNavigating = false;
+        this.lastParseResult = null;
+        this.lastParseHash = null;
         
         // 브라우저 뒤로가기/앞으로가기 이벤트 처리
         window.addEventListener('hashchange', () => this.handleRoute());
@@ -30,23 +42,23 @@ class Router {
         // 🚀 parseHash로 라우트와 파라미터 추출
         const { route, params } = this.parseHash();
         
-        console.log(`🎯 라우트 실행: ${route}`, params); // 이 로그가 중요!
+        debugLog(`🎯 라우트 실행: ${route}`, params);
         
         // 🚀 라우트 존재 확인
         if (this.routes[route]) {
             try {
                 // ✅ 파라미터를 확실히 전달
                 this.routes[route](params);
-                console.log(`✅ ${route} 라우트 실행 완료`);
+                debugLog(`✅ ${route} 라우트 실행 완료`);
             } catch (error) {
-                console.error(`❌ ${route} 라우트 실행 에러:`, error);
+                debugLog(`❌ ${route} 라우트 실행 에러:`, error);
                 // 에러 시 홈으로 리다이렉트
                 if (route !== 'home') {
                     this.navigate('home');
                 }
             }
         } else {
-            console.warn(`❌ 알 수 없는 라우트: ${route}`);
+            debugLog(`❌ 알 수 없는 라우트: ${route}`);
             this.navigate('home');
         }
     }
@@ -56,55 +68,63 @@ class Router {
      */
     parseHash() {
         const hash = window.location.hash.slice(1) || 'home';
-        console.log('🔍 원본 해시:', hash);
+        
+        // 🚨 캐싱된 파싱 결과 사용
+        if (this.lastParseHash === hash && this.lastParseResult) {
+            return this.lastParseResult;
+        }
         
         // 🚀 URL 디코딩 먼저 수행 (한글 처리)
-        const decodedHash = decodeURIComponent(hash);
-        console.log('🔍 디코딩된 해시:', decodedHash);
+        let decodedHash;
+        try {
+            decodedHash = decodeURIComponent(hash);
+        } catch (e) {
+            decodedHash = hash;
+        }
         
-        const [route, ...paramParts] = decodedHash.split('/');
+        let result;
         
-        // 🚀 파라미터 파싱 개선
-        const params = {};
-        
-        // URL 파라미터 파싱 (예: category/국보, list/page/2)
-        if (paramParts.length > 0) {
-            // 🎯 카테고리 라우트 특별 처리
-            if (route === 'category' && paramParts[0]) {
-                params.category = paramParts[0];
-                console.log('📂 카테고리 파라미터:', params.category);
-            }
-            // 🎯 리스트 라우트 처리 (list/page/2)
-            else if (route === 'list') {
-                for (let i = 0; i < paramParts.length; i += 2) {
-                    if (paramParts[i] && paramParts[i + 1] !== undefined) {
-                        params[paramParts[i]] = paramParts[i + 1];
-                    }
+        // 🎯 세부페이지 라우팅 추가 (detail/ID)
+        if (decodedHash.startsWith('detail/')) {
+            const itemId = decodedHash.replace('detail/', '');
+            result = {
+                route: 'detail',
+                params: { id: itemId }
+            };
+        }
+        // 카테고리 + 페이지 처리
+        else if (decodedHash.match(/^category\/[^\/]+\/page\/\d+$/)) {
+            const parts = decodedHash.split('/');
+            result = {
+                route: 'category',
+                params: { 
+                    category: parts[1], 
+                    page: parseInt(parts[3]) 
                 }
-            }
-            // 🎯 기타 라우트 일반 처리
-            else {
-                for (let i = 0; i < paramParts.length; i += 2) {
-                    if (paramParts[i] && paramParts[i + 1] !== undefined) {
-                        params[paramParts[i]] = paramParts[i + 1];
-                    }
-                }
-            }
+            };
+        }
+        // 기본 카테고리 처리
+        else if (decodedHash.startsWith('category/')) {
+            const categoryName = decodedHash.replace('category/', '').split('/')[0];
+            result = {
+                route: 'category',
+                params: { category: categoryName, page: 1 }
+            };
+        }
+        // 기본 라우트
+        else {
+            const parts = decodedHash.split('/');
+            result = {
+                route: parts[0] || 'home',
+                params: {}
+            };
         }
 
-        // 🚀 쿼리 파라미터도 파싱 (예: #home?page=2&category=국보)
-        const queryStart = decodedHash.indexOf('?');
-        if (queryStart !== -1) {
-            const queryString = decodedHash.slice(queryStart + 1);
-            const urlParams = new URLSearchParams(queryString);
-            
-            for (const [key, value] of urlParams) {
-                params[key] = decodeURIComponent(value);
-            }
-        }
-
-        console.log(`🛣️ 라우팅 파싱: ${route}`, params);
-        return { route, params };
+        // 🚨 캐싱
+        this.lastParseHash = hash;
+        this.lastParseResult = result;
+        
+        return result;
     }
     
     /**
@@ -327,19 +347,60 @@ class Router {
     }
     
     /**
+     * 🔥 세부페이지 직접 로드 (대체 로직)
+     */
+    loadDetailDirectly(itemId) {
+        if (window.dataManager && window.dataManager.cachedData) {
+            const item = window.dataManager.cachedData.find(data => 
+                data.key_asno === itemId || 
+                data.composite_key === itemId ||
+                data.name === itemId
+            );
+            
+            if (item) {
+                debugLog('✅ 세부 항목 찾음:', item.name);
+                this.renderDetailView(item);
+            } else {
+                console.error('❌ 세부 항목을 찾을 수 없음:', itemId);
+                this.navigate('home');
+            }
+        }
+    }
+
+    renderDetailView(item) {
+        const detailContainer = document.querySelector('.detail-content, #detail-view, .main-content');
+        if (detailContainer) {
+            detailContainer.innerHTML = `
+                <div class="detail-header">
+                    <h1>${item.name}</h1>
+                    <p class="text-muted">${item.kdcd_name} | ${item.ctcd_name}</p>
+                </div>
+                <div class="detail-body">
+                    ${item.imageUrl ? `<img src="${item.imageUrl}" class="img-fluid mb-3" alt="${item.name}">` : ''}
+                    <p>${item.content || '내용이 없습니다.'}</p>
+                    ${item.english_description ? `<div class="mt-3"><h5>English</h5><p>${item.english_description}</p></div>` : ''}
+                </div>
+                <div class="detail-footer">
+                    <button onclick="history.back()" class="btn btn-secondary">돌아가기</button>
+                </div>
+            `;
+        }
+    }
+
+    /**
      * 🔥 추가 디버깅용 함수 (임시로 router.js에 추가)
      */
     debugRouteExecution() {
         const { route, params } = this.parseHash();
-        console.log('🔍 라우트 디버그:');
-        console.log('  - 파싱된 라우트:', route);
-        console.log('  - 파싱된 파라미터:', params);
-        console.log('  - 사용 가능한 라우트:', Object.keys(this.routes));
-        console.log('  - 해당 라우트 함수:', typeof this.routes[route]);
+        debugLog('🔍 라우트 디버그:');
+        debugLog('  - 파싱된 라우트:', route);
+        debugLog('  - 파싱된 파라미터:', params);
+        debugLog('  - 사용 가능한 라우트:', Object.keys(this.routes));
+        debugLog('  - 해당 라우트 함수:', typeof this.routes[route]);
         
         // 수동으로 라우트 실행 테스트
         if (this.routes[route]) {
-            console.log('🧪 수동 라우트 실행 테스트...');
+            debugLog('🧪 수동 라우트 실행 테스트...');
             this.routes[route](params);
         }
     }
@@ -402,10 +463,22 @@ router.addRoute('list', (params) => {
     }
 });
 
-router.addRoute('detail', async (params) => {
+// 🚨 세부페이지 라우트 핸들러 추가
+router.addRoute('detail', (params) => {
+    debugLog('📄 세부페이지 라우트 실행:', params);
     router.showView('detail-view');
-    if (params[0] && typeof loadHeritageDetail === 'function') {
-        await loadHeritageDetail(decodeURIComponent(params[0]));
+    
+    const itemId = params.id;
+    if (itemId) {
+        // 세부페이지 로드 함수 호출
+        if (typeof window.loadDetailView === 'function') {
+            window.loadDetailView(itemId);
+        } else if (typeof loadDetailView === 'function') {
+            loadDetailView(itemId);
+        } else {
+            // 🚨 대체 로직: 직접 데이터 찾기
+            router.loadDetailDirectly(itemId);
+        }
     }
 });
 

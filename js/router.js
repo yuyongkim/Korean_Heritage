@@ -218,11 +218,10 @@ class Router {
         this.isNavigating = true;
         
         try {
-            // URL 업데이트
+            // URL 업데이트 (hashchange 이벤트가 자동으로 handleRoute 호출)
             window.location.hash = newHash;
             
-            // 🚀 즉시 라우팅 처리 (hashchange 이벤트 기다리지 않음)
-            this.handleRoute();
+            // 🚨 중요: hashchange 이벤트가 handleRoute를 호출하므로 여기서 직접 호출하지 않음
             
         } catch (error) {
             console.error('❌ 네비게이션 에러:', error);

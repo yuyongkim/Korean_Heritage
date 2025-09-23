@@ -1029,6 +1029,11 @@ async function loadCategoryView(category) {
 async function renderCategoryContent() {
     console.log('카테고리 컨텐츠 렌더링 시작:', currentCategoryData.length, '건');
     
+    // URL 업데이트 (페이지네이션을 위한)
+    const newUrl = `category/${currentCategoryName}/page/${currentCategoryPage}`;
+    console.log(`🛣️ 카테고리 페이지 URL 업데이트: ${window.location.hash.slice(1)} -> ${newUrl}`);
+    router.navigate(newUrl);
+    
     // 지역 필터 적용
     const locationFilter = document.getElementById('category-location-filter')?.value || '';
     let filteredData = currentCategoryData;
@@ -1452,31 +1457,10 @@ async function changeCategoryPage(page) {
     // 🚨 중요: 로딩 타임아웃 설정
     setLoadingTimeout();
     
-    // 🚨 중요: URL 업데이트 - 현재 카테고리 정보 가져오기
-    const currentHash = window.location.hash.slice(1);
-    let newUrl = '';
-    
-    if (currentHash.includes('category/')) {
-        // 카테고리 페이지인 경우: category/보물/page/2
-        const categoryMatch = currentHash.match(/category\/([^\/]+)/);
-        if (categoryMatch) {
-            const categoryName = categoryMatch[1];
-            newUrl = `category/${categoryName}/page/${page}`;
-        } else {
-            // 폴백: 현재 해시에 /page/ 추가
-            newUrl = currentHash + `/page/${page}`;
-        }
-    } else {
-        // 홈 페이지인 경우: home?page=2
-        newUrl = `home?page=${page}`;
-    }
-    
-    console.log(`🛣️ 카테고리 페이지 URL 업데이트: ${currentHash} -> ${newUrl}`);
-    
     try {
-        // 🚨 중요: 라우터에 URL 변경 알리기
-        router.navigate(newUrl);
-        
+        // router.navigate()를 여기서 직접 호출하는 대신,
+        // renderCategoryContent가 URL을 처리하도록 둡니다.
+        // 이렇게 하면 중복 호출을 막을 수 있습니다.
         await renderCategoryContent();
     } catch (error) {
         console.error('카테고리 페이지 로딩 오류:', error);
@@ -1543,6 +1527,11 @@ async function loadEnglishView() {
  * English 컨텐츠 렌더링
  */
 async function renderEnglishContent() {
+    // URL 업데이트 (페이지네이션을 위한)
+    const newUrl = `english/page/${currentEnglishPage}`;
+    console.log(`🛣️ English 페이지 URL 업데이트: ${window.location.hash.slice(1)} -> ${newUrl}`);
+    router.navigate(newUrl);
+    
     // 필터 적용
     const categoryFilter = document.getElementById('english-category-filter')?.value || '';
     const locationFilter = document.getElementById('english-location-filter')?.value || '';
@@ -1855,24 +1844,9 @@ async function changeEnglishPage(page) {
     // 🚨 중요: 로딩 타임아웃 설정
     setLoadingTimeout();
     
-    // 🚨 중요: URL 업데이트
-    const currentHash = window.location.hash.slice(1);
-    let newUrl = '';
-    
-    if (currentHash.includes('english')) {
-        // English 페이지인 경우: english/page/2
-        newUrl = `english/page/${page}`;
-    } else {
-        // 폴백: home?page=2
-        newUrl = `home?page=${page}`;
-    }
-    
-    console.log(`🛣️ English 페이지 URL 업데이트: ${currentHash} -> ${newUrl}`);
-    
     try {
-        // 🚨 중요: 라우터에 URL 변경 알리기
-        router.navigate(newUrl);
-        
+        // router.navigate()를 여기서 직접 호출하는 대신,
+        // renderEnglishContent가 URL을 처리하도록 둡니다.
         await renderEnglishContent();
     } catch (error) {
         console.error('English 페이지 로딩 오류:', error);
@@ -1955,6 +1929,11 @@ async function loadUnclassifiedView(type = 'sido-type') {
  */
 async function renderUnclassifiedContent() {
     console.log('미분류 항목 컨텐츠 렌더링 시작:', currentUnclassifiedData.length, '건');
+    
+    // URL 업데이트 (페이지네이션을 위한)
+    const newUrl = `unclassified/page/${currentUnclassifiedPage}`;
+    console.log(`🛣️ 미분류 페이지 URL 업데이트: ${window.location.hash.slice(1)} -> ${newUrl}`);
+    router.navigate(newUrl);
     
     // 페이지네이션
     const totalPages = Math.ceil(currentUnclassifiedData.length / itemsPerPage);
@@ -2239,24 +2218,9 @@ async function changeUnclassifiedPage(page) {
     // 🚨 중요: 로딩 타임아웃 설정
     setLoadingTimeout();
     
-    // 🚨 중요: URL 업데이트
-    const currentHash = window.location.hash.slice(1);
-    let newUrl = '';
-    
-    if (currentHash.includes('unclassified')) {
-        // 미분류 페이지인 경우: unclassified/page/2
-        newUrl = `unclassified/page/${page}`;
-    } else {
-        // 폴백: home?page=2
-        newUrl = `home?page=${page}`;
-    }
-    
-    console.log(`🛣️ 미분류 페이지 URL 업데이트: ${currentHash} -> ${newUrl}`);
-    
     try {
-        // 🚨 중요: 라우터에 URL 변경 알리기
-        router.navigate(newUrl);
-        
+        // router.navigate()를 여기서 직접 호출하는 대신,
+        // renderUnclassifiedContent가 URL을 처리하도록 둡니다.
         await renderUnclassifiedContent();
     } catch (error) {
         console.error('미분류 페이지 로딩 오류:', error);
@@ -2441,31 +2405,9 @@ async function changePage(page) {
     // 🚨 중요: 로딩 타임아웃 설정
     setLoadingTimeout();
     
-    // 🚨 중요: URL 업데이트
-    const currentHash = window.location.hash.slice(1);
-    let newUrl = '';
-    
-    if (currentHash.includes('category/')) {
-        // 카테고리 페이지인 경우: category/보물/page/2
-        const categoryMatch = currentHash.match(/category\/([^\/]+)/);
-        if (categoryMatch) {
-            const categoryName = categoryMatch[1];
-            newUrl = `category/${categoryName}/page/${page}`;
-        } else {
-            newUrl = currentHash + `/page/${page}`;
-        }
-    } else {
-        // 홈 페이지인 경우: home?page=2
-        newUrl = `home?page=${page}`;
-    }
-    
-    console.log(`🛣️ 페이지 URL 업데이트: ${currentHash} -> ${newUrl}`);
-    
     try {
-        // 🚨 중요: 라우터에 URL 변경 알리기
-        router.navigate(newUrl);
-        
-        await loadHeritageList();
+        router.navigate(createPageUrl(page)); // URL 먼저 변경
+        await loadHeritageList(); // loadHeritageList가 끝날 때까지 기다림
         window.scrollTo(0, 0);
     } catch (error) {
         console.error('페이지 로딩 오류:', error);

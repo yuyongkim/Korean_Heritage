@@ -552,11 +552,35 @@ router.addRoute('category', async (params) => {
     if (params.category) {
         console.log('✅ 카테고리 파라미터 확인:', params.category);
         
+        // 🚨 중요: 페이지 파라미터 처리 추가
+        const page = parseInt(params.page) || 1;
+        console.log('📄 카테고리 페이지 요청:', page);
+        
         // loadCategoryView 함수 존재 확인
         if (typeof window.loadCategoryView === 'function') {
             await window.loadCategoryView(params.category);
+            
+            // 🚨 중요: 페이지가 1보다 크면 해당 페이지로 이동
+            if (page > 1) {
+                console.log(`🔄 카테고리 페이지 ${page}로 이동`);
+                if (typeof window.changeCategoryPage === 'function') {
+                    // 페이지 변경 전에 현재 카테고리 설정 확인
+                    if (window.currentCategoryName === params.category) {
+                        window.changeCategoryPage(page);
+                    } else {
+                        console.warn('⚠️ 카테고리 이름 불일치, 페이지 변경 무시');
+                    }
+                }
+            }
         } else if (typeof loadCategoryView === 'function') {
             await loadCategoryView(params.category);
+            
+            // 페이지가 1보다 크면 해당 페이지로 이동
+            if (page > 1) {
+                if (typeof window.changeCategoryPage === 'function') {
+                    window.changeCategoryPage(page);
+                }
+            }
         } else {
             console.error('❌ loadCategoryView 함수를 찾을 수 없습니다');
             // 🚀 대체 로직: 직접 카테고리 필터링 호출

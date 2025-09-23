@@ -1165,15 +1165,8 @@ window.loadCategoryView = loadCategoryView;
 async function renderCategoryContent() {
     console.log('카테고리 컨텐츠 렌더링 시작:', currentCategoryData.length, '건');
     
-    // URL 업데이트 (페이지네이션을 위한) - 첫 페이지에서만 업데이트
-    if (currentCategoryPage > 1) {
-        const newUrl = `category/${currentCategoryName}/page/${currentCategoryPage}`;
-        console.log(`🛣️ 카테고리 페이지 URL 업데이트: ${window.location.hash.slice(1)} -> ${newUrl}`);
-        // 무한 루프 방지를 위해 조건부 navigate
-        if (!window.location.hash.includes(`/page/${currentCategoryPage}`)) {
-            router.navigate(newUrl);
-        }
-    }
+    // 🚨 중요: URL 업데이트 로직 제거 - 라우터에서 처리하도록 변경
+    // URL 업데이트는 라우터에서 자동으로 처리되므로 여기서는 제거
     
     // 지역 필터 적용
     const locationFilter = document.getElementById('category-location-filter')?.value || '';
@@ -1642,9 +1635,9 @@ async function changeCategoryPage(page) {
     setLoadingTimeout();
     
     try {
-        // URL 직접 업데이트
+        // 🚨 중요: router.navigate() 사용하여 무한 루프 방지
         const newUrl = `category/${currentCategoryName}/page/${page}`;
-        window.location.hash = newUrl;
+        router.navigate(newUrl);
         
         // 컨텐츠 렌더링 (URL 업데이트 없이)
         await renderCategoryContentOnly();
@@ -2940,6 +2933,61 @@ window.testDetailToPage2 = function() {
     }, 1000);
     
     return '테스트 시작됨 - 콘솔을 확인하세요';
+};
+
+// 🧪 보물 카테고리 페이지네이션 테스트 함수
+window.testTreasureCategoryPagination = function() {
+    console.log('🧪 보물 카테고리 페이지네이션 테스트 시작');
+    
+    // 현재 상태 로깅
+    console.log('📍 현재 상태:');
+    console.log('- URL:', window.location.href);
+    console.log('- Hash:', window.location.hash);
+    console.log('- Current Category Page:', currentCategoryPage);
+    console.log('- Current Category Name:', currentCategoryName);
+    console.log('- Router Navigating:', router.isNavigating);
+    
+    // 시나리오 시뮬레이션
+    console.log('🎭 보물 카테고리 시나리오 시뮬레이션:');
+    
+    // 1. 보물 카테고리로 이동
+    console.log('1️⃣ 보물 카테고리로 이동');
+    router.navigate('category/보물');
+    
+    setTimeout(() => {
+        // 2. 2페이지로 이동
+        console.log('2️⃣ 2페이지로 이동');
+        changeCategoryPage(2);
+        
+        setTimeout(() => {
+            // 3. 3페이지로 이동
+            console.log('3️⃣ 3페이지로 이동');
+            changeCategoryPage(3);
+            
+            setTimeout(() => {
+                // 4. 4페이지로 이동
+                console.log('4️⃣ 4페이지로 이동');
+                changeCategoryPage(4);
+                
+                setTimeout(() => {
+                    // 5. 5페이지로 이동
+                    console.log('5️⃣ 5페이지로 이동');
+                    changeCategoryPage(5);
+                    
+                    setTimeout(() => {
+                        console.log('✅ 보물 카테고리 테스트 완료');
+                        console.log('📍 최종 상태:');
+                        console.log('- URL:', window.location.href);
+                        console.log('- Hash:', window.location.hash);
+                        console.log('- Current Category Page:', currentCategoryPage);
+                        console.log('- Current Category Name:', currentCategoryName);
+                    }, 1000);
+                }, 1000);
+            }, 1000);
+        }, 1000);
+    }, 1000);
+    
+    return '보물 카테고리 테스트 시작됨 - 콘솔을 확인하세요';
 };
 
 // 🔥 안전한 라우팅 함수 래퍼

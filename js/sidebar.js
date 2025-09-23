@@ -229,12 +229,12 @@ function setupCSVButton() {
         });
         console.log('✅ CSV 버튼 이벤트 리스너 설정 완료');
     } else {
-        console.error('❌ csv-upload-btn 요소를 찾을 수 없음');
+        // CSV 업로드 버튼이 제거되었음 (자동 데이터 로딩 사용)
     }
 }
 
-// DOM 로드 완료 후 실행
-document.addEventListener('DOMContentLoaded', setupCSVButton);
+// DOM 로드 완료 후 실행 - CSV 기능 제거됨
+// document.addEventListener('DOMContentLoaded', setupCSVButton);
 
 // 혹시 DOMContentLoaded가 이미 지나갔을 경우를 대비
 if (document.readyState === 'loading') {

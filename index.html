@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="refresh" content="0; url=main.html" />
+    <!-- Meta refresh는 해시를 보존하지 않으므로 JavaScript 사용 -->
     <title>한국 문화재 디지털 아카이브</title>
     <style>
         body {
@@ -72,13 +72,18 @@
     </div>
     
     <script>
+        // 해시를 보존하면서 리다이렉션
+        function redirectWithHash() {
+            const hash = window.location.hash;
+            const targetUrl = 'main.html' + hash;
+            window.location.replace(targetUrl);
+        }
+        
         // 3초 후 자동 리다이렉션 (메타 태그가 작동하지 않는 경우 대비)
-        setTimeout(() => {
-            window.location.href = 'main.html';
-        }, 3000);
+        setTimeout(redirectWithHash, 3000);
         
         // 즉시 리다이렉션 시도
-        window.location.replace('main.html');
+        redirectWithHash();
     </script>
 </body>
 </html>

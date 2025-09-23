@@ -1573,6 +1573,9 @@ async function changeCategoryPage(page) {
     }
 }
 
+// 전역으로 함수 등록
+window.changeCategoryPage = changeCategoryPage;
+
 // 🧪 테스트용 함수들
 window.testPagination = function(page) {
     console.log('🧪 페이지네이션 테스트:', page);
@@ -2336,6 +2339,9 @@ async function changeUnclassifiedPage(page) {
     }
 }
 
+// 전역으로 함수 등록
+window.changeUnclassifiedPage = changeUnclassifiedPage;
+
 /**
  * 번역률 계산 및 업데이트
  */
@@ -2523,12 +2529,18 @@ async function changePage(page) {
     }
 }
 
+// 전역으로 함수 등록
+window.changePage = changePage;
+
 /**
  * 문화재 상세 보기
  */
 function viewHeritageDetail(name) {
     router.navigate(`detail/${encodeURIComponent(name)}`);
 }
+
+// 전역으로 함수 등록
+window.viewHeritageDetail = viewHeritageDetail;
 
 /**
  * 유틸리티 함수들

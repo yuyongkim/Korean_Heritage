@@ -36,23 +36,24 @@ class Router {
         // 🚀 parseHash로 라우트와 파라미터 추출
         const { route, params } = this.parseHash();
         
-        debugLog(`🎯 라우트 실행: ${route}`, params);
+        console.log(`🎯 라우트 실행: ${route}`, params);
         
         // 🚀 라우트 존재 확인
         if (this.routes[route]) {
+            console.log(`✅ 라우트 '${route}' 핸들러 찾음, 실행 중...`);
             try {
                 // ✅ 파라미터를 확실히 전달
                 this.routes[route](params);
-                debugLog(`✅ ${route} 라우트 실행 완료`);
+                console.log(`✅ ${route} 라우트 실행 완료`);
             } catch (error) {
-                debugLog(`❌ ${route} 라우트 실행 에러:`, error);
+                console.error(`❌ ${route} 라우트 실행 에러:`, error);
                 // 에러 시 홈으로 리다이렉트
                 if (route !== 'home') {
                     this.navigate('home');
                 }
             }
         } else {
-            debugLog(`❌ 알 수 없는 라우트: ${route}`);
+            console.error(`❌ 알 수 없는 라우트: ${route}`, '사용 가능한 라우트:', Object.keys(this.routes));
             this.navigate('home');
         }
     }
@@ -62,9 +63,11 @@ class Router {
      */
     parseHash() {
         const hash = window.location.hash.slice(1) || 'home';
+        console.log('📍 Hash 파싱 시작:', hash);
         
         // 🚨 캐싱된 파싱 결과 사용
         if (this.lastParseHash === hash && this.lastParseResult) {
+            console.log('🚀 캐시된 파싱 결과 사용:', this.lastParseResult);
             return this.lastParseResult;
         }
         
@@ -72,8 +75,10 @@ class Router {
         let decodedHash;
         try {
             decodedHash = decodeURIComponent(hash);
+            console.log('🔓 URL 디코딩 완료:', decodedHash);
         } catch (e) {
             decodedHash = hash;
+            console.log('⚠️ URL 디코딩 실패, 원본 사용:', decodedHash);
         }
         
         let result;
@@ -81,6 +86,7 @@ class Router {
         // 🎯 세부페이지 라우팅 추가 (detail/ID)
         if (decodedHash.startsWith('detail/')) {
             const itemId = decodedHash.replace('detail/', '');
+            console.log('🔍 상세페이지 라우트 감지:', decodedHash, '-> ID:', itemId);
             result = {
                 route: 'detail',
                 params: { id: itemId }
@@ -127,6 +133,7 @@ class Router {
         this.lastParseHash = hash;
         this.lastParseResult = result;
         
+        console.log('📋 최종 파싱 결과:', result);
         return result;
     }
     

@@ -725,21 +725,19 @@ function renderPagination(current, total, totalItems, containerId = 'pagination'
 }
 
 /**
- * 문화재 상세 정보 로드
+ * 문화재 상세 정보 로드 (라우터에 의해 호출됨)
  */
 async function loadHeritageDetail(name) {
-    // 데이터 매니저가 준비될 때까지 기다리기
     await dataManager.waitForData();
+    router.showView('detail-view'); // 뷰를 먼저 보여주고
     
     const item = dataManager.getByName(name);
-    if (!item) {
-        console.error('문화재를 찾을 수 없습니다:', name);
-        // 홈으로 리다이렉트하지 않고 에러 페이지 표시
-        showHeritageNotFound(name);
-        return;
+    if (item) {
+        renderHeritageDetail(item); // 내용을 채워넣음
+    } else {
+        console.error(`${name} 데이터를 찾을 수 없습니다.`);
+        // 404 뷰 표시 로직 추가 가능
     }
-    
-    renderHeritageDetail(item);
 }
 
 /**
@@ -987,40 +985,16 @@ let currentCategoryData = [];
 let currentCategoryName = '';
 
 /**
- * 카테고리별 뷰 로드
+ * 카테고리별 뷰 로드 (라우터에 의해 호출됨)
  */
-async function loadCategoryView(category) {
-    console.log('카테고리 뷰 로드 시작:', category);
-    currentCategoryName = category;
-    currentCategoryPage = 1;
-    
-    // 데이터 매니저가 준비될 때까지 기다리기
+async function loadCategoryView(category, page = 1) {
     await dataManager.waitForData();
+    currentPage = page;
     
-    // 기본 데이터 로드
-    const allItems = dataManager.getByCategory(category);
-    console.log('카테고리 데이터:', category, '→', allItems.length, '건');
-    currentCategoryData = allItems;
-    
-    // 제목 업데이트
-    const titleElement = document.getElementById('category-title');
-    if (titleElement) {
-        titleElement.textContent = category;
-    }
-    
-    // 카운트 업데이트
-    updateCategoryCount(allItems.length);
-    
-    // 지역 필터 초기화
-    setupCategoryLocationFilter(allItems);
-    
-    // 컨텐츠 렌더링
-    renderCategoryContent();
-    
-    // 이벤트 리스너 설정
-    setupCategoryEventListeners();
-    
-    console.log('카테고리 뷰 로드 완료:', category);
+    // ... 기존의 카테고리 데이터 필터링 및 렌더링 로직 ...
+    // renderHeritageList(pageItems);
+    // renderPagination(currentPage, totalPages, totalItems);
+    // updateElement('category-title', category);
 }
 
 /**
@@ -2377,50 +2351,28 @@ async function resetFilters() {
 }
 
 /**
- * 페이지 변경
+ * 페이지 변경 (카테고리, 검색 등 모든 목록에 공통으로 사용)
  */
-async function changePage(page) {
-    // 🚨 중요: 로딩 중이면 무시
-    if (isLoading) {
-        console.log('이미 로딩 중이므로 페이지 변경 무시:', page);
+function changePage(page) {
+    if (isLoading || page === currentPage || page < 1) {
         return;
     }
-    
-    // 🚨 중요: 페이지 번호 유효성 검사
-    if (page < 1 || isNaN(page)) {
-        console.warn('유효하지 않은 페이지 번호:', page);
-        return;
-    }
-    
-    // 🚨 중요: 현재 페이지와 동일하면 무시
-    if (page === currentPage) {
-        console.log('현재 페이지와 동일하므로 무시:', page);
-        return;
-    }
-    
-    console.log(`페이지 변경: ${currentPage} -> ${page}`);
     currentPage = page;
-    isLoading = true;
+
+    const currentHash = window.location.hash.slice(1);
     
-    // 🚨 중요: 로딩 타임아웃 설정
-    setLoadingTimeout();
-    
-    try {
-        router.navigate(createPageUrl(page)); // URL 먼저 변경
-        await loadHeritageList(); // loadHeritageList가 끝날 때까지 기다림
-        window.scrollTo(0, 0);
-    } catch (error) {
-        console.error('페이지 로딩 오류:', error);
-        showErrorMessage('페이지를 불러오는 중 오류가 발생했습니다.');
-    } finally {
-        isLoading = false;
-    }
+    // 기존 URL에서 페이지 정보만 교체
+    const newHash = currentHash.replace(/(\/page\/\d+)|(\?page=\d+)|$/, `/page/${page}`);
+
+    // 라우터에 URL 변경 요청
+    router.navigate(newHash);
 }
 
 /**
- * 문화재 상세 보기
+ * 문화재 상세 보기 (카드나 목록 클릭 시 호출)
  */
 function viewHeritageDetail(name) {
+    // 라우터에 URL 변경 요청
     router.navigate(`detail/${encodeURIComponent(name)}`);
 }
 

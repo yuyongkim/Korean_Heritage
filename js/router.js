@@ -1,12 +1,6 @@
 // 🚨 긴급 성능 복구 - 과도한 로깅 제거
-// 🔥 1단계: 로깅 레벨 조정 (모든 파일 상단에 추가)
-const DEBUG_MODE = false; // 🚨 false로 설정하여 로깅 비활성화
-
-function debugLog(...args) {
-    if (DEBUG_MODE) {
-        console.log(...args);
-    }
-}
+// 🔥 1단계: 로깅 레벨 조정 (중앙화된 설정 사용)
+// DEBUG_MODE와 debugLog는 config.js에서 가져옴
 
 /**
  * SPA 라우터 - URL 해시 기반 페이지 라우팅

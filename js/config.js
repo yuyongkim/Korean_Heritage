@@ -7,7 +7,7 @@
 const DEBUG_MODE = false; // Set to true for development debugging
 
 // API Keys
-const KAKAO_MAP_API_KEY = 'YOUR_KAKAO_MAP_API_KEY'; // 카카오 맵 API 키를 여기에 설정하세요
+const KAKAO_MAP_API_KEY = 'f3b94f450409b9b743b3932047bdbe4b'; // 카카오 맵 API 키
 
 /**
  * Debug logging function

@@ -64,7 +64,7 @@ class SimpleMapManager {
             // 새 스크립트 태그 생성
             const script = document.createElement('script');
             script.type = 'text/javascript';
-            script.src = '//dapi.kakao.com/v2/maps/sdk.js?appkey=YOUR_APP_KEY&autoload=false';
+            script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_MAP_API_KEY}&autoload=false`;
             script.async = true;
 
             script.onload = () => {

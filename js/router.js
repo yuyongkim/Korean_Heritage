@@ -68,26 +68,46 @@ class Router {
      */
     parseHash() {
         const hash = window.location.hash.slice(1) || 'home';
-        const [route, ...paramParts] = hash.split('/');
+        console.log('🔍 원본 해시:', hash);
+        
+        // 🚀 URL 디코딩 먼저 수행 (한글 처리)
+        const decodedHash = decodeURIComponent(hash);
+        console.log('🔍 디코딩된 해시:', decodedHash);
+        
+        const [route, ...paramParts] = decodedHash.split('/');
         
         // 🚀 파라미터 파싱 개선
         const params = {};
-        const paramString = paramParts.join('/');
         
-        // URL 파라미터 파싱 (예: category/국보/page/2)
-        if (paramString) {
-            const parts = paramString.split('/');
-            for (let i = 0; i < parts.length; i += 2) {
-                if (parts[i] && parts[i + 1] !== undefined) {
-                    params[parts[i]] = decodeURIComponent(parts[i + 1]);
+        // URL 파라미터 파싱 (예: category/국보, list/page/2)
+        if (paramParts.length > 0) {
+            // 🎯 카테고리 라우트 특별 처리
+            if (route === 'category' && paramParts[0]) {
+                params.category = paramParts[0];
+                console.log('📂 카테고리 파라미터:', params.category);
+            }
+            // 🎯 리스트 라우트 처리 (list/page/2)
+            else if (route === 'list') {
+                for (let i = 0; i < paramParts.length; i += 2) {
+                    if (paramParts[i] && paramParts[i + 1] !== undefined) {
+                        params[paramParts[i]] = paramParts[i + 1];
+                    }
+                }
+            }
+            // 🎯 기타 라우트 일반 처리
+            else {
+                for (let i = 0; i < paramParts.length; i += 2) {
+                    if (paramParts[i] && paramParts[i + 1] !== undefined) {
+                        params[paramParts[i]] = paramParts[i + 1];
+                    }
                 }
             }
         }
 
         // 🚀 쿼리 파라미터도 파싱 (예: #home?page=2&category=국보)
-        const queryStart = hash.indexOf('?');
+        const queryStart = decodedHash.indexOf('?');
         if (queryStart !== -1) {
-            const queryString = hash.slice(queryStart + 1);
+            const queryString = decodedHash.slice(queryStart + 1);
             const urlParams = new URLSearchParams(queryString);
             
             for (const [key, value] of urlParams) {
@@ -117,24 +137,42 @@ class Router {
     /**
      * 🚀 최적화된 프로그래매틱 네비게이션
      */
-    navigate(path) {
-        // 🚀 중복 네비게이션 방지
+    navigate(hash) {
+        // 중복 네비게이션 방지
         if (this.isNavigating) {
             console.log('⏳ 이미 네비게이션 진행 중, 무시');
             return;
         }
 
-        // 🚀 동일한 라우트로의 이동 체크
-        const currentHash = window.location.hash.slice(1) || 'home';
-        if (currentHash === path) {
-            console.log('🔄 동일한 경로, 무시:', path);
+        // 🚀 한글 URL 안전 처리
+        const safeHash = encodeURIComponent(decodeURIComponent(hash));
+        const currentHash = window.location.hash.slice(1);
+        
+        // 동일한 라우트로의 이동 체크
+        if (currentHash === hash || currentHash === safeHash) {
+            console.log('🔄 동일한 라우트, 무시:', hash);
             return;
         }
+
+        console.log(`🛣️ 라우터 네비게이션: ${currentHash} -> ${hash}`);
         
-        console.log(`🛣️ 라우터 네비게이션: ${currentHash} -> ${path}`);
+        this.isNavigating = true;
         
-        // 해시 변경으로 라우팅 트리거
-        window.location.hash = path;
+        try {
+            // URL 업데이트
+            window.location.hash = hash;
+            
+            // 라우팅 처리
+            this.handleRoute();
+            
+        } catch (error) {
+            console.error('❌ 네비게이션 에러:', error);
+            this.navigate('home');
+        } finally {
+            setTimeout(() => {
+                this.isNavigating = false;
+            }, 100);
+        }
     }
     
     /**
@@ -331,17 +369,30 @@ function goBack() {
 }
 
 // 라우트 등록
-router.addRoute('home', () => {
+router.addRoute('home', (params) => {
+    console.log('🏠 홈 라우트 실행');
     router.showView('home-view');
-    if (typeof updateDashboard === 'function') {
+    if (window.loadHomeView) {
+        window.loadHomeView();
+    } else if (typeof updateDashboard === 'function') {
         updateDashboard();
     }
 });
 
-router.addRoute('list', () => {
+router.addRoute('list', (params) => {
+    console.log('📋 리스트 라우트 실행:', params);
     router.showView('list-view');
-    if (typeof loadHeritageList === 'function') {
+    
+    // 🚀 페이지 파라미터 처리
+    const page = parseInt(params.page) || 1;
+    console.log('📄 요청된 페이지:', page);
+    
+    if (typeof window.loadListView === 'function') {
+        window.loadListView(page, params);
+    } else if (typeof loadHeritageList === 'function') {
         loadHeritageList();
+    } else {
+        console.error('❌ loadListView 함수를 찾을 수 없습니다');
     }
 });
 
@@ -353,33 +404,32 @@ router.addRoute('detail', async (params) => {
 });
 
 router.addRoute('category', (params) => {
-    console.log('카테고리 라우트 실행:', params);
+    console.log('📂 카테고리 라우트 실행:', params);
     router.showView('category-view');
     
-    // 🚀 개선된 파라미터 처리
-    const categoryName = params.category || params[0];
-    const page = params.page || params[1];
-    
-    if (categoryName && typeof loadCategoryView === 'function') {
-        const decodedCategory = decodeURIComponent(categoryName);
-        console.log('카테고리 로드:', decodedCategory);
+    // 🚀 카테고리 파라미터 검증 및 처리
+    if (params.category) {
+        console.log('✅ 카테고리 파라미터 확인:', params.category);
         
-        // 카테고리 로드
-        loadCategoryView(decodedCategory);
-        
-        // 페이지 번호가 있는 경우 처리
-        if (page) {
-            const pageNum = parseInt(page);
-            if (pageNum && pageNum > 0) {
-                setTimeout(() => {
-                    if (typeof changeCategoryPage === 'function') {
-                        changeCategoryPage(pageNum);
-                    }
-                }, 100);
+        // loadCategoryView 함수 존재 확인
+        if (typeof window.loadCategoryView === 'function') {
+            window.loadCategoryView(params.category);
+        } else if (typeof loadCategoryView === 'function') {
+            loadCategoryView(params.category);
+        } else {
+            console.error('❌ loadCategoryView 함수를 찾을 수 없습니다');
+            // 🚀 대체 로직: 직접 카테고리 필터링 호출
+            if (window.dataManager && window.dataManager.filterByCategory) {
+                window.dataManager.filterByCategory(params.category);
+                console.log('🔄 dataManager로 카테고리 필터링 실행');
             }
         }
     } else {
-        console.error('카테고리 파라미터가 없거나 loadCategoryView 함수가 없습니다');
+        console.warn('⚠️ 카테고리 파라미터가 없습니다, 전체 카테고리 표시');
+        // 전체 카테고리 목록 표시
+        if (typeof window.loadAllCategories === 'function') {
+            window.loadAllCategories();
+        }
     }
 });
 

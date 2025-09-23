@@ -281,7 +281,7 @@ class DataManager {
                         console.log('✅ HERITAGE_DATA 변수 확인:', HERITAGE_DATA.length, '개 항목');
                         
                         // 데이터 변환
-                        this.heritageData = HERITAGE_DATA.map((row, index) => {
+                        const rawData = HERITAGE_DATA.map((row, index) => {
                             // 이미지 URL 처리
                             let imageUrl = '';
                             if (row.imageUrl && row.imageUrl.trim() !== '') {
@@ -325,6 +325,9 @@ class DataManager {
                                 }
                             };
                         }).filter(item => item.name && item.name.trim() !== '');
+                        
+                        // 데이터 검증 및 정제
+                        this.heritageData = this.processLoadedData(rawData);
                         
                         console.log('✅ 대용량 데이터 변환 완료:', this.heritageData.length, '개 항목');
                         resolve(this.heritageData);
@@ -374,7 +377,7 @@ class DataManager {
         console.log('CSV 파싱 완료:', parseResult.data.length, '행');
         
         // 데이터 변환
-        this.heritageData = parseResult.data.map((row, index) => {
+        const rawData = parseResult.data.map((row, index) => {
             // 이미지 URL 처리
             let imageUrl = '';
             if (row.imageUrl && row.imageUrl.trim() !== '') {
@@ -419,6 +422,9 @@ class DataManager {
             };
         }).filter(item => item.name && item.name.trim() !== ''); // 빈 이름 제거
         
+        // 데이터 검증 및 정제
+        this.heritageData = this.processLoadedData(rawData);
+        
         console.log('자동 CSV 데이터 변환 완료:', this.heritageData.length, '개 항목');
         
         // 영어 설명 자동 생성
@@ -457,7 +463,7 @@ class DataManager {
             console.log('CSV 파싱 완료:', parseResult.data.length, '행');
             
             // 데이터 변환
-            this.heritageData = parseResult.data.map((row, index) => {
+            const rawData = parseResult.data.map((row, index) => {
                 // 이미지 URL 처리
                 let imageUrl = '';
                 if (row.imageUrl && row.imageUrl.trim() !== '') {
@@ -501,6 +507,9 @@ class DataManager {
                     }
                 };
             }).filter(item => item.name && item.name.trim() !== ''); // 빈 이름 제거
+            
+            // 데이터 검증 및 정제
+            this.heritageData = this.processLoadedData(rawData);
             
             console.log('데이터 변환 완료:', this.heritageData.length, '개 항목');
             
@@ -1413,6 +1422,58 @@ class DataManager {
         }
 
         return generatedCount;
+    }
+    
+    /**
+     * 데이터 검증 함수 - 안전한 데이터 처리
+     */
+    validateHeritageData(data) {
+        if (!Array.isArray(data)) {
+            console.error('❌ 데이터가 배열이 아닙니다:', typeof data);
+            return [];
+        }
+        
+        return data.map((item, index) => {
+            // 필수 필드 검증 및 기본값 설정
+            const validatedItem = {
+                ...item,
+                name: item.name || `무명 문화재 ${index + 1}`,
+                content: item.content || '',
+                english_description: String(item.english_description || ''),
+                kdcd_name: item.kdcd_name || '미분류',
+                ctcd_name: item.ctcd_name || '미지정',
+                imageUrl: item.imageUrl || '',
+                longitude: parseFloat(item.longitude) || 0,
+                latitude: parseFloat(item.latitude) || 0
+            };
+            
+            // english_description이 문자열이 아닌 경우 처리
+            if (typeof validatedItem.english_description !== 'string') {
+                validatedItem.english_description = String(validatedItem.english_description || '');
+            }
+            
+            return validatedItem;
+        });
+    }
+    
+    /**
+     * 데이터 로딩 시 검증 추가
+     */
+    processLoadedData(rawData) {
+        console.log('🔍 데이터 검증 시작...');
+        
+        // 데이터 검증 및 정제
+        const validatedData = this.validateHeritageData(rawData);
+        
+        // 검증 결과 로그
+        const totalItems = validatedData.length;
+        const withEnglish = validatedData.filter(item => 
+            item.english_description && String(item.english_description).trim() !== ''
+        ).length;
+        
+        console.log(`✅ 데이터 검증 완료: ${totalItems}개 항목, 영어 번역 ${withEnglish}개`);
+        
+        return validatedData;
     }
 }
 

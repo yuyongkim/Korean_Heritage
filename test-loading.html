@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로딩 테스트</title>
+</head>
+<body>
+    <h1>한국 문화재 디지털 아카이브 - 로딩 테스트</h1>
+    <div id="status">로딩 중...</div>
+    <div id="data-info"></div>
+    
+    <!-- 문화재 데이터 로드 -->
+    <script src="js/heritage-data.js"></script>
+    
+    <script>
+        console.log('테스트 시작...');
+        
+        // HERITAGE_DATA 확인
+        if (typeof HERITAGE_DATA !== 'undefined') {
+            console.log('✅ HERITAGE_DATA 로드 성공:', HERITAGE_DATA.length, '개 항목');
+            document.getElementById('status').innerHTML = '✅ 데이터 로드 성공!';
+            document.getElementById('data-info').innerHTML = `
+                <h3>데이터 정보:</h3>
+                <p>총 항목 수: ${HERITAGE_DATA.length}개</p>
+                <p>첫 번째 항목: ${HERITAGE_DATA[0]?.name || '없음'}</p>
+                <p>마지막 항목: ${HERITAGE_DATA[HERITAGE_DATA.length-1]?.name || '없음'}</p>
+            `;
+        } else {
+            console.error('❌ HERITAGE_DATA 로드 실패');
+            document.getElementById('status').innerHTML = '❌ 데이터 로드 실패!';
+        }
+        
+        // 데이터 매니저 테스트
+        setTimeout(() => {
+            if (typeof DataManager !== 'undefined') {
+                console.log('✅ DataManager 클래스 사용 가능');
+                const dm = new DataManager();
+                dm.loadData().then(() => {
+                    console.log('✅ DataManager 로드 성공:', dm.heritageData.length, '개 항목');
+                }).catch(error => {
+                    console.error('❌ DataManager 로드 실패:', error);
+                });
+            } else {
+                console.error('❌ DataManager 클래스 없음');
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

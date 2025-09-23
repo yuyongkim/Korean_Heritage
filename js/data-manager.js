@@ -52,58 +52,12 @@ class DataManager {
         
         console.log('🔄 데이터 로드 시작...');
         
-        // 방법 1: JavaScript 데이터 로드 시도 (최우선)
+        // 방법 1: 대용량 JavaScript 데이터 로드 시도 (최우선)
         try {
-            console.log('방법 1: JavaScript 데이터 로드 시도');
-            if (typeof HERITAGE_DATA !== 'undefined' && Array.isArray(HERITAGE_DATA) && HERITAGE_DATA.length > 0) {
-                const jsData = HERITAGE_DATA;
-                // JavaScript 데이터를 내부 형식으로 변환
-                this.heritageData = jsData.map((row, index) => {
-                    // 이미지 URL 처리
-                    let imageUrl = '';
-                    if (row.imageUrl && row.imageUrl.trim() !== '') {
-                        imageUrl = row.imageUrl.trim();
-                        // URL이 상대 경로인 경우 절대 경로로 변환
-                        if (imageUrl.startsWith('/')) {
-                            imageUrl = 'http://www.khs.go.kr' + imageUrl;
-                        }
-                    }
-                    
-                    return {
-                        id: index + 1,
-                        name: row.name || '',
-                        category: row.kdcd_name || '',
-                        location: row.ctcd_name || '',
-                        korean_description: row.content || '',
-                        english_description: row.content_en || '', // 번역된 영어 설명 사용
-                        source_url: '', // 현재 CSV에는 출처 URL이 없음
-                        period: '', // 현재 CSV에는 시대 정보가 없음
-                        designation_no: row.key_asno ? `지정번호: ${row.key_asno}` : '',
-                        image_url: imageUrl,
-                        coords: (row.longitude && row.latitude) ? {
-                            lat: parseFloat(row.latitude),
-                            lng: parseFloat(row.longitude)
-                        } : null,
-                        // 4축 필터링을 위한 필드들 추가
-                        kdcd_name: row.kdcd_name || '',
-                        ctcd_name: row.ctcd_name || '',
-                        key_kdcd: row.key_kdcd || '',
-                        key_ctcd: row.key_ctcd || '',
-                        content: row.content || '',
-                        // 원본 데이터 보존
-                        original_data: {
-                            key_asno: row.key_asno,
-                            key_kdcd: row.key_kdcd,
-                            key_ctcd: row.key_ctcd,
-                            composite_key: row.composite_key,
-                            has_image: row.has_image === 'True',
-                            content_length: parseInt(row.content_length) || 0,
-                            original_image_url: row.imageUrl || ''
-                        }
-                    };
-                }).filter(item => item.name && item.name.trim() !== ''); // 빈 이름 제거
-                
-                console.log('✅ JavaScript 데이터 로드 성공:', this.heritageData.length, '개 항목');
+            console.log('방법 1: 대용량 JavaScript 데이터 로드 시도');
+            await this.loadLargeHeritageData();
+            if (this.heritageData && this.heritageData.length > 0) {
+                console.log('✅ 대용량 JavaScript 데이터 로드 성공:', this.heritageData.length, '개 항목');
                 
                 // JavaScript 데이터를 대용량 저장소에 저장
                 await this.saveData();
@@ -278,6 +232,86 @@ class DataManager {
         }
     }
     
+    /**
+     * 대용량 JavaScript 데이터 로드
+     */
+    async loadLargeHeritageData() {
+        try {
+            console.log('대용량 JavaScript 데이터 로드 시작...');
+            
+            // 동적으로 스크립트 로드
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = 'js/heritage-data-complete-20250917_031007.js';
+                script.onload = () => {
+                    console.log('✅ 대용량 JavaScript 파일 로드 완료');
+                    if (typeof HERITAGE_DATA !== 'undefined' && Array.isArray(HERITAGE_DATA)) {
+                        console.log('✅ HERITAGE_DATA 변수 확인:', HERITAGE_DATA.length, '개 항목');
+                        
+                        // 데이터 변환
+                        this.heritageData = HERITAGE_DATA.map((row, index) => {
+                            // 이미지 URL 처리
+                            let imageUrl = '';
+                            if (row.imageUrl && row.imageUrl.trim() !== '') {
+                                imageUrl = row.imageUrl.trim();
+                                // URL이 상대 경로인 경우 절대 경로로 변환
+                                if (imageUrl.startsWith('/')) {
+                                    imageUrl = 'http://www.khs.go.kr' + imageUrl;
+                                }
+                            }
+                            
+                            return {
+                                id: index + 1,
+                                name: row.name || '',
+                                category: row.kdcd_name || '',
+                                location: row.ctcd_name || '',
+                                korean_description: row.content || '',
+                                english_description: row.content_en || '',
+                                source_url: '',
+                                period: '',
+                                designation_no: row.key_asno ? `지정번호: ${row.key_asno}` : '',
+                                image_url: imageUrl,
+                                coords: (row.longitude && row.latitude) ? {
+                                    lat: parseFloat(row.latitude),
+                                    lng: parseFloat(row.longitude)
+                                } : null,
+                                // 4축 필터링을 위한 필드들 추가
+                                kdcd_name: row.kdcd_name || '',
+                                ctcd_name: row.ctcd_name || '',
+                                key_kdcd: row.key_kdcd || '',
+                                key_ctcd: row.key_ctcd || '',
+                                content: row.content || '',
+                                // 원본 데이터 보존
+                                original_data: {
+                                    key_asno: row.key_asno,
+                                    key_kdcd: row.key_kdcd,
+                                    key_ctcd: row.key_ctcd,
+                                    composite_key: row.composite_key,
+                                    has_image: row.has_image === 'True',
+                                    content_length: parseInt(row.content_length) || 0,
+                                    original_image_url: row.imageUrl || ''
+                                }
+                            };
+                        }).filter(item => item.name && item.name.trim() !== '');
+                        
+                        console.log('✅ 대용량 데이터 변환 완료:', this.heritageData.length, '개 항목');
+                        resolve(this.heritageData);
+                    } else {
+                        reject(new Error('HERITAGE_DATA 변수를 찾을 수 없습니다'));
+                    }
+                };
+                script.onerror = () => {
+                    console.error('❌ 대용량 JavaScript 파일 로드 실패');
+                    reject(new Error('대용량 JavaScript 파일 로드 실패'));
+                };
+                document.head.appendChild(script);
+            });
+        } catch (error) {
+            console.error('대용량 데이터 로드 오류:', error);
+            throw error;
+        }
+    }
+
     /**
      * 자동 CSV 로드 (data/heritage_master.csv)
      */

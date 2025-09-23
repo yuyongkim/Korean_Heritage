@@ -402,9 +402,24 @@ function toggleViewMode(mode) {
  */
 function loadHeritageList(searchQuery = '') {
     // 🚨 중요: 데이터 매니저 로딩 상태 확인
+    if (!dataManager) {
+        console.error('데이터 매니저가 초기화되지 않았습니다');
+        return;
+    }
+    
     if (dataManager.isLoading) {
         console.log('데이터 매니저가 로딩 중입니다. 잠시 후 다시 시도합니다.');
         setTimeout(() => loadHeritageList(searchQuery), 500);
+        return;
+    }
+    
+    if (!dataManager.isLoaded) {
+        console.log('데이터가 아직 로딩되지 않았습니다. 데이터 로딩 완료를 기다립니다...');
+        // 데이터 로딩 완료를 기다리는 이벤트 리스너 등록
+        dataManager.addEventListener('dataLoaded', () => {
+            console.log('데이터 로딩 완료, 문화재 목록 로드 재시도');
+            loadHeritageList(searchQuery);
+        });
         return;
     }
     
@@ -998,9 +1013,19 @@ function loadCategoryView(category) {
     currentCategoryName = category;
     currentCategoryPage = 1;
     
-    // 데이터 매니저 확인
-    if (!dataManager || !dataManager.isLoaded) {
-        console.error('데이터 매니저가 로드되지 않았습니다');
+    // 데이터 매니저 확인 및 대기 메커니즘
+    if (!dataManager) {
+        console.error('데이터 매니저가 초기화되지 않았습니다');
+        return;
+    }
+    
+    if (!dataManager.isLoaded) {
+        console.log('데이터가 아직 로딩 중입니다. 잠시 후 다시 시도합니다...');
+        // 데이터 로딩 완료를 기다리는 이벤트 리스너 등록
+        dataManager.addEventListener('dataLoaded', () => {
+            console.log('데이터 로딩 완료, 카테고리 뷰 재시도');
+            loadCategoryView(category);
+        });
         return;
     }
     

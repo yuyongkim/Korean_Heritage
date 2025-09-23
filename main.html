@@ -4,16 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>한국 문화유산 위키 시스템</title>
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;500;700&family=Inter:wght@400;500;600&family=Crimson+Text:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
-    
-    <!-- Kakao Maps API -->
-    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=f3b94f450409b9b743b3932047bdbe4b"></script>
 </head>
 <body>
     <!-- 사이드바 네비게이션 -->
@@ -45,6 +39,13 @@
                 <div class="position-relative">
                     <input type="text" id="globalSearch" class="form-control" data-i18n-placeholder="search.placeholder" placeholder="문화재 검색...">
                     <i class="fas fa-search search-icon"></i>
+                </div>
+                <!-- 검색 옵션 선택 -->
+                <div class="search-options mt-2">
+                    <select id="searchOption" class="form-select form-select-sm">
+                        <option value="title">제목만 검색</option>
+                        <option value="title+description" selected>제목 + 상세 설명</option>
+                    </select>
                 </div>
             </div>
             
@@ -84,55 +85,32 @@
                         <li><a href="#category/천연기념물" class="submenu-link">
                             <i class="fas fa-seedling heritage-icon-natural"></i><span data-i18n="category.natural">천연기념물</span>
                         </a></li>
-                        <li><a href="#category/국가무형문화재" class="submenu-link">
-                            <i class="fas fa-masks-theater heritage-icon-intangible"></i><span data-i18n="category.intangible">국가무형문화재</span>
+                    </ul>
+                </li>
+
+                <!-- 미분류 항목 메뉴 -->
+                <li class="menu-item">
+                    <div class="menu-label">
+                        <i class="fas fa-question-circle"></i>
+                        <span>미분류 항목</span>
+                    </div>
+                    <ul class="submenu">
+                        <li><a href="#unclassified/sido-type" class="submenu-link">
+                            <i class="fas fa-landmark"></i><span>시도유형문화재</span>
+                            <span class="badge bg-primary ms-2" id="sido-type-count">로딩 중...</span>
                         </a></li>
-                        <li><a href="#category/국가민속문화재" class="submenu-link">
-                            <i class="fas fa-home heritage-icon-folk"></i><span data-i18n="category.folk">국가민속문화재</span>
+                        <li><a href="#unclassified/sido-folklore" class="submenu-link">
+                            <i class="fas fa-theater-masks"></i><span>시도민속문화재</span>
+                            <span class="badge bg-primary ms-2" id="sido-folklore-count">로딩 중...</span>
                         </a></li>
-                        
-                        <!-- 미분류 카테고리 토글 -->
-                        <li class="submenu-toggle">
-                            <a href="#" class="submenu-link" onclick="toggleSubmenu('unclassified-menu'); return false;">
-                                <span>📁 미분류 항목</span>
-                                <i class="fas fa-chevron-down toggle-icon"></i>
-                            </a>
-                            <ul id="unclassified-menu" class="submenu submenu-collapsed">
-                                <li><a href="#category/미분류-사찰" class="submenu-link">
-                                    <span>🏛️ 사찰</span>
-                                </a></li>
-                                <li><a href="#category/미분류-고분" class="submenu-link">
-                                    <span>⚰️ 고분</span>
-                                </a></li>
-                                <li><a href="#category/미분류-성곽" class="submenu-link">
-                                    <span>🏰 성곽</span>
-                                </a></li>
-                                <li><a href="#category/미분류-탑" class="submenu-link">
-                                    <span>🗼 탑</span>
-                                </a></li>
-                                <li><a href="#category/미분류-불상" class="submenu-link">
-                                    <span>🙏 불상</span>
-                                </a></li>
-                                <li><a href="#category/미분류-기와" class="submenu-link">
-                                    <span>🧱 기와</span>
-                                </a></li>
-                                <li><a href="#category/미분류-도자기" class="submenu-link">
-                                    <span>🏺 도자기</span>
-                                </a></li>
-                                <li><a href="#category/미분류-서적" class="submenu-link">
-                                    <span>📚 서적</span>
-                                </a></li>
-                                <li><a href="#category/미분류-회화" class="submenu-link">
-                                    <span>🎨 회화</span>
-                                </a></li>
-                                <li><a href="#category/미분류-공예" class="submenu-link">
-                                    <span>🔨 공예</span>
-                                </a></li>
-                                <li><a href="#category/미분류-기타" class="submenu-link">
-                                    <span>📦 기타</span>
-                                </a></li>
-                            </ul>
-                        </li>
+                        <li><a href="#unclassified/cultural-data" class="submenu-link">
+                            <i class="fas fa-book"></i><span>문화재자료</span>
+                            <span class="badge bg-primary ms-2" id="cultural-data-count">로딩 중...</span>
+                        </a></li>
+                        <li><a href="#unclassified/others" class="submenu-link">
+                            <i class="fas fa-ellipsis-h"></i><span>기타 미분류</span>
+                            <span class="badge bg-warning text-dark ms-2" id="others-count">로딩 중...</span>
+                        </a></li>
                     </ul>
                 </li>
             </ul>
@@ -142,11 +120,11 @@
                 <h6 class="stats-title">현재 통계</h6>
                 <div class="stats-grid">
                     <div class="stat-item">
-                        <div class="stat-number" id="sidebar-total">-</div>
+                        <div class="stat-number" id="sidebar-total">로딩 중...</div>
                         <div class="stat-label">총 문화재</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-number" id="sidebar-translation-rate">-</div>
+                        <div class="stat-number">87%</div>
                         <div class="stat-label">번역률</div>
                     </div>
                 </div>
@@ -190,25 +168,25 @@
                     <div class="row justify-content-center">
                         <div class="col-auto">
                             <div class="stat-item">
-                                <div class="stat-number" id="hero-total-count">-</div>
+                                <div class="stat-number">11,247</div>
                                 <div class="stat-label">총 문화유산</div>
                             </div>
                         </div>
                         <div class="col-auto">
                             <div class="stat-item">
-                                <div class="stat-number" id="hero-translation-count">-</div>
+                                <div class="stat-number">87.3%</div>
                                 <div class="stat-label">AI 번역 완료</div>
                             </div>
                         </div>
                         <div class="col-auto">
                             <div class="stat-item">
-                                <div class="stat-number" id="hero-comet-score">-</div>
+                                <div class="stat-number">0.742</div>
                                 <div class="stat-label">평균 COMET 점수</div>
                             </div>
                         </div>
                         <div class="col-auto">
                             <div class="stat-item">
-                                <div class="stat-number" id="hero-language-count">-</div>
+                                <div class="stat-number">2</div>
                                 <div class="stat-label">지원 언어</div>
                             </div>
                         </div>
@@ -226,7 +204,7 @@
                                     <p class="explore-description">최고 등급의 문화재<br>Supreme Cultural Properties</p>
                                     <div class="explore-stats">
                                         <span class="badge heritage-badge-national">최상급</span>
-                                        <small class="text-muted ms-2" id="explore-national-count">0건</small>
+                                        <small class="text-muted ms-2" id="explore-national-count">로딩 중...</small>
                                     </div>
                                 </div>
                             </div>
@@ -241,7 +219,7 @@
                                     <p class="explore-description">국가지정문화재<br>State-designated Heritage</p>
                                     <div class="explore-stats">
                                         <span class="badge heritage-badge-treasure">문화재</span>
-                                        <small class="text-muted ms-2" id="explore-treasure-count">0건</small>
+                                        <small class="text-muted ms-2" id="explore-treasure-count">로딩 중...</small>
                                     </div>
                                 </div>
                             </div>
@@ -256,7 +234,7 @@
                                     <p class="explore-description">역사적 장소와 유적<br>Historical Places & Sites</p>
                                     <div class="explore-stats">
                                         <span class="badge heritage-badge-historic">유적</span>
-                                        <small class="text-muted ms-2" id="explore-historic-count">0건</small>
+                                        <small class="text-muted ms-2" id="explore-historic-count">로딩 중...</small>
                                     </div>
                                 </div>
                             </div>
@@ -271,7 +249,7 @@
                                     <p class="explore-description">아름다운 경치의 명소<br>Beautiful Scenic Places</p>
                                     <div class="explore-stats">
                                         <span class="badge heritage-badge-scenic">명소</span>
-                                        <small class="text-muted ms-2" id="explore-scenic-count">0건</small>
+                                        <small class="text-muted ms-2" id="explore-scenic-count">로딩 중...</small>
                                     </div>
                                 </div>
                             </div>
@@ -286,7 +264,7 @@
                                     <p class="explore-description">자연 유산과 생물<br>Natural Heritage & Creatures</p>
                                     <div class="explore-stats">
                                         <span class="badge heritage-badge-natural">자연</span>
-                                        <small class="text-muted ms-2" id="explore-natural-count">0건</small>
+                                        <small class="text-muted ms-2" id="explore-natural-count">로딩 중...</small>
                                     </div>
                                 </div>
                             </div>
@@ -301,7 +279,7 @@
                                     <p class="explore-description">전통 기능과 예술<br>Traditional Skills & Arts</p>
                                     <div class="explore-stats">
                                         <span class="badge heritage-badge-intangible">무형</span>
-                                        <small class="text-muted ms-2" id="explore-intangible-count">0건</small>
+                                        <small class="text-muted ms-2" id="explore-intangible-count">로딩 중...</small>
                                     </div>
                                 </div>
                             </div>
@@ -326,7 +304,7 @@
                                     <div class="stat-icon mb-3">
                                         <i class="fas fa-landmark"></i>
                                     </div>
-                                    <h4 id="total-count" class="stat-number">-</h4>
+                                    <h4 id="total-count" class="stat-number">로딩 중...</h4>
                                     <p class="stat-label">총 문화재</p>
                                     <small class="stat-description">국가지정문화재 전체</small>
                                 </div>
@@ -338,10 +316,10 @@
                                     <div class="stat-icon mb-3">
                                         <i class="fas fa-language"></i>
                                     </div>
-                                    <h4 class="stat-number" id="translation-percentage">-</h4>
+                                    <h4 class="stat-number">87.3%</h4>
                                     <p class="stat-label">번역 완료율</p>
                                     <div class="progress mt-2">
-                                        <div class="progress-bar" id="translation-progress" style="width: 0%"></div>
+                                        <div class="progress-bar" style="width: 87.3%"></div>
                                     </div>
                                 </div>
                             </div>
@@ -352,7 +330,7 @@
                                     <div class="stat-icon mb-3">
                                         <i class="fas fa-robot"></i>
                                     </div>
-                                    <h4 class="stat-number" id="comet-score">-</h4>
+                                    <h4 class="stat-number">0.742</h4>
                                     <p class="stat-label">평균 COMET 점수</p>
                                     <small class="stat-description">AI 번역 품질 지수</small>
                                 </div>
@@ -364,7 +342,7 @@
                                     <div class="stat-icon mb-3">
                                         <i class="fas fa-map-marked-alt"></i>
                                     </div>
-                                    <h4 id="location-count" class="stat-number">-</h4>
+                                    <h4 id="location-count" class="stat-number">로딩 중...</h4>
                                     <p class="stat-label">커버 지역</p>
                                     <small class="stat-description">전국 17개 광역시도</small>
                                 </div>
@@ -387,7 +365,7 @@
                                                     <i class="fas fa-crown"></i>
                                                 </div>
                                                 <div class="category-info">
-                                                    <div class="category-count" id="national-count">-</div>
+                                                    <div class="category-count" id="national-count">로딩 중...</div>
                                                     <div class="category-name">국보</div>
                                                 </div>
                                             </div>
@@ -398,7 +376,7 @@
                                                     <i class="fas fa-gem"></i>
                                                 </div>
                                                 <div class="category-info">
-                                                    <div class="category-count" id="treasure-count">-</div>
+                                                    <div class="category-count" id="treasure-count">로딩 중...</div>
                                                     <div class="category-name">보물</div>
                                                 </div>
                                             </div>
@@ -409,7 +387,7 @@
                                                     <i class="fas fa-mountain"></i>
                                                 </div>
                                                 <div class="category-info">
-                                                    <div class="category-count" id="site-count">-</div>
+                                                    <div class="category-count" id="site-count">로딩 중...</div>
                                                     <div class="category-name">사적·명승</div>
                                                 </div>
                                             </div>
@@ -420,7 +398,7 @@
                                                     <i class="fas fa-tree"></i>
                                                 </div>
                                                 <div class="category-info">
-                                                    <div class="category-count" id="natural-count">-</div>
+                                                    <div class="category-count" id="natural-count">로딩 중...</div>
                                                     <div class="category-name">천연기념물</div>
                                                 </div>
                                             </div>
@@ -472,7 +450,7 @@
         <!-- 목록 뷰 -->
         <div id="list-view" class="view" style="display: none;">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2 id="results-title">📋 문화재 목록 (0개)</h2>
+                <h2>문화재 목록</h2>
                 <div class="d-flex gap-2">
                     <!-- 뷰 모드 전환 버튼 -->
                     <div class="btn-group" role="group" aria-label="뷰 모드 선택">
@@ -498,91 +476,6 @@
                     <button class="btn btn-outline-secondary btn-sm" onclick="resetFilters()">
                         <i class="fas fa-undo"></i> 초기화
                     </button>
-                </div>
-            </div>
-            
-            <!-- 4축 필터링 시스템 -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-filter me-2"></i>4축 필터링 시스템
-                        <small class="text-muted ms-2">총 <span id="total-heritage-count">0</span>개 문화재</small>
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <!-- 축 1: 지정 권한 -->
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold">
-                                <i class="fas fa-crown text-warning me-1"></i>지정 권한
-                            </label>
-                            <select id="authority-filter" class="form-select form-select-sm">
-                                <option value="">모든 권한</option>
-                                <option value="국가지정">국가지정</option>
-                                <option value="시도지정">시도지정</option>
-                                <option value="기타지정">기타지정</option>
-                            </select>
-                        </div>
-                        
-                        <!-- 축 2: 지역 분포 -->
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold">
-                                <i class="fas fa-map-marker-alt text-danger me-1"></i>지역 분포
-                            </label>
-                            <select id="region-group-filter" class="form-select form-select-sm">
-                                <option value="">모든 권역</option>
-                                <option value="수도권">수도권</option>
-                                <option value="영남권">영남권</option>
-                                <option value="호남권">호남권</option>
-                                <option value="충청권">충청권</option>
-                                <option value="강원권">강원권</option>
-                                <option value="제주권">제주권</option>
-                            </select>
-                        </div>
-                        
-                        <!-- 축 3: 데이터 품질 -->
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold">
-                                <i class="fas fa-star text-success me-1"></i>데이터 품질
-                            </label>
-                            <select id="quality-filter" class="form-select form-select-sm">
-                                <option value="">모든 품질</option>
-                                <option value="complete">완전한 데이터</option>
-                                <option value="high">고품질 (3점+)</option>
-                                <option value="medium">보통 (2점+)</option>
-                                <option value="basic">기본 (1점+)</option>
-                            </select>
-                        </div>
-                        
-                        <!-- 축 4: 시대 분류 -->
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold">
-                                <i class="fas fa-clock text-info me-1"></i>시대 분류
-                            </label>
-                            <select id="period-filter" class="form-select form-select-sm">
-                                <option value="">모든 시대</option>
-                                <option value="선사시대">선사시대</option>
-                                <option value="삼국시대">삼국시대</option>
-                                <option value="통일신라">통일신라</option>
-                                <option value="고려시대">고려시대</option>
-                                <option value="조선시대">조선시대</option>
-                                <option value="근현대">근현대</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <!-- 필터 결과 요약 -->
-                    <div class="row mt-3">
-                        <div class="col-12">
-                            <div class="alert alert-info py-2 mb-0">
-                                <small>
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    현재 필터: <span id="current-filters">모든 문화재</span> 
-                                    | 결과: <strong id="filtered-count">0</strong>개
-                                </small>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
             
@@ -686,8 +579,8 @@
                             <div id="heritage-location">
                                 <!-- 위치 정보 -->
                             </div>
-                            <div id="heritage-map" class="mt-3" style="height: 300px; width: 300px; border-radius: 8px; margin: 0 auto;">
-                                <!-- 지도가 여기에 동적으로 로드됩니다 -->
+                            <div id="heritage-map" class="mt-3" style="height: 200px; background: #f8f9fa; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #6c757d;">
+                                지도 로딩 중...
                             </div>
                         </div>
                     </div>
@@ -776,6 +669,87 @@
             </nav>
         </div>
 
+        <!-- 미분류 항목 뷰 -->
+        <div id="unclassified-view" class="view" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 id="unclassified-title">미분류 항목</h2>
+                <button class="btn btn-outline-secondary" onclick="goBack()">
+                    <i class="fas fa-arrow-left"></i> 뒤로가기
+                </button>
+            </div>
+            
+            <!-- 미분류 항목 페이지 컨트롤 -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="text-muted">총 <span id="unclassified-count">0</span>건</span>
+                    
+                    <!-- 미분류 타입별 필터 -->
+                    <select id="unclassified-type-filter" class="form-select form-select-sm" style="width: auto;">
+                        <option value="sido-type">시도유형문화재</option>
+                        <option value="sido-folklore">시도민속문화재</option>
+                        <option value="cultural-data">문화재자료</option>
+                        <option value="others">기타 미분류</option>
+                    </select>
+                </div>
+                
+                <div class="d-flex gap-2">
+                    <!-- 뷰 모드 전환 버튼 -->
+                    <div class="btn-group" role="group" aria-label="뷰 모드 선택">
+                        <input type="radio" class="btn-check" name="unclassified-view-mode" id="unclassified-grid-btn" autocomplete="off" checked>
+                        <label class="btn btn-outline-primary btn-sm" for="unclassified-grid-btn" title="그리드 뷰">
+                            <i class="fas fa-th"></i>
+                        </label>
+                        
+                        <input type="radio" class="btn-check" name="unclassified-view-mode" id="unclassified-list-btn" autocomplete="off">
+                        <label class="btn btn-outline-primary btn-sm" for="unclassified-list-btn" title="리스트 뷰">
+                            <i class="fas fa-list"></i>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 미분류 항목 정보 알림 -->
+            <div class="alert alert-info mb-4" role="alert">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>미분류 항목 안내</strong><br>
+                <small>이 항목들은 시도지정문화재나 문화재자료 등으로 분류된 항목들입니다. 
+                각각의 특성에 따라 적절한 관리가 필요합니다.</small>
+            </div>
+            
+            <!-- 그리드 뷰 컨테이너 -->
+            <div id="unclassified-grid" style="display: block;">
+                <!-- 동적으로 생성됨 -->
+            </div>
+            
+            <!-- 리스트 뷰 컨테이너 -->
+            <div id="unclassified-table" style="display: none;">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 100px;">이미지</th>
+                                <th>문화재명</th>
+                                <th>현재 분류</th>
+                                <th>지역</th>
+                                <th>설명</th>
+                                <th style="width: 100px;">상세보기</th>
+                            </tr>
+                        </thead>
+                        <tbody id="unclassified-list-tbody">
+                            <!-- 동적으로 생성됨 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- 미분류 항목 페이지네이션 -->
+            <nav class="mt-4">
+                <ul id="unclassified-pagination" class="pagination justify-content-center">
+                    <!-- 동적으로 생성됨 -->
+                </ul>
+            </nav>
+        </div>
+
 
     </main>
 
@@ -792,18 +766,24 @@
     <!-- CSV 파서 -->
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
     
+    <!-- Leaflet 지도 라이브러리 (API 키 불필요) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js"></script>
+    
+
+
     <!-- 문화재 데이터 (CSV 대신 JavaScript) -->
     <script src="js/heritage-data.js"></script>
     
     <!-- 메인 앱 스크립트 -->
-    <script src="js/indexeddb-manager.js?v=20250122"></script>
-    <script src="js/i18n.js?v=20250122"></script>
-    <script src="js/image-resolver.js?v=20250122"></script>
-    <script src="js/map-manager-simple.js?v=20250122"></script>
-    <script src="js/app.js?v=20250122"></script>
-    <script src="js/router.js?v=20250122"></script>
-    <script src="js/data-manager.js?v=20250122"></script>
-    <script src="js/csv-uploader.js?v=20250122"></script>
-    <script src="js/sidebar.js?v=20250122"></script>
+    <script src="js/indexeddb-manager.js"></script>
+    <script src="js/i18n.js"></script>
+    <script src="js/image-resolver.js"></script>
+    <script src="js/map-manager.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/router.js"></script>
+    <script src="js/data-manager.js"></script>
+    <script src="js/csv-uploader.js"></script>
+    <script src="js/sidebar.js"></script>
 </body>
 </html>

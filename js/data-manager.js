@@ -10,7 +10,38 @@ class DataManager {
         this.isLoaded = false;
         this.currentLanguage = 'ko';
         
+        // 이벤트 시스템 초기화
+        this.eventListeners = {
+            dataLoaded: [],
+            dataUpdated: [],
+            statisticsChanged: []
+        };
+        
         this.setupLanguageToggle();
+    }
+    
+    /**
+     * 이벤트 리스너 추가
+     */
+    addEventListener(event, callback) {
+        if (this.eventListeners[event]) {
+            this.eventListeners[event].push(callback);
+        }
+    }
+    
+    /**
+     * 이벤트 발생
+     */
+    emit(event, data = null) {
+        if (this.eventListeners[event]) {
+            this.eventListeners[event].forEach(callback => {
+                try {
+                    callback(data);
+                } catch (error) {
+                    console.error(`이벤트 리스너 오류 (${event}):`, error);
+                }
+            });
+        }
     }
     
     /**
@@ -24,72 +55,74 @@ class DataManager {
         // 방법 1: JavaScript 데이터 로드 시도 (최우선)
         try {
             console.log('방법 1: JavaScript 데이터 로드 시도');
-            if (typeof getHeritageData === 'function') {
-                const jsData = getHeritageData();
-                if (jsData && Array.isArray(jsData) && jsData.length > 0) {
-                    // JavaScript 데이터를 내부 형식으로 변환
-                    this.heritageData = jsData.map((row, index) => {
-                        // 이미지 URL 처리
-                        let imageUrl = '';
-                        if (row.imageUrl && row.imageUrl.trim() !== '') {
-                            imageUrl = row.imageUrl.trim();
-                            // URL이 상대 경로인 경우 절대 경로로 변환
-                            if (imageUrl.startsWith('/')) {
-                                imageUrl = 'https://www.khs.go.kr' + imageUrl;
-                            }
+            if (typeof HERITAGE_DATA !== 'undefined' && Array.isArray(HERITAGE_DATA) && HERITAGE_DATA.length > 0) {
+                const jsData = HERITAGE_DATA;
+                // JavaScript 데이터를 내부 형식으로 변환
+                this.heritageData = jsData.map((row, index) => {
+                    // 이미지 URL 처리
+                    let imageUrl = '';
+                    if (row.imageUrl && row.imageUrl.trim() !== '') {
+                        imageUrl = row.imageUrl.trim();
+                        // URL이 상대 경로인 경우 절대 경로로 변환
+                        if (imageUrl.startsWith('/')) {
+                            imageUrl = 'http://www.khs.go.kr' + imageUrl;
                         }
-                        
-                        return {
-                            id: index + 1,
-                            name: row.name || '',
-                            category: row.kdcd_name || '',
-                            location: row.ctcd_name || '',
-                            korean_description: row.content || '',
-                            content_en: '', // 현재 CSV에는 영문 설명이 없음
-                            source_url: row.source_url || '', // 원본 CSV의 source_url 사용
-                            period: '', // 현재 CSV에는 시대 정보가 없음
-                            designation_no: row.key_asno ? `지정번호: ${row.key_asno}` : '',
-                            image_url: imageUrl,
-                            coords: (row.longitude && row.latitude) ? {
-                                lat: parseFloat(row.latitude),
-                                lng: parseFloat(row.longitude)
-                            } : null,
-                            // 4축 필터링을 위한 필드들 추가
-                            kdcd_name: row.kdcd_name || '',
-                            ctcd_name: row.ctcd_name || '',
-                            key_kdcd: row.key_kdcd || '',
-                            key_ctcd: row.key_ctcd || '',
-                            content: row.content || '',
-                            // 원본 데이터 보존
-                            original_data: {
-                                key_asno: row.key_asno,
-                                key_kdcd: row.key_kdcd,
-                                key_ctcd: row.key_ctcd,
-                                composite_key: row.composite_key,
-                                has_image: row.has_image === 'True',
-                                content_length: parseInt(row.content_length) || 0,
-                                original_image_url: row.imageUrl || ''
-                            }
-                        };
-                    }).filter(item => item.name && item.name.trim() !== ''); // 빈 이름 제거
-                    
-                    console.log('✅ JavaScript 데이터 로드 성공:', this.heritageData.length, '개 항목');
-                    
-                    // 데이터 샘플 확인
-                    if (this.heritageData.length > 0) {
-                        console.log('📊 데이터 샘플:', {
-                            첫번째: this.heritageData[0],
-                            카테고리분포: this.heritageData.slice(0, 10).map(item => item.kdcd_name || item.category)
-                        });
                     }
                     
-                    // JavaScript 데이터를 대용량 저장소에 저장
-                    await this.saveData();
-                    
-                    this.processData();
-                    this.isLoaded = true;
-                    return this.heritageData;
+                    return {
+                        id: index + 1,
+                        name: row.name || '',
+                        category: row.kdcd_name || '',
+                        location: row.ctcd_name || '',
+                        korean_description: row.content || '',
+                        english_description: row.content_en || '', // 번역된 영어 설명 사용
+                        source_url: '', // 현재 CSV에는 출처 URL이 없음
+                        period: '', // 현재 CSV에는 시대 정보가 없음
+                        designation_no: row.key_asno ? `지정번호: ${row.key_asno}` : '',
+                        image_url: imageUrl,
+                        coords: (row.longitude && row.latitude) ? {
+                            lat: parseFloat(row.latitude),
+                            lng: parseFloat(row.longitude)
+                        } : null,
+                        // 4축 필터링을 위한 필드들 추가
+                        kdcd_name: row.kdcd_name || '',
+                        ctcd_name: row.ctcd_name || '',
+                        key_kdcd: row.key_kdcd || '',
+                        key_ctcd: row.key_ctcd || '',
+                        content: row.content || '',
+                        // 원본 데이터 보존
+                        original_data: {
+                            key_asno: row.key_asno,
+                            key_kdcd: row.key_kdcd,
+                            key_ctcd: row.key_ctcd,
+                            composite_key: row.composite_key,
+                            has_image: row.has_image === 'True',
+                            content_length: parseInt(row.content_length) || 0,
+                            original_image_url: row.imageUrl || ''
+                        }
+                    };
+                }).filter(item => item.name && item.name.trim() !== ''); // 빈 이름 제거
+                
+                console.log('✅ JavaScript 데이터 로드 성공:', this.heritageData.length, '개 항목');
+                
+                // JavaScript 데이터를 대용량 저장소에 저장
+                await this.saveData();
+                
+                this.processData();
+                this.isLoaded = true;
+                
+                // 데이터 로딩 완료 이벤트 발생
+                this.emit('dataLoaded', this.heritageData);
+                
+                // 데이터 로딩 완료 후 대시보드 업데이트
+                if (typeof updateDashboard === 'function') {
+                    updateDashboard();
                 }
+                
+                // 로딩 완료 알림 표시
+                this.showDataLoadedNotification();
+                
+                return this.heritageData;
             }
         } catch (jsError) {
             console.log('JavaScript 데이터 로드 실패, IndexedDB 시도');
@@ -106,6 +139,15 @@ class DataManager {
                     
                     this.processData();
                     this.isLoaded = true;
+                    
+                    // 데이터 로딩 완료 이벤트 발생
+                    this.emit('dataLoaded', this.heritageData);
+                    
+                    // 데이터 로딩 완료 후 대시보드 업데이트
+                    if (typeof updateDashboard === 'function') {
+                        updateDashboard();
+                    }
+                    
                     return this.heritageData;
                 }
             } catch (indexedError) {
@@ -124,6 +166,15 @@ class DataManager {
             
             this.processData();
             this.isLoaded = true;
+            
+            // 데이터 로딩 완료 이벤트 발생
+            this.emit('dataLoaded', this.heritageData);
+            
+            // 데이터 로딩 완료 후 대시보드 업데이트
+            if (typeof updateDashboard === 'function') {
+                updateDashboard();
+            }
+            
             return this.heritageData;
             
         } catch (autoCsvError) {
@@ -158,17 +209,23 @@ class DataManager {
                             
                         } else if (Array.isArray(parsedData) && parsedData.length > 0) {
                             // 기존 형식: [...]
-                    this.heritageData = parsedData;
+                            this.heritageData = parsedData;
                             const backupAge = timestamp ? 
                                 Math.floor((Date.now() - parseInt(timestamp)) / 1000 / 60) : '알 수 없음';
-                    
+                            
                             console.log('✅ 사용자 데이터 로드 성공 (기존 형식):', this.heritageData.length, '개 항목');
-                    console.log('마지막 업데이트:', backupAge, '분 전');
+                            console.log('마지막 업데이트:', backupAge, '분 전');
                         }
-                    
+                        
                         if (this.heritageData && this.heritageData.length > 0) {
                     this.processData();
                     this.isLoaded = true;
+                    
+                    // 데이터 로딩 완료 후 대시보드 업데이트
+                    if (typeof updateDashboard === 'function') {
+                        updateDashboard();
+                    }
+                    
                     return this.heritageData;
                         }
                 }
@@ -189,6 +246,12 @@ class DataManager {
                     
                     this.processData();
                     this.isLoaded = true;
+                    
+                    // 데이터 로딩 완료 후 대시보드 업데이트
+                    if (typeof updateDashboard === 'function') {
+                        updateDashboard();
+                    }
+                    
                     return this.heritageData;
                     
                 } catch (csvError) {
@@ -203,6 +266,12 @@ class DataManager {
             
             this.processData();
             this.isLoaded = true;
+            
+            // 데이터 로딩 완료 후 대시보드 업데이트
+            if (typeof updateDashboard === 'function') {
+                updateDashboard();
+            }
+            
             return this.heritageData;
         }
             }
@@ -246,7 +315,7 @@ class DataManager {
                 imageUrl = row.imageUrl.trim();
                 // URL이 상대 경로인 경우 절대 경로로 변환
                 if (imageUrl.startsWith('/')) {
-                    imageUrl = 'https://www.khs.go.kr' + imageUrl;
+                    imageUrl = 'http://www.khs.go.kr' + imageUrl;
                 }
             }
             
@@ -256,7 +325,7 @@ class DataManager {
                 category: row.kdcd_name || '',
                 location: row.ctcd_name || '',
                 korean_description: row.content || '',
-                content_en: '', // 현재 CSV에는 영문 설명이 없음
+                english_description: row.content_en || '', // 번역된 영어 설명 사용
                 source_url: '', // 현재 CSV에는 출처 URL이 없음
                 period: '', // 현재 CSV에는 시대 정보가 없음
                 designation_no: row.key_asno ? `지정번호: ${row.key_asno}` : '',
@@ -329,7 +398,7 @@ class DataManager {
                     imageUrl = row.imageUrl.trim();
                     // URL이 상대 경로인 경우 절대 경로로 변환
                     if (imageUrl.startsWith('/')) {
-                        imageUrl = 'https://www.khs.go.kr' + imageUrl;
+                        imageUrl = 'http://www.khs.go.kr' + imageUrl;
                     }
                 }
                 
@@ -339,7 +408,7 @@ class DataManager {
                     category: row.kdcd_name || '',
                     location: row.ctcd_name || '',
                     korean_description: row.content || '',
-                    content_en: '', // 현재 CSV에는 영문 설명이 없음
+                    english_description: row.content_en || '', // 번역된 영어 설명 사용
                     source_url: '', // 현재 CSV에는 출처 URL이 없음
                     period: '', // 현재 CSV에는 시대 정보가 없음
                     designation_no: row.key_asno ? `지정번호: ${row.key_asno}` : '',
@@ -501,7 +570,7 @@ class DataManager {
                     image_url: item.image_url,
                     content: item.content ? item.content.substring(0, 50) + '...' : '',
                     korean_description: item.korean_description ? item.korean_description.substring(0, 50) + '...' : '',
-                    content_en: item.content_en ? item.content_en.substring(0, 50) + '...' : '',
+                    english_description: item.english_description ? item.english_description.substring(0, 50) + '...' : '',
                     longitude: item.longitude,
                     latitude: item.latitude
                 }));
@@ -581,8 +650,8 @@ class DataManager {
         `;
         const storageIcon = storageType === 'IndexedDB' ? 'fa-database' : 'fa-hdd';
         const storageMessage = storageType === 'IndexedDB' 
-            ? `${this.heritageData.length}개 항목이 IndexedDB에 대용량 저장되었습니다! 수백MB~GB까지 지원합니다!`
-            : `${this.heritageData.length}개 항목이 로컬 스토리지에 압축 저장되었습니다. 이제 매번 CSV 업로드할 필요가 없습니다!`;
+            ? `${this.heritageData.length}개 항목이 IndexedDB에 대용량 저장되었습니다!<br>수백MB~GB까지 지원합니다!`
+            : `${this.heritageData.length}개 항목이 로컬 스토리지에 압축 저장되었습니다.<br>이제 매번 CSV 업로드할 필요가 없습니다!`;
             
         notification.innerHTML = `
             <i class="fas ${storageIcon} me-2"></i>
@@ -632,6 +701,44 @@ class DataManager {
     }
     
     /**
+     * 데이터 로딩 완료 알림
+     */
+    showDataLoadedNotification() {
+        // 기존 알림 제거
+        const existingNotification = document.querySelector('.data-loaded-notification');
+        if (existingNotification) {
+            existingNotification.remove();
+        }
+        
+        // 새 알림 생성
+        const notification = document.createElement('div');
+        notification.className = 'data-loaded-notification alert alert-info alert-dismissible fade show';
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            min-width: 300px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        `;
+        notification.innerHTML = `
+            <i class="fas fa-database me-2"></i>
+            <strong>데이터 로딩 완료!</strong><br>
+            <small>${this.heritageData.length.toLocaleString()}개의 문화재 데이터가 로딩되었습니다.</small>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // 5초 후 자동 제거
+        setTimeout(() => {
+            if (notification && notification.parentNode) {
+                notification.remove();
+            }
+        }, 5000);
+    }
+    
+    /**
      * 데이터베이스에 문화재 데이터 추가
      */
     async addHeritageData(items) {
@@ -644,7 +751,7 @@ class DataManager {
                     category: item.category,
                     location: item.location,
                     korean_description: item.korean_description,
-                    content_en: item.content_en,
+                    english_description: item.english_description,
                     source_url: item.source_url,
                     period: item.period,
                     designation_no: item.designation_no,
@@ -693,7 +800,7 @@ class DataManager {
                 category: "국보",
                 location: "서울특별시",
                 korean_description: "원각사는 지금의 탑골공원 자리에 있었던 절로, 조선 세조 11년(1465)에 세웠다. 조선시대의 숭유억불정책 속에서도 중요한 사찰로 보호되어 오다가 1504년 연산군이 이 절을 '연방원(聯芳院)'이라는 이름의 기생집으로 만들어 승려들을 내보냄으로써 절은 없어지게 되었다. 이 탑은 조선시대의 석탑으로는 유일한 형태로, 높이는 약 12m이다. 대리석으로 만들어졌으며 탑 구석구석에 표현된 화려한 조각이 대리석의 회백색과 잘 어울려 더욱 아름답게 보인다.",
-                content_en: "Wongaksa Temple whose precincts once housed this stone was established in 1465 at the current location of Tapgol Park in Downtown Seoul. The temple continued to thrive as a state institution even after the adoption of anti-Buddhist policies by the Joseon Dynasty, but was eventually turned into a gisaeng house called Yeonbangwon by King Yeonsangun in 1504. This stone pagoda is unique among those built during the Joseon period, standing about 12 meters tall. Made of marble, the pagoda displays exquisite carvings throughout that harmonize beautifully with the grayish-white color of the marble.",
+                english_description: "Wongaksa Temple whose precincts once housed this stone was established in 1465 at the current location of Tapgol Park in Downtown Seoul. The temple continued to thrive as a state institution even after the adoption of anti-Buddhist policies by the Joseon Dynasty, but was eventually turned into a gisaeng house called Yeonbangwon by King Yeonsangun in 1504. This stone pagoda is unique among those built during the Joseon period, standing about 12 meters tall. Made of marble, the pagoda displays exquisite carvings throughout that harmonize beautifully with the grayish-white color of the marble.",
                 source_url: "http://www.heritage.go.kr/heri/cul/culSelectDetail.do?culPageNo=1&region=1&searchCondition=1&searchKeyword=원각사지&ccbaCpno=2113800860000&ccbaKdcd=11&ccbaCtcd=13",
                 period: "조선시대",
                 designation_no: "국보 제2호",
@@ -706,7 +813,7 @@ class DataManager {
                 category: "국보",
                 location: "전국",
                 korean_description: "훈민정음은 1443년(세종 25) 조선 제4대 왕인 세종이 창제한 우리나라 고유의 문자이다. 세종은 중국 문자를 사용하던 당시의 현실을 안타깝게 여겨, 우리말의 표기에 적합한 문자 체계를 완성하였다. 훈민정음 해례본은 1446년에 간행된 것으로, 새로 만든 28자의 자형과 그 사용법을 자세히 설명하고 있다.",
-                content_en: "Hunminjeongeum is the original name of Hangeul, the Korean alphabet created by King Sejong the Great in 1443. Feeling sorry for the people who could not express their thoughts and feelings in writing due to the difficulty of Chinese characters, King Sejong created an easy writing system suitable for Korean language. The Hunminjeongeum Haerye edition published in 1446 contains detailed explanations of the 28 letters and their usage.",
+                english_description: "Hunminjeongeum is the original name of Hangeul, the Korean alphabet created by King Sejong the Great in 1443. Feeling sorry for the people who could not express their thoughts and feelings in writing due to the difficulty of Chinese characters, King Sejong created an easy writing system suitable for Korean language. The Hunminjeongeum Haerye edition published in 1446 contains detailed explanations of the 28 letters and their usage.",
                 source_url: "http://www.heritage.go.kr/heri/cul/culSelectDetail.do?ccbaCpno=1132970700000",
                 period: "조선시대",
                 designation_no: "국보 제70호",
@@ -719,7 +826,7 @@ class DataManager {
                 category: "보물", 
                 location: "경상북도",
                 korean_description: "불국사 다보탑은 통일신라시대인 751년(경덕왕 10)에 건립된 것으로 추정되는 석탑이다. 높이 10.4m의 이 탑은 독특하고 화려한 장식으로 유명하며, 같은 경내에 있는 석가탑과 대조를 이루고 있다. 다보탑은 『법화경』의 다보여래 신앙을 바탕으로 건립되었으며, 복잡하면서도 아름다운 구조로 통일신라 석탑 예술의 절정을 보여준다.",
-                content_en: "Dabotap Pagoda at Bulguksa Temple is estimated to have been built in 751 during the Unified Silla period. Standing 10.4 meters tall, this pagoda is famous for its unique and ornate decorations, contrasting with the simpler Seokgatap Pagoda in the same temple grounds. Dabotap was built based on the faith of Prabhutaratna Buddha from the Lotus Sutra, showcasing the pinnacle of Unified Silla pagoda art with its complex yet beautiful structure.",
+                english_description: "Dabotap Pagoda at Bulguksa Temple is estimated to have been built in 751 during the Unified Silla period. Standing 10.4 meters tall, this pagoda is famous for its unique and ornate decorations, contrasting with the simpler Seokgatap Pagoda in the same temple grounds. Dabotap was built based on the faith of Prabhutaratna Buddha from the Lotus Sutra, showcasing the pinnacle of Unified Silla pagoda art with its complex yet beautiful structure.",
                 source_url: "http://www.heritage.go.kr/heri/cul/culSelectDetail.do?ccbaCpno=1132020200000",
                 period: "통일신라",
                 designation_no: "보물 제20호",
@@ -732,7 +839,7 @@ class DataManager {
                 category: "사적",
                 location: "경상북도",
                 korean_description: "첨성대는 신라시대의 천문관측대로, 선덕여왕(재위 632~647) 때 건립된 것으로 추정된다. 높이 9.17m의 이 석조 건물은 동양에서 현존하는 가장 오래된 천문대이다. 27단의 석재로 쌓아 올린 원통형 구조물로, 신라인들의 뛰어난 과학 기술과 천문학 지식을 보여주는 귀중한 유산이다.",
-                content_en: "Cheomseongdae is an astronomical observatory from the Silla period, believed to have been built during the reign of Queen Seondeok (632-647). This 9.17-meter-tall stone structure is the oldest existing observatory in East Asia. Built with 27 layers of stone in a cylindrical form, it represents the advanced scientific technology and astronomical knowledge of the Silla people.",
+                english_description: "Cheomseongdae is an astronomical observatory from the Silla period, believed to have been built during the reign of Queen Seondeok (632-647). This 9.17-meter-tall stone structure is the oldest existing observatory in East Asia. Built with 27 layers of stone in a cylindrical form, it represents the advanced scientific technology and astronomical knowledge of the Silla people.",
                 source_url: "http://www.heritage.go.kr/heri/cul/culSelectDetail.do?ccbaCpno=1315400310000",
                 period: "신라시대",
                 designation_no: "사적 제31호",
@@ -745,7 +852,7 @@ class DataManager {
                 category: "명승",
                 location: "제주특별자치도",
                 korean_description: "한라산은 제주도 중앙에 위치한 해발 1,950m의 우리나라 최고봉이다. 화산활동으로 형성된 이 산은 정상에 백록담이라는 분화구호를 가지고 있으며, 고도에 따라 다양한 식생대를 이루고 있다. 아고산대 식물과 고산식물이 분포하여 학술적 가치가 높고, 웅장하고 아름다운 자연경관을 자랑한다.",
-                content_en: "Hallasan Mountain, located in the center of Jeju Island, is South Korea's highest peak at 1,950 meters above sea level. This mountain, formed by volcanic activity, has a crater lake called Baengnokdam at its summit and features diverse vegetation zones according to altitude. It has high academic value due to the distribution of subalpine and alpine plants, and boasts magnificent and beautiful natural scenery.",
+                english_description: "Hallasan Mountain, located in the center of Jeju Island, is South Korea's highest peak at 1,950 meters above sea level. This mountain, formed by volcanic activity, has a crater lake called Baengnokdam at its summit and features diverse vegetation zones according to altitude. It has high academic value due to the distribution of subalpine and alpine plants, and boasts magnificent and beautiful natural scenery.",
                 source_url: "http://www.heritage.go.kr/heri/cul/culSelectDetail.do?ccbaCpno=1572600980000",
                 period: "자연유산",
                 designation_no: "명승 제98호",
@@ -758,7 +865,7 @@ class DataManager {
                 category: "천연기념물",
                 location: "전라남도",
                 korean_description: "진돗개는 진도에서 자연적으로 번식해온 우리나라 토종개로, 충성심이 강하고 영리하여 예로부터 사랑받아 왔다. 주인에 대한 충성심과 귀소본능이 뛰어나며, 사냥개로서의 능력도 우수하다. 모색에 따라 황구(황색)와 백구(흰색)로 나뉘며, 우리나라 고유의 견종으로서의 가치를 인정받고 있다.",
-                content_en: "The Jindo dog is Korea's native breed that has naturally bred on Jindo Island. Known for strong loyalty and intelligence, it has been beloved since ancient times. It excels in loyalty to its master and homing instinct, and also has excellent abilities as a hunting dog. Divided into Hwanggu (yellow) and Baekgu (white) according to coat color, it is recognized for its value as Korea's unique dog breed.",
+                english_description: "The Jindo dog is Korea's native breed that has naturally bred on Jindo Island. Known for strong loyalty and intelligence, it has been beloved since ancient times. It excels in loyalty to its master and homing instinct, and also has excellent abilities as a hunting dog. Divided into Hwanggu (yellow) and Baekgu (white) according to coat color, it is recognized for its value as Korea's unique dog breed.",
                 source_url: "http://www.heritage.go.kr/heri/cul/culSelectDetail.do?ccbaCpno=1472053000000",
                 period: "자연유산",
                 designation_no: "천연기념물 제53호",
@@ -785,13 +892,6 @@ class DataManager {
         
         // 기존 필터 옵션도 업데이트 (호환성)
         this.updateFilterOptions();
-        
-        // 대시보드 업데이트 (데이터 로드 완료 후)
-        if (typeof updateDashboard === 'function') {
-            setTimeout(() => {
-                updateDashboard();
-            }, 100);
-        }
     }
     
     /**
@@ -817,14 +917,25 @@ class DataManager {
     }
     
     /**
-     * 검색 및 필터링 (기본)
+     * 검색 및 필터링
      */
-    search(query = '', categoryFilter = '', locationFilter = '') {
+    search(query = '', categoryFilter = '', locationFilter = '', searchOption = 'title+description') {
         this.filteredData = this.heritageData.filter(item => {
-            const matchesQuery = !query || 
-                item.name.toLowerCase().includes(query.toLowerCase()) ||
-                item.korean_description.toLowerCase().includes(query.toLowerCase()) ||
-                (item.content_en && item.content_en.toLowerCase().includes(query.toLowerCase()));
+            let matchesQuery = true;
+            
+            if (query) {
+                const queryLower = query.toLowerCase();
+                
+                if (searchOption === 'title') {
+                    // 제목만 검색
+                    matchesQuery = item.name.toLowerCase().includes(queryLower);
+                } else if (searchOption === 'title+description') {
+                    // 제목 + 상세 설명 검색
+                    matchesQuery = item.name.toLowerCase().includes(queryLower) ||
+                        item.korean_description.toLowerCase().includes(queryLower) ||
+                        (item.english_description && item.english_description.toLowerCase().includes(queryLower));
+                }
+            }
             
             const matchesCategory = !categoryFilter || item.category === categoryFilter;
             const matchesLocation = !locationFilter || item.location === locationFilter;
@@ -833,184 +944,6 @@ class DataManager {
         });
         
         return this.filteredData;
-    }
-    
-    /**
-     * 4축 필터링 시스템
-     */
-    applyFilters() {
-        const searchTerm = document.getElementById('globalSearch')?.value || '';
-        const categoryFilter = document.getElementById('category-filter')?.value || '';
-        const regionFilter = document.getElementById('location-filter')?.value || '';
-        const authorityFilter = document.getElementById('authority-filter')?.value || '';
-        const regionGroupFilter = document.getElementById('region-group-filter')?.value || '';
-        const qualityFilter = document.getElementById('quality-filter')?.value || '';
-        const periodFilter = document.getElementById('period-filter')?.value || '';
-        
-        console.log('🔍 4축 필터링 적용:', {
-            searchTerm, categoryFilter, regionFilter, authorityFilter, 
-            regionGroupFilter, qualityFilter, periodFilter
-        });
-        
-        this.filteredData = this.heritageData.filter(item => {
-            // 1. 검색어 필터
-            if (searchTerm) {
-                const searchableText = [
-                    item.name, item.kdcd_name || item.category, 
-                    item.ctcd_name || item.location, item.content
-                ].join(' ').toLowerCase();
-                if (!searchableText.includes(searchTerm.toLowerCase())) return false;
-            }
-            
-            // 2. 카테고리 필터 (기존)
-            if (categoryFilter) {
-                const itemCategory = item.kdcd_name || item.category || (item.key_kdcd ? `미분류코드${item.key_kdcd}` : '미분류');
-                if (itemCategory !== categoryFilter) return false;
-            }
-            
-            // 3. 지역 필터 (기존)
-            if (regionFilter) {
-                const itemRegion = item.ctcd_name || item.location || (item.key_ctcd ? `미분류지역${item.key_ctcd}` : '미분류지역');
-                if (itemRegion !== regionFilter) return false;
-            }
-            
-            // 4. 지정 권한 필터 (축 1)
-            if (authorityFilter) {
-                const authorityLevel = this.getAuthorityLevel(item.key_kdcd);
-                if (authorityLevel !== authorityFilter) return false;
-            }
-            
-            // 5. 지역 그룹 필터 (축 2)
-            if (regionGroupFilter) {
-                const regionGroup = this.getRegionGroup(item.key_ctcd);
-                if (regionGroup !== regionGroupFilter) return false;
-            }
-            
-            // 6. 데이터 품질 필터 (축 3)
-            if (qualityFilter) {
-                const qualityScore = this.getDataQualityScore(item);
-                if (!this.matchesQualityFilter(qualityScore, qualityFilter)) return false;
-            }
-            
-            // 7. 시대 분류 필터 (축 4)
-            if (periodFilter) {
-                const period = this.getHistoricalPeriod(item);
-                if (period !== periodFilter) return false;
-            }
-            
-            return true;
-        });
-        
-        // 결과 개수 실시간 업데이트
-        this.updateResultsCount();
-        
-        // 필터 요약 업데이트
-        this.updateFilterSummary();
-        
-        console.log(`✅ 4축 필터링 완료: ${this.filteredData.length}개 결과`);
-        return this.filteredData;
-    }
-    
-    /**
-     * 지정 권한 레벨 계산
-     */
-    getAuthorityLevel(keyKdcd) {
-        if (!keyKdcd) return '미분류';
-        
-        const code = String(keyKdcd);
-        if (['11', '12', '13', '14', '15', '16', '17'].includes(code)) {
-            return '국가지정';
-        } else if (['21', '22', '23', '31'].includes(code)) {
-            return '시도지정';
-        } else if (['79', '80'].includes(code)) {
-            return '기타지정';
-        }
-        return '미분류';
-    }
-    
-    /**
-     * 지역 그룹 계산
-     */
-    getRegionGroup(keyCtcd) {
-        if (!keyCtcd) return '미분류';
-        
-        const code = String(keyCtcd);
-        const regionGroups = {
-            '수도권': ['11', '23', '31'], // 서울, 인천, 경기
-            '영남권': ['21', '22', '26', '37', '38'], // 부산, 대구, 울산, 경북, 경남
-            '호남권': ['24', '35', '36'], // 광주, 전북, 전남
-            '충청권': ['25', '29', '33', '34'], // 대전, 세종, 충북, 충남
-            '강원권': ['32'], // 강원
-            '제주권': ['39'] // 제주
-        };
-        
-        for (const [group, codes] of Object.entries(regionGroups)) {
-            if (codes.includes(code)) return group;
-        }
-        return '기타지역';
-    }
-    
-    /**
-     * 데이터 품질 점수 계산
-     */
-    getDataQualityScore(item) {
-        let score = 0;
-        if (item.content && item.content.trim()) score += 1;
-        if (item.image_url && item.image_url.trim()) score += 1;
-        if (item.content_en && item.content_en.trim()) score += 1;
-        if (item.coords && item.coords.lat && item.coords.lng) score += 1;
-        return score;
-    }
-    
-    /**
-     * 품질 필터 매칭
-     */
-    matchesQualityFilter(score, filter) {
-        switch (filter) {
-            case 'complete': return score >= 4;
-            case 'high': return score >= 3;
-            case 'medium': return score >= 2;
-            case 'basic': return score >= 1;
-            default: return true;
-        }
-    }
-    
-    /**
-     * 시대 분류 계산 (간단한 키워드 기반)
-     */
-    getHistoricalPeriod(item) {
-        const content = (item.content || '').toLowerCase();
-        const name = (item.name || '').toLowerCase();
-        const text = content + ' ' + name;
-        
-        if (text.includes('선사') || text.includes('구석기') || text.includes('신석기')) return '선사시대';
-        if (text.includes('삼국') || text.includes('고구려') || text.includes('백제') || text.includes('신라')) return '삼국시대';
-        if (text.includes('통일신라') || text.includes('신라시대')) return '통일신라';
-        if (text.includes('고려') || text.includes('고려시대')) return '고려시대';
-        if (text.includes('조선') || text.includes('조선시대') || text.includes('세종') || text.includes('이성계')) return '조선시대';
-        if (text.includes('근대') || text.includes('현대') || text.includes('일제') || text.includes('해방')) return '근현대';
-        
-        return '미분류';
-    }
-    
-    /**
-     * 필터 요약 업데이트
-     */
-    updateFilterSummary() {
-        const filters = [];
-        const authorityFilter = document.getElementById('authority-filter')?.value;
-        const regionGroupFilter = document.getElementById('region-group-filter')?.value;
-        const qualityFilter = document.getElementById('quality-filter')?.value;
-        const periodFilter = document.getElementById('period-filter')?.value;
-        
-        if (authorityFilter) filters.push(`지정권한: ${authorityFilter}`);
-        if (regionGroupFilter) filters.push(`지역: ${regionGroupFilter}`);
-        if (qualityFilter) filters.push(`품질: ${qualityFilter}`);
-        if (periodFilter) filters.push(`시대: ${periodFilter}`);
-        
-        const summary = filters.length > 0 ? filters.join(', ') : '모든 문화재';
-        updateElement('current-filters', summary);
-        updateElement('filtered-count', this.filteredData.length.toLocaleString());
     }
     
     /**
@@ -1031,90 +964,41 @@ class DataManager {
      * 카테고리별 문화재 가져오기
      */
     getByCategory(category) {
-        console.log('🔍 카테고리별 검색:', category);
-        
         return this.heritageData.filter(item => {
-            // 미분류 카테고리 처리
-            if (category.startsWith('미분류-')) {
-                const subCategory = category.replace('미분류-', '');
-                
-                // 이름 기반 분류
-                if (item.name && item.name.includes(subCategory)) {
-                    return true;
-                }
-                
-                // 설명 기반 분류
-                const content = (item.content || item.korean_description || '').toLowerCase();
-                if (content.includes(subCategory)) {
-                    return true;
-                }
-                
-                // 키워드 기반 분류
-                const keywords = {
-                    '사찰': ['사찰', '절', '암자', '선원', '정사'],
-                    '고분': ['고분', '무덤', '분묘', '능', '릉'],
-                    '성곽': ['성', '성곽', '성벽', '성터', '산성'],
-                    '탑': ['탑', '석탑', '목탑', '전탑'],
-                    '불상': ['불상', '석불', '목불', '금불'],
-                    '기와': ['기와', '와당', '전', '벽돌'],
-                    '도자기': ['도자기', '자기', '도기', '토기', '청자', '백자'],
-                    '서적': ['서적', '책', '문서', '고문서', '필사본'],
-                    '회화': ['회화', '그림', '화', '도화', '산수화'],
-                    '공예': ['공예', '장식', '금속', '목공', '칠공'],
-                    '기타': ['기타', '미상', '불명']
+            // 우선순위: kdcd_name > category > 코드 기반 매핑
+            let itemCategory = item.kdcd_name || item.category;
+            if (!itemCategory && item.key_kdcd) {
+                const codeMapping = {
+                    '11': '국보', '12': '보물', '13': '사적', '14': '명승',
+                    '15': '천연기념물', '16': '국가무형문화재', '17': '국가민속문화재',
+                    '21': '시도유형문화재', '22': '시도기념물', '23': '시도민속문화재',
+                    '31': '시도무형문화재', '79': '문화재자료', '80': '등록문화재'
                 };
-                
-                if (keywords[subCategory]) {
-                    return keywords[subCategory].some(keyword => 
-                        item.name.includes(keyword) || content.includes(keyword)
-                    );
-                }
-                
-                return false;
+                itemCategory = codeMapping[item.key_kdcd] || `미분류코드${item.key_kdcd}`;
             }
+            if (!itemCategory) itemCategory = '미분류';
             
-            // 일반 카테고리 처리
-            return item.category === category || 
-                   item.kdcd_name === category ||
-                   (item.key_kdcd && this.getCategoryByCode(item.key_kdcd) === category);
+            return itemCategory === category;
         });
-    }
-    
-    /**
-     * 코드로 카테고리명 반환
-     */
-    getCategoryByCode(keyKdcd) {
-        const codeMapping = {
-            '11': '국보', '12': '보물', '13': '사적', '14': '명승',
-            '15': '천연기념물', '16': '국가무형문화재', '17': '국가민속문화재',
-            '21': '시도유형문화재', '22': '시도기념물', '23': '시도민속문화재',
-            '31': '시도무형문화재', '79': '문화재자료', '80': '등록문화재'
-        };
-        return codeMapping[keyKdcd] || '미분류';
     }
     
     /**
      * 통계 정보 가져오기
      */
     getStatistics() {
-        console.log('📊 통계 계산 시작, 총 데이터:', this.heritageData.length);
-        
         const stats = {
             total: this.heritageData.length,
             categories: {},
             locations: new Set()
         };
         
+        console.log('📊 통계 계산 시작, 총 데이터:', this.heritageData.length);
+        
         // 실제 데이터 기반으로 통계 수집
         this.heritageData.forEach(item => {
             // 카테고리 통계 (우선순위: kdcd_name > category > 코드 기반)
-            let category = '미분류';
-            if (item.kdcd_name && item.kdcd_name !== '') {
-                category = item.kdcd_name;
-            } else if (item.category && item.category !== '') {
-                category = item.category;
-            } else if (item.key_kdcd) {
-                // 코드 기반 매핑
+            let category = item.kdcd_name || item.category;
+            if (!category && item.key_kdcd) {
                 const codeMapping = {
                     '11': '국보', '12': '보물', '13': '사적', '14': '명승',
                     '15': '천연기념물', '16': '국가무형문화재', '17': '국가민속문화재',
@@ -1122,63 +1006,31 @@ class DataManager {
                     '31': '시도무형문화재', '79': '문화재자료', '80': '등록문화재'
                 };
                 category = codeMapping[item.key_kdcd] || `미분류코드${item.key_kdcd}`;
-            } else {
-                // 미분류 항목들을 더 세분화
-                if (item.name && item.name.includes('사찰')) {
-                    category = '미분류-사찰';
-                } else if (item.name && item.name.includes('고분')) {
-                    category = '미분류-고분';
-                } else if (item.name && item.name.includes('성')) {
-                    category = '미분류-성곽';
-                } else if (item.name && item.name.includes('탑')) {
-                    category = '미분류-탑';
-                } else if (item.name && item.name.includes('불상')) {
-                    category = '미분류-불상';
-                } else if (item.name && item.name.includes('기와')) {
-                    category = '미분류-기와';
-                } else if (item.name && item.name.includes('도자기')) {
-                    category = '미분류-도자기';
-                } else if (item.name && item.name.includes('서적')) {
-                    category = '미분류-서적';
-                } else if (item.name && item.name.includes('회화')) {
-                    category = '미분류-회화';
-                } else if (item.name && item.name.includes('공예')) {
-                    category = '미분류-공예';
-                } else {
-                    category = '미분류-기타';
-                }
             }
+            if (!category) category = '미분류';
             
             stats.categories[category] = (stats.categories[category] || 0) + 1;
             
-            // 지역 통계 (우선순위: ctcd_name > location > 코드 기반)
-            let location = null;
-            if (item.ctcd_name && item.ctcd_name !== '') {
-                location = item.ctcd_name;
-            } else if (item.location && item.location !== '') {
-                location = item.location;
-            } else if (item.key_ctcd) {
-                // 지역 코드 기반 매핑
+            // 지역 통계
+            let location = item.ctcd_name || item.location;
+            if (!location && item.key_ctcd) {
                 const regionMapping = {
-                    '11': '서울특별시', '21': '부산광역시', '22': '대구광역시', '23': '인천광역시',
-                    '24': '광주광역시', '25': '대전광역시', '26': '울산광역시', '29': '세종특별자치시',
-                    '31': '경기도', '32': '강원특별자치도', '33': '충청북도', '34': '충청남도',
-                    '35': '전북특별자치도', '36': '전라남도', '37': '경상북도', '38': '경상남도',
-                    '39': '제주특별자치도'
+                    '11': '서울특별시', '21': '부산광역시', '22': '대구광역시',
+                    '23': '인천광역시', '24': '광주광역시', '25': '대전광역시',
+                    '26': '울산광역시', '29': '세종특별자치시',
+                    '31': '경기도', '32': '강원특별자치도', '33': '충청북도',
+                    '34': '충청남도', '35': '전북특별자치도', '36': '전라남도',
+                    '37': '경상북도', '38': '경상남도', '39': '제주특별자치도'
                 };
                 location = regionMapping[item.key_ctcd] || `미분류지역${item.key_ctcd}`;
             }
-            
             if (location) {
                 stats.locations.add(location);
             }
         });
         
-        console.log('📊 통계 계산 완료:', {
-            total: stats.total,
-            categories: stats.categories,
-            locationCount: stats.locations.size
-        });
+        console.log('📊 카테고리별 통계:', stats.categories);
+        console.log('📊 지역 수:', stats.locations.size);
         
         return {
             ...stats,
@@ -1270,88 +1122,21 @@ class DataManager {
         }
         
         console.log(`✅ 필터 업데이트 완료: 전체 ${this.heritageData.length}개 데이터`);
-        
-        // 4축 필터링 이벤트 리스너 설정
-        this.setup4AxisFilterListeners();
-    }
-    
-    /**
-     * 4축 필터링 이벤트 리스너 설정
-     */
-    setup4AxisFilterListeners() {
-        console.log('🔧 4축 필터링 이벤트 리스너 설정 중...');
-        
-        // 기존 이벤트 리스너 제거 (중복 방지)
-        const filterElements = [
-            'authority-filter', 'region-group-filter', 'quality-filter', 'period-filter',
-            'category-filter', 'location-filter', 'region-filter'
-        ];
-        
-        filterElements.forEach(id => {
-            const element = document.getElementById(id);
-            if (element) {
-                // 기존 이벤트 리스너 제거
-                element.removeEventListener('change', this.handleFilterChange);
-                // 새 이벤트 리스너 추가
-                element.addEventListener('change', this.handleFilterChange.bind(this));
-                console.log(`✅ ${id} 이벤트 리스너 설정 완료`);
-            }
-        });
-        
-        // 검색어 이벤트 리스너
-        const searchElement = document.getElementById('globalSearch');
-        if (searchElement) {
-            searchElement.removeEventListener('input', this.handleSearchInput);
-            searchElement.addEventListener('input', this.handleSearchInput.bind(this));
-            console.log('✅ 검색어 이벤트 리스너 설정 완료');
-        }
-        
-        console.log('🔧 4축 필터링 이벤트 리스너 설정 완료');
-    }
-    
-    /**
-     * 필터 변경 이벤트 핸들러
-     */
-    handleFilterChange(event) {
-        console.log('🔍 필터 변경:', event.target.id, event.target.value);
-        this.applyFilters();
-    }
-    
-    /**
-     * 검색어 입력 이벤트 핸들러
-     */
-    handleSearchInput(event) {
-        console.log('🔍 검색어 입력:', event.target.value);
-        // 디바운스 적용 (300ms)
-        clearTimeout(this.searchTimeout);
-        this.searchTimeout = setTimeout(() => {
-            this.applyFilters();
-        }, 300);
     }
     
     /**
      * 4축 필터링 적용
      */
     applyFilters() {
-        // 모든 필터 값 수집
         const searchTerm = document.getElementById('globalSearch')?.value?.toLowerCase() || '';
         const categoryFilter = document.getElementById('category-filter')?.value || '';
         const regionFilter = document.getElementById('region-filter')?.value || 
                            document.getElementById('location-filter')?.value || '';
         
-        // 4축 필터링 값들
-        const authorityFilter = document.getElementById('authority-filter')?.value || '';
-        const regionGroupFilter = document.getElementById('region-group-filter')?.value || '';
-        const qualityFilter = document.getElementById('quality-filter')?.value || '';
-        const periodFilter = document.getElementById('period-filter')?.value || '';
-        
-        console.log('🔍 4축 필터 적용:', { 
-            searchTerm, categoryFilter, regionFilter,
-            authorityFilter, regionGroupFilter, qualityFilter, periodFilter
-        });
+        console.log('🔍 필터 적용:', { searchTerm, categoryFilter, regionFilter });
         
         this.filteredData = this.heritageData.filter(item => {
-            // 1. 검색어 필터
+            // 검색어 필터
             if (searchTerm) {
                 const searchableText = [
                     item.name,
@@ -1363,193 +1148,29 @@ class DataManager {
                 if (!searchableText.includes(searchTerm)) return false;
             }
             
-            // 2. 카테고리 필터
+            // 카테고리 필터 (수정된 로직)
             if (categoryFilter) {
                 const itemCategory = item.kdcd_name || item.category || 
                                    (item.key_kdcd ? `미분류코드${item.key_kdcd}` : '미분류');
                 if (itemCategory !== categoryFilter) return false;
             }
             
-            // 3. 지역 필터
+            // 지역 필터 (수정된 로직)
             if (regionFilter) {
                 const itemRegion = item.ctcd_name || item.location || 
                                   (item.key_ctcd ? `미분류지역${item.key_ctcd}` : '미분류지역');
                 if (itemRegion !== regionFilter) return false;
             }
             
-            // 4. 지정 권한 필터
-            if (authorityFilter) {
-                const authority = this.getAuthorityLevel(item.key_kdcd);
-                if (authority !== authorityFilter) return false;
-            }
-            
-            // 5. 지역 그룹 필터
-            if (regionGroupFilter) {
-                const regionGroup = this.getRegionGroup(item.key_ctcd);
-                if (regionGroup !== regionGroupFilter) return false;
-            }
-            
-            // 6. 데이터 품질 필터
-            if (qualityFilter) {
-                const qualityScore = this.getDataQualityScore(item);
-                if (!this.matchesQualityFilter(qualityScore, qualityFilter)) return false;
-            }
-            
-            // 7. 역사적 시대 필터
-            if (periodFilter) {
-                const period = this.getHistoricalPeriod(item);
-                if (period !== periodFilter) return false;
-            }
-            
             return true;
         });
         
-        console.log(`🔍 4축 필터 적용 결과: ${this.filteredData.length}개`);
+        console.log(`🔍 필터 적용 결과: ${this.filteredData.length}개`);
         
         // 결과 개수 실시간 업데이트
         this.updateResultsCount();
         
-        // 필터 요약 업데이트
-        this.updateFilterSummary();
-        
         return this.filteredData;
-    }
-    
-    /**
-     * 지정 권한 레벨 반환
-     */
-    getAuthorityLevel(keyKdcd) {
-        if (!keyKdcd) return '기타지정';
-        
-        const authorityMapping = {
-            '11': '국가지정', '12': '국가지정', '13': '국가지정', '14': '국가지정',
-            '15': '국가지정', '16': '국가지정', '17': '국가지정',
-            '21': '시도지정', '22': '시도지정', '23': '시도지정',
-            '31': '시도지정', '79': '기타지정', '80': '기타지정'
-        };
-        
-        return authorityMapping[keyKdcd] || '기타지정';
-    }
-    
-    /**
-     * 지역 그룹 반환
-     */
-    getRegionGroup(keyCtcd) {
-        if (!keyCtcd) return '기타';
-        
-        const regionGroupMapping = {
-            '11': '수도권', '31': '수도권',  // 서울, 경기
-            '21': '영남권', '22': '영남권', '25': '영남권', '26': '영남권', '37': '영남권', '38': '영남권',  // 부산, 대구, 대전, 울산, 경북, 경남
-            '24': '호남권', '35': '호남권', '36': '호남권',  // 광주, 전북, 전남
-            '23': '충청권', '29': '충청권', '33': '충청권', '34': '충청권',  // 인천, 세종, 충북, 충남
-            '32': '강원권',  // 강원
-            '39': '제주권'   // 제주
-        };
-        
-        return regionGroupMapping[keyCtcd] || '기타';
-    }
-    
-    /**
-     * 데이터 품질 점수 계산
-     */
-    getDataQualityScore(item) {
-        let score = 0;
-        
-        // 기본 정보 (1점)
-        if (item.name && item.name.trim()) score += 1;
-        
-        // 카테고리 정보 (1점)
-        if (item.kdcd_name || item.category) score += 1;
-        
-        // 지역 정보 (1점)
-        if (item.ctcd_name || item.location) score += 1;
-        
-        // 설명 정보 (1점)
-        if (item.content || item.korean_description) score += 1;
-        
-        // 이미지 정보 (1점)
-        if (item.image_url && item.image_url.trim()) score += 1;
-        
-        // 좌표 정보 (1점)
-        if (item.coords && item.coords.lat && item.coords.lng) score += 1;
-        
-        return score;
-    }
-    
-    /**
-     * 품질 필터 매칭 확인
-     */
-    matchesQualityFilter(score, filter) {
-        switch (filter) {
-            case 'complete': return score >= 6;
-            case 'high': return score >= 3;
-            case 'medium': return score >= 2;
-            case 'basic': return score >= 1;
-            default: return true;
-        }
-    }
-    
-    /**
-     * 역사적 시대 반환
-     */
-    getHistoricalPeriod(item) {
-        const name = item.name || '';
-        const description = item.content || item.korean_description || '';
-        const text = (name + ' ' + description).toLowerCase();
-        
-        // 시대별 키워드 매칭
-        if (text.includes('삼국') || text.includes('고구려') || text.includes('백제') || text.includes('신라')) {
-            return '삼국시대';
-        } else if (text.includes('고려') || text.includes('고려시대')) {
-            return '고려시대';
-        } else if (text.includes('조선') || text.includes('조선시대')) {
-            return '조선시대';
-        } else if (text.includes('일제') || text.includes('일본') || text.includes('근대')) {
-            return '근대';
-        } else if (text.includes('현대') || text.includes('현재')) {
-            return '현대';
-        } else {
-            return '시대미상';
-        }
-    }
-    
-    /**
-     * 필터 요약 업데이트
-     */
-    updateFilterSummary() {
-        const summaryElement = document.getElementById('filter-summary');
-        if (!summaryElement) return;
-        
-        const activeFilters = [];
-        
-        // 활성 필터 수집
-        const filters = [
-            { id: 'authority-filter', label: '지정권한' },
-            { id: 'region-group-filter', label: '지역그룹' },
-            { id: 'quality-filter', label: '데이터품질' },
-            { id: 'period-filter', label: '역사적시대' },
-            { id: 'category-filter', label: '카테고리' },
-            { id: 'location-filter', label: '지역' }
-        ];
-        
-        filters.forEach(filter => {
-            const element = document.getElementById(filter.id);
-            if (element && element.value) {
-                activeFilters.push(`${filter.label}: ${element.value}`);
-            }
-        });
-        
-        // 요약 표시
-        if (activeFilters.length > 0) {
-            summaryElement.innerHTML = `
-                <div class="alert alert-info mb-0">
-                    <i class="fas fa-filter me-2"></i>
-                    <strong>활성 필터:</strong> ${activeFilters.join(', ')}
-                </div>
-            `;
-        } else {
-            summaryElement.innerHTML = '';
-        }
     }
     
     /**
@@ -1582,37 +1203,6 @@ class DataManager {
         const countElements = document.querySelectorAll('.results-count, .heritage-count, .total-count');
         countElements.forEach(element => {
             element.textContent = count.toLocaleString();
-        });
-        
-        // 메인 페이지 총 문화재 수 업데이트
-        this.updateMainPageCount();
-    }
-    
-    /**
-     * 메인 페이지 총 문화재 수 업데이트
-     */
-    updateMainPageCount() {
-        const totalCount = this.heritageData.length;
-        console.log('🏠 메인 페이지 총 문화재 수 업데이트:', totalCount);
-        
-        // 여러 가능한 요소 ID들에 대해 업데이트 시도
-        const possibleIds = [
-            'total-heritage-count', 'main-total-count', 'dashboard-total-count',
-            'sidebar-total', 'home-total-count'
-        ];
-        
-        possibleIds.forEach(id => {
-            const element = document.getElementById(id);
-            if (element) {
-                element.textContent = totalCount.toLocaleString();
-                console.log(`✅ ${id} 업데이트: ${totalCount.toLocaleString()}`);
-            }
-        });
-        
-        // 클래스 기반으로도 찾기
-        const totalCountElements = document.querySelectorAll('.total-heritage-count, .main-total-count');
-        totalCountElements.forEach(element => {
-            element.textContent = totalCount.toLocaleString();
         });
     }
     
@@ -1731,8 +1321,8 @@ class DataManager {
         let generatedCount = 0;
         
         this.heritageData.forEach(item => {
-            if (!item.content_en || item.content_en.trim() === '') {
-                item.content_en = this.generateEnglishDescription(item);
+            if (!item.english_description || item.english_description.trim() === '') {
+                item.english_description = this.generateEnglishDescription(item);
                 generatedCount++;
             }
         });

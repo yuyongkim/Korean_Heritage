@@ -28,6 +28,17 @@ console.log('전역 객체들 확인:', {
     // 대시보드 업데이트
     updateDashboard();
     
+    // 데이터 변경 이벤트 리스너 설정
+    dataManager.addEventListener('dataLoaded', (data) => {
+        console.log('📊 데이터 로딩 완료 이벤트 수신:', data.length, '개 항목');
+        updateDashboard();
+    });
+    
+    dataManager.addEventListener('dataUpdated', (data) => {
+        console.log('📊 데이터 업데이트 이벤트 수신');
+        updateDashboard();
+    });
+    
     // 이벤트 리스너 설정
     setupEventListeners();
     
@@ -43,20 +54,34 @@ console.log('전역 객체들 확인:', {
 function setupEventListeners() {
     // 글로벌 검색
     const globalSearch = document.getElementById('globalSearch');
+    const searchOption = document.getElementById('searchOption');
+    
     if (globalSearch) {
         globalSearch.addEventListener('input', debounce((e) => {
             const query = e.target.value.trim();
+            const searchType = searchOption ? searchOption.value : 'title+description';
             if (query) {
-                performGlobalSearch(query);
+                performGlobalSearch(query, searchType);
             }
         }, 300));
         
         globalSearch.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 const query = e.target.value.trim();
+                const searchType = searchOption ? searchOption.value : 'title+description';
                 if (query) {
                     router.navigate(`search/${encodeURIComponent(query)}`);
                 }
+            }
+        });
+    }
+    
+    // 검색 옵션 변경 시 즉시 검색 실행
+    if (searchOption) {
+        searchOption.addEventListener('change', () => {
+            const query = globalSearch ? globalSearch.value.trim() : '';
+            if (query) {
+                performGlobalSearch(query, searchOption.value);
             }
         });
     }
@@ -72,21 +97,6 @@ function setupEventListeners() {
     if (locationFilter) {
         locationFilter.addEventListener('change', applyFilters);
     }
-    
-    // 4축 필터링 이벤트 리스너
-    const authorityFilter = document.getElementById('authority-filter');
-    const regionGroupFilter = document.getElementById('region-group-filter');
-    const qualityFilter = document.getElementById('quality-filter');
-    const periodFilter = document.getElementById('period-filter');
-    
-    [authorityFilter, regionGroupFilter, qualityFilter, periodFilter].forEach(filter => {
-        if (filter) {
-            filter.addEventListener('change', () => {
-                console.log('🔄 4축 필터 변경:', filter.id, filter.value);
-                applyFilters();
-            });
-        }
-    });
     
     // 뷰 모드 전환
     const gridViewBtn = document.getElementById('grid-view-btn');
@@ -111,6 +121,12 @@ function setupEventListeners() {
  * 대시보드 업데이트
  */
 function updateDashboard() {
+    // 데이터가 로딩되지 않았으면 대기
+    if (!dataManager || !dataManager.isLoaded || !dataManager.heritageData || dataManager.heritageData.length === 0) {
+        console.log('📊 데이터가 아직 로딩되지 않음, 대시보드 업데이트 대기');
+        return;
+    }
+    
     const stats = dataManager.getStatistics();
     
     console.log('📊 대시보드 업데이트:', stats);
@@ -125,7 +141,7 @@ function updateDashboard() {
     updateElement('site-count', (stats.categories['사적'] || 0) + (stats.categories['명승'] || 0));
     updateElement('natural-count', stats.categories['천연기념물'] || 0);
     
-    // 대시보드 카테고리별 건수 업데이트
+    // 탐색 카드 카운트 업데이트
     updateElement('explore-national-count', (stats.categories['국보'] || 0) + '건');
     updateElement('explore-treasure-count', (stats.categories['보물'] || 0) + '건');
     updateElement('explore-historic-count', (stats.categories['사적'] || 0) + '건');
@@ -133,31 +149,11 @@ function updateDashboard() {
     updateElement('explore-natural-count', (stats.categories['천연기념물'] || 0) + '건');
     updateElement('explore-intangible-count', (stats.categories['국가무형문화재'] || 0) + '건');
     
-    // 히어로 섹션 통계 업데이트 (4개 주요 숫자)
-    updateElement('hero-total-count', stats.total.toLocaleString());
+    // 사이드바 통계 업데이트
+    updateElement('sidebar-total', stats.total);
     
-    // 번역 완료율 계산 (영어 설명이 있는 항목 비율)
-    const totalItems = dataManager.heritageData.length;
-    const translatedItems = dataManager.heritageData.filter(item => 
-        item.content_en && item.content_en.trim() !== ''
-    ).length;
-    const translationRate = totalItems > 0 ? Math.round((translatedItems / totalItems) * 100) : 0;
-    
-    updateElement('hero-translation-count', translationRate + '%');
-    updateElement('translation-percentage', translationRate + '%');
-    
-    // 프로그레스 바 업데이트
-    const progressBar = document.getElementById('translation-progress');
-    if (progressBar) {
-        progressBar.style.width = translationRate + '%';
-    }
-    
-    // COMET 점수 (임시로 고정값 사용, 추후 실제 계산 로직 추가)
-    updateElement('hero-comet-score', '0.742');
-    updateElement('comet-score', '0.742');
-    
-    // 지원 언어 수
-    updateElement('hero-language-count', '2');
+    // 미분류 항목 통계 업데이트
+    updateUnclassifiedStats();
     
     // 4축 필터링 시스템 업데이트
     if (dataManager && typeof dataManager.updateFilters === 'function') {
@@ -166,12 +162,6 @@ function updateDashboard() {
     
     // 결과 개수 실시간 업데이트
     updateResultsCount();
-    
-    // 사이드바 총 문화재 수 업데이트
-    updateElement('sidebar-total', stats.total.toLocaleString());
-    
-    // 사이드바 번역률 업데이트
-    updateElement('sidebar-translation-rate', translationRate + '%');
     
     // 애니메이션 효과
     animateNumbers();
@@ -222,34 +212,19 @@ function updateResultsCount() {
 function animateNumbers() {
     const counters = document.querySelectorAll('.stat-number, .category-count');
     counters.forEach(counter => {
-        const originalText = counter.textContent;
-        const target = parseInt(originalText.replace(/,/g, '').replace('%', '')) || 0;
-        
-        // 이미 애니메이션 중이면 건너뛰기
-        if (counter.dataset.animating === 'true') {
-            return;
-        }
-        
-        counter.dataset.animating = 'true';
-        
-        const increment = Math.max(1, Math.ceil(target / 50));
+        const target = parseInt(counter.textContent.replace(/,/g, '')) || 0;
+        const increment = target / 50;
         let current = 0;
         
         const timer = setInterval(() => {
             current += increment;
             if (current >= target) {
-                counter.textContent = originalText;
-                counter.dataset.animating = 'false';
+                counter.textContent = target.toLocaleString();
                 clearInterval(timer);
             } else {
-                // 퍼센트나 다른 단위가 있으면 유지
-                if (originalText.includes('%')) {
-                    counter.textContent = current + '%';
-                } else {
-                    counter.textContent = current.toLocaleString();
-                }
+                counter.textContent = Math.floor(current).toLocaleString();
             }
-        }, 30);
+        }, 40);
     });
 }
 
@@ -279,9 +254,10 @@ function loadHeritageList(searchQuery = '') {
     const query = searchQuery || document.getElementById('globalSearch')?.value || '';
     const categoryFilter = document.getElementById('category-filter')?.value || '';
     const locationFilter = document.getElementById('location-filter')?.value || '';
+    const searchOption = document.getElementById('searchOption')?.value || 'title+description';
     
     // 검색 및 필터링
-    const results = dataManager.search(query, categoryFilter, locationFilter);
+    const results = dataManager.search(query, categoryFilter, locationFilter, searchOption);
     
     // 페이지네이션
     const totalPages = Math.ceil(results.length / itemsPerPage);
@@ -344,9 +320,7 @@ function renderGridView(items) {
     const container = document.getElementById('heritage-grid');
     if (!container) return;
     
-    container.innerHTML = items.map(item => {
-        const eraInfo = getEraInformation(item);
-        return `
+    container.innerHTML = items.map(item => `
         <div class="heritage-grid-item">
             <div class="card heritage-card h-100" onclick="viewHeritageDetail('${item.name}')">
                 <div class="card-img-top heritage-image">
@@ -360,22 +334,21 @@ function renderGridView(items) {
                         <span class="badge category-badge category-${item.category}">${item.category}</span>
                         <small class="text-muted">${item.location}</small>
                     </div>
-                    <h6 class="card-title">${dataManager.currentLanguage === 'ko' ? item.name : (item.name_en || item.name)}</h6>
+                    <h6 class="card-title">${item.name}</h6>
                     <p class="card-text text-truncate-2">
                         ${dataManager.currentLanguage === 'ko' 
-                            ? (item.content ? item.content.substring(0, 100) + '...' : '설명 없음')
-                            : (item.content_en ? item.content_en.substring(0, 100) + '...' : '영문 설명 준비 중...')
+                            ? (item.korean_description ? item.korean_description.substring(0, 100) + '...' : '설명 없음')
+                            : (item.english_description ? item.english_description.substring(0, 100) + '...' : '영문 설명 준비 중...')
                         }
                     </p>
                     <div class="d-flex justify-content-between align-items-center">
-                        <small class="text-muted">${eraInfo || '시대 정보 없음'}</small>
+                        <small class="text-muted">${item.period || '시대 정보 없음'}</small>
                         <small class="text-primary">${item.designation_no || ''}</small>
                     </div>
                 </div>
             </div>
         </div>
-        `;
-    }).join('');
+    `).join('');
 }
 
 /**
@@ -385,9 +358,7 @@ function renderListView(items) {
     const tbody = document.getElementById('heritage-list-tbody');
     if (!tbody) return;
     
-    tbody.innerHTML = items.map(item => {
-        const eraInfo = getEraInformation(item);
-        return `
+    tbody.innerHTML = items.map(item => `
         <tr class="heritage-list-row" onclick="viewHeritageDetail('${item.name}')" style="cursor: pointer;">
             <td>
                 <div class="heritage-list-image">
@@ -401,7 +372,7 @@ function renderListView(items) {
                 </div>
             </td>
             <td>
-                <div class="fw-semibold text-primary">${dataManager.currentLanguage === 'ko' ? item.name : (item.name_en || item.name)}</div>
+                <div class="fw-semibold text-primary">${item.name}</div>
                 ${item.designation_no ? `<small class="text-muted">${item.designation_no}</small>` : ''}
             </td>
             <td>
@@ -409,13 +380,13 @@ function renderListView(items) {
             </td>
             <td>
                 <span class="text-muted">${item.location || '정보 없음'}</span>
-                ${eraInfo ? `<br><small class="text-muted">${eraInfo}</small>` : ''}
+                ${item.period ? `<br><small class="text-muted">${item.period}</small>` : ''}
             </td>
             <td>
                 <div class="heritage-list-desc">
                     ${dataManager.currentLanguage === 'ko' 
-                        ? (item.content ? item.content.substring(0, 150) + '...' : '설명 없음')
-                        : (item.content_en ? item.content_en.substring(0, 150) + '...' : '영문 설명 준비 중...')
+                        ? (item.korean_description ? item.korean_description.substring(0, 150) + '...' : '설명 없음')
+                        : (item.english_description ? item.english_description.substring(0, 150) + '...' : '영문 설명 준비 중...')
                     }
                 </div>
             </td>
@@ -425,8 +396,7 @@ function renderListView(items) {
                 </button>
             </td>
         </tr>
-        `;
-    }).join('');
+    `).join('');
 }
 
 /**
@@ -629,47 +599,21 @@ function renderPagination(current, total, totalItems) {
 /**
  * 문화재 상세 정보 로드
  */
-async function loadHeritageDetail(name) {
-    console.log('상세 페이지 로드 시작:', name);
-    
+function loadHeritageDetail(name) {
     const item = dataManager.getByName(name);
     if (!item) {
         console.error('문화재를 찾을 수 없습니다:', name);
-        // 홈으로 바로 이동하지 않고 이전 페이지로 돌아가기
-        goBack();
+        router.navigate('home');
         return;
     }
     
-    console.log('문화재 데이터 로드 성공:', item.name);
-    await renderHeritageDetail(item);
-}
-
-/**
- * 시대 정보 가져오기 (우선순위에 따라)
- */
-function getEraInformation(item) {
-    // 우선순위: cccePd -> ccmaAsdt -> cceeAsdt
-    if (item.cccePd && item.cccePd.trim() !== '') {
-        return item.cccePd;
-    }
-    if (item.ccmaAsdt && item.ccmaAsdt.trim() !== '') {
-        return item.ccmaAsdt;
-    }
-    if (item.cceeAsdt && item.cceeAsdt.trim() !== '') {
-        return item.cceeAsdt;
-    }
-    return null;
+    renderHeritageDetail(item);
 }
 
 /**
  * 문화재 상세 정보 렌더링
  */
-async function renderHeritageDetail(item) {
-    console.log('상세 페이지 렌더링 시작:', item.name);
-    
-    // 시대 정보 가져오기
-    const eraInfo = getEraInformation(item);
-    
+function renderHeritageDetail(item) {
     // 헤더 영역 추가 (제목과 카테고리)
     const mainContent = document.querySelector('#detail-view .col-lg-8');
     if (mainContent) {
@@ -685,10 +629,10 @@ async function renderHeritageDetail(item) {
                 <div class="container-fluid">
                     <div class="row align-items-center">
                         <div class="col">
-                            <h1 class="heritage-title">${dataManager.currentLanguage === 'ko' ? item.name : (item.name_en || item.name)}</h1>
+                            <h1 class="heritage-title">${item.name}</h1>
                             <div class="heritage-subtitle">
                                 <span class="heritage-badge me-2">${item.category}</span>
-                                ${eraInfo ? `<span class="heritage-period me-2">${eraInfo}</span>` : ''}
+                                ${item.period ? `<span class="heritage-period me-2">${item.period}</span>` : ''}
                                 ${item.designation_no ? `<span class="heritage-designation">${item.designation_no}</span>` : ''}
                             </div>
                         </div>
@@ -762,22 +706,22 @@ async function renderHeritageDetail(item) {
                 <div class="heritage-meta-value">${item.designation_no}</div>
             </div>
             ` : ''}
-            ${eraInfo ? `
+            ${item.period ? `
             <div class="heritage-meta-item d-flex">
                 <div class="heritage-meta-label"><i class="fas fa-history me-2"></i>시대</div>
-                <div class="heritage-meta-value">${eraInfo}</div>
+                <div class="heritage-meta-value">${item.period}</div>
             </div>
             ` : ''}
             <div class="heritage-meta-item d-flex">
                 <div class="heritage-meta-label"><i class="fas fa-map-marker-alt me-2"></i>소재지</div>
                 <div class="heritage-meta-value">${item.location}</div>
             </div>
-            ${item.ccbaCtcd && item.ccbaAsno && item.ccbaKdcd ? `
+            ${item.source_url ? `
             <div class="heritage-meta-item d-flex">
                 <div class="heritage-meta-label"><i class="fas fa-external-link-alt me-2"></i>출처</div>
                 <div class="heritage-meta-value">
-                    <a href="https://www.heritage.go.kr/heri/cul/culSelectDetail.do?VdkVgwKey=${item.ccbaCtcd},${item.ccbaAsno},${item.ccbaKdcd}" target="_blank" class="text-primary">
-                        국가유산청 바로가기 <i class="fas fa-external-link-alt fa-sm"></i>
+                    <a href="${item.source_url}" target="_blank" class="text-primary">
+                        문화재청 바로가기 <i class="fas fa-external-link-alt fa-sm"></i>
                     </a>
                 </div>
             </div>
@@ -798,104 +742,26 @@ async function renderHeritageDetail(item) {
         `;
 
         // 지도 표시
-        if (typeof mapManager !== 'undefined' && mapManager.showMap && item.coords) {
-            try {
-                await mapManager.showMap('heritage-map', item.coords, item.name, () => {
-                    console.log('🗺️ 지도 로딩 완료 - 추가 작업 수행 가능');
-                });
-            } catch (error) {
-                console.error('지도 로딩 실패:', error);
-                const mapContainer = document.getElementById('heritage-map');
-                if (mapContainer) {
-                    mapContainer.innerHTML = `
-                        <div class="text-center py-4 bg-light rounded">
-                            <i class="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
-                            <p class="mb-0 text-muted">지도 로딩에 실패했습니다</p>
-                            <small class="text-muted">좌표: ${item.coords.lat.toFixed(6)}, ${item.coords.lng.toFixed(6)}</small>
-                        </div>
-                    `;
-                }
-            }
-        } else if (item.coords) {
-            // 지도 매니저가 없으면 기본 메시지 표시
-            const mapContainer = document.getElementById('heritage-map');
-            if (mapContainer) {
-                mapContainer.innerHTML = `
-                    <div class="text-center py-4 bg-light rounded">
-                        <i class="fas fa-map-marked-alt fa-2x text-muted mb-2"></i>
-                        <p class="mb-0 text-muted">지도 정보</p>
-                        <small class="text-muted">좌표: ${item.coords.lat.toFixed(6)}, ${item.coords.lng.toFixed(6)}</small>
-                    </div>
-                `;
-            }
+        if (window.mapManager && item.coords) {
+            setTimeout(() => {
+                mapManager.showMap('heritage-map', item.coords, item.name);
+            }, 100);
         }
     }
     
     // 관련 링크
     const linksContainer = document.getElementById('heritage-links');
     if (linksContainer) {
-        // 문화재청 상세 페이지 URL - 원본 source_url 사용 또는 기본 URL 생성
-        let heritageUrl = item.source_url;
-        let isOriginalUrl = false;
-        
-        // source_url이 있고 구체적인 상세 페이지 URL인지 확인
-        if (heritageUrl && heritageUrl.trim() !== '' && heritageUrl.includes('culSelectDetail.do')) {
-            isOriginalUrl = true;
-        } else {
-            // source_url이 없거나 메인 페이지 URL이면 기본 URL 생성
-            if (item.original_data && item.original_data.composite_key) {
-                console.log('🔍 composite_key 발견:', item.original_data.composite_key);
-                // composite_key가 '-'로 구분되어 있으므로 '-'로 split
-                const parts = item.original_data.composite_key.split('-');
-                console.log('🔍 parts:', parts);
-                if (parts.length >= 3) {
-                    // ccbaKdcd, ccbaAsno, ccbaCtcd 파라미터 형식으로 URL 생성
-                    const ccbaKdcd = parts[0];
-                    const ccbaCtcd = parts[1];
-                    const ccbaAsno = parts[2].padStart(13, '0'); // 13자리로 패딩
-                    
-                    heritageUrl = `https://www.heritage.go.kr/heri/cul/culSelectDetail.do?culPageNo=1&region=1&searchCondition=&searchCondition2=&ccbaKdcd=${ccbaKdcd}&ccbaAsno=${ccbaAsno}&ccbaCtcd=${ccbaCtcd}&ccbaCpno=${ccbaKdcd}${ccbaCtcd}${ccbaAsno}&ccbaCndt=&ccbaLcto=&stCcbaAsdt=&endCcbaAsdt=&header=view&returnUrl=%2Fheri%2Fcul%2FculSelectViewList.do&pageNo=1_1_1_0&p=multiSch&sortType=&sortOrd=&sngl=Y&s_kdcdArr=00&s_ctcdArr=00&ccbaPcd1Arr=99&ccbaGcodeArr=00`;
-                    isOriginalUrl = true;
-                    console.log('✅ 상세 페이지 URL 생성 성공:', heritageUrl);
-                } else {
-                    console.log('❌ parts 길이 부족:', parts.length);
-                }
-            } else {
-                console.log('❌ composite_key 없음');
-            }
-            
-            // 여전히 URL이 없으면 기본 URL
-            if (!heritageUrl) {
-                heritageUrl = 'https://www.heritage.go.kr/main/';
-                isOriginalUrl = false;
-            }
-        }
-        
-        // URL 상태에 따른 링크 텍스트 설정
-        const linkText = isOriginalUrl ? '문화재청 상세 페이지' : '국가유산청 홈페이지';
-        const detailText = isOriginalUrl ? '상세 정보 (원문)' : '국가유산청에서 검색';
-        
-        // 디버깅 로그
-        console.log('🔗 URL 생성 상세:');
-        console.log('- heritageUrl:', heritageUrl);
-        console.log('- isOriginalUrl:', isOriginalUrl);
-        console.log('- linkText:', linkText);
-        console.log('- detailText:', detailText);
-        console.log('- source_url:', item.source_url);
-        console.log('- original_data:', item.original_data);
-        console.log('- composite_key:', item.original_data?.composite_key);
-        
         linksContainer.innerHTML = `
-            <a href="${heritageUrl}" target="_blank" class="heritage-link d-block mb-2" onclick="console.log('🔗 링크 클릭:', '${heritageUrl}');">
-                <i class="fas fa-external-link-alt me-2"></i>${linkText}
-            </a>
-            <a href="${heritageUrl}" target="_blank" class="heritage-link d-block mb-2" onclick="console.log('🔗 링크 클릭:', '${heritageUrl}');">
-                <i class="fas fa-info-circle me-2"></i>${detailText}
-            </a>
-            <a href="#" class="heritage-link d-block mb-2" onclick="shareHeritage('${item.name}'); return false;">
+            ${item.source_url ? `
+                <a href="${item.source_url}" target="_blank" class="heritage-link d-block mb-2">
+                    <i class="fas fa-external-link-alt me-2"></i>문화재청 상세 정보
+                </a>
+            ` : ''}
+            <a href="#" class="heritage-link d-block mb-2">
                 <i class="fas fa-share me-2"></i>공유하기
             </a>
-            <a href="#" class="heritage-link d-block" onclick="addToFavorites('${item.name}'); return false;">
+            <a href="#" class="heritage-link d-block">
                 <i class="fas fa-heart me-2"></i>즐겨찾기
             </a>
         `;
@@ -903,8 +769,6 @@ async function renderHeritageDetail(item) {
     
     // 상세 페이지 언어 토글 이벤트 재설정
     setupDetailLanguageToggle(item);
-    
-    console.log('상세 페이지 렌더링 완료:', item.name);
 }
 
 /**
@@ -915,38 +779,25 @@ function updateHeritageDescription(item) {
     if (!container) return;
     
     const isKorean = dataManager.currentLanguage === 'ko';
+    
     const description = isKorean 
-        ? (item.content || '설명이 없습니다.')
-        : (item.content_en || '영문 설명을 준비 중입니다.');
+        ? item.korean_description 
+        : (item.english_description || '영문 설명을 준비 중입니다.');
     
-    // 줄바꿈 처리 및 문단 나누기
+    // 문단 나누기 - 숫자와 단위 분리 방지
     let processedDescription = description
-        .replace(/\r\n/g, '\n')  // Windows 줄바꿈 처리
-        .replace(/\r/g, '\n')    // Mac 줄바꿈 처리
-        .replace(/\n\s*\n/g, '\n\n')  // 연속된 줄바꿈 정리
-        .trim();
+        .replace(/\n/g, '<br>')  // 기존 줄바꿈을 <br>로 변환
+        .replace(/(\d+\.?\d*)\s*<br>\s*([a-zA-Z가-힣]+)/g, '$1$2')  // 숫자와 단위 사이 줄바꿈 제거
+        .replace(/([가-힣])\s*<br>\s*([가-힣])/g, '$1 $2')  // 한글 단어 사이 줄바꿈을 공백으로
+        .replace(/([가-힣]\.)\s*<br>\s*([가-힣])/g, '$1 $2')  // 문장 끝과 다음 문장 시작 사이 줄바꿈 제거
+        .replace(/\s+/g, ' ');  // 연속된 공백을 하나로
     
-    // 문단별로 나누기 (빈 줄 기준)
-    const paragraphs = processedDescription.split('\n\n').filter(p => p.trim().length > 0);
+    // 문장 단위로 나누기 (숫자.숫자 패턴 제외)
+    const sentences = processedDescription
+        .split(/(?<!\d)\.(?!\d)/)  // 숫자가 아닌 점에서만 분리
+        .filter(s => s.trim().length > 0);
     
-    container.innerHTML = paragraphs.map(p => {
-        // 문단 내 줄바꿈을 <br>로 변환
-        let formattedParagraph = p.trim().replace(/\n/g, '<br>');
-        
-        // 숫자와 단위 사이의 줄바꿈 방지 (예: 1.54m, 1.4m 등)
-        formattedParagraph = formattedParagraph.replace(/(\d+\.?\d*)\s*<br>\s*([a-zA-Z가-힣]+)/g, '$1$2');
-        
-        // 일반적인 줄바꿈 패턴 처리 (한글 단어 사이)
-        formattedParagraph = formattedParagraph.replace(/([가-힣])\s*<br>\s*([가-힣])/g, '$1 $2');
-        
-        // 문장 끝 마침표 후 줄바꿈 처리 (자연스러운 문단 구분)
-        formattedParagraph = formattedParagraph.replace(/([가-힣]\.)\s*<br>\s*([가-힣])/g, '$1 $2');
-        
-        // 연속된 공백 정리
-        formattedParagraph = formattedParagraph.replace(/\s+/g, ' ');
-        
-        return `<p>${formattedParagraph}</p>`;
-    }).join('');
+    container.innerHTML = sentences.map(s => `<p>${s.trim()}.</p>`).join('');
 }
 
 /**
@@ -972,13 +823,6 @@ let currentCategoryName = '';
  */
 function loadCategoryView(category) {
     console.log('카테고리 뷰 로드:', category);
-    
-    // 동일한 카테고리로의 중복 로드 방지
-    if (currentCategoryName === category && currentCategoryData.length > 0) {
-        console.log('동일한 카테고리 중복 로드 방지:', category);
-        return;
-    }
-    
     currentCategoryName = category;
     currentCategoryPage = 1;
     
@@ -1073,9 +917,7 @@ function renderCategoryGridView(items) {
         return;
     }
     
-    container.innerHTML = items.map(item => {
-        const eraInfo = getEraInformation(item);
-        return `
+    container.innerHTML = items.map(item => `
         <div class="heritage-grid-item">
             <div class="card heritage-card h-100" onclick="viewHeritageDetail('${item.name}')">
                 <div class="card-img-top heritage-image">
@@ -1089,22 +931,21 @@ function renderCategoryGridView(items) {
                         <span class="badge category-badge category-${item.category}">${item.category}</span>
                         <small class="text-muted">${item.location || '지역 정보 없음'}</small>
                     </div>
-                    <h6 class="card-title">${dataManager.currentLanguage === 'ko' ? item.name : (item.name_en || item.name)}</h6>
+                    <h6 class="card-title">${item.name}</h6>
                     <p class="card-text text-truncate-2">
                         ${dataManager.currentLanguage === 'ko' 
-                            ? (item.content ? item.content.substring(0, 100) + '...' : '설명 없음')
-                            : (item.content_en ? item.content_en.substring(0, 100) + '...' : '영문 설명 준비 중...')
+                            ? (item.korean_description ? item.korean_description.substring(0, 100) + '...' : '설명 없음')
+                            : (item.english_description ? item.english_description.substring(0, 100) + '...' : '영문 설명 준비 중...')
                         }
                     </p>
                     <div class="d-flex justify-content-between align-items-center">
-                        <small class="text-muted">${eraInfo || '시대 정보 없음'}</small>
+                        <small class="text-muted">${item.period || '시대 정보 없음'}</small>
                         <small class="text-primary">${item.designation_no || ''}</small>
                     </div>
                 </div>
             </div>
         </div>
-        `;
-    }).join('');
+    `).join('');
 }
 
 /**
@@ -1127,9 +968,7 @@ function renderCategoryListView(items) {
         return;
     }
     
-    tbody.innerHTML = items.map(item => {
-        const eraInfo = getEraInformation(item);
-        return `
+    tbody.innerHTML = items.map(item => `
         <tr class="heritage-list-row" onclick="viewHeritageDetail('${item.name}')" style="cursor: pointer;">
             <td>
                 <div class="heritage-list-image">
@@ -1143,9 +982,9 @@ function renderCategoryListView(items) {
                 </div>
             </td>
             <td>
-                <div class="fw-semibold text-primary">${dataManager.currentLanguage === 'ko' ? item.name : (item.name_en || item.name)}</div>
+                <div class="fw-semibold text-primary">${item.name}</div>
                 ${item.designation_no ? `<small class="text-muted">${item.designation_no}</small>` : ''}
-                ${eraInfo ? `<br><small class="text-muted">${eraInfo}</small>` : ''}
+                ${item.period ? `<br><small class="text-muted">${item.period}</small>` : ''}
             </td>
             <td>
                 <span class="text-muted">${item.location || '정보 없음'}</span>
@@ -1153,8 +992,8 @@ function renderCategoryListView(items) {
             <td>
                 <div class="heritage-list-desc">
                     ${dataManager.currentLanguage === 'ko' 
-                        ? (item.content ? item.content.substring(0, 150) + '...' : '설명 없음')
-                        : (item.content_en ? item.content_en.substring(0, 150) + '...' : '영문 설명 준비 중...')
+                        ? (item.korean_description ? item.korean_description.substring(0, 150) + '...' : '설명 없음')
+                        : (item.english_description ? item.english_description.substring(0, 150) + '...' : '영문 설명 준비 중...')
                     }
                 </div>
             </td>
@@ -1164,8 +1003,7 @@ function renderCategoryListView(items) {
                 </button>
             </td>
         </tr>
-        `;
-    }).join('');
+    `).join('');
 }
 
 /**
@@ -1379,19 +1217,11 @@ function renderCategoryPagination(current, totalPages, totalItems) {
     let paginationHTML = '';
     
     // 이전 버튼
-    if (current > 1) {
-        paginationHTML += `
-            <li class="page-item">
-                <a class="page-link" href="#category/${encodeURIComponent(currentCategoryName)}/${current - 1}">이전</a>
-            </li>
-        `;
-    } else {
-        paginationHTML += `
-            <li class="page-item disabled">
-                <span class="page-link">이전</span>
-            </li>
-        `;
-    }
+    paginationHTML += `
+        <li class="page-item ${current <= 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="changeCategoryPage(${current - 1}); return false;">이전</a>
+        </li>
+    `;
     
     // 페이지 번호
     const maxVisible = 5;
@@ -1403,35 +1233,19 @@ function renderCategoryPagination(current, totalPages, totalItems) {
     }
     
     for (let i = startPage; i <= endPage; i++) {
-        if (i === current) {
-            paginationHTML += `
-                <li class="page-item active">
-                    <span class="page-link">${i}</span>
-                </li>
-            `;
-        } else {
-            paginationHTML += `
-                <li class="page-item">
-                    <a class="page-link" href="#category/${encodeURIComponent(currentCategoryName)}/${i}">${i}</a>
-                </li>
-            `;
-        }
+        paginationHTML += `
+            <li class="page-item ${i === current ? 'active' : ''}">
+                <a class="page-link" href="#" onclick="changeCategoryPage(${i}); return false;">${i}</a>
+            </li>
+        `;
     }
     
     // 다음 버튼
-    if (current < totalPages) {
-        paginationHTML += `
-            <li class="page-item">
-                <a class="page-link" href="#category/${encodeURIComponent(currentCategoryName)}/${current + 1}">다음</a>
-            </li>
-        `;
-    } else {
-        paginationHTML += `
-            <li class="page-item disabled">
-                <span class="page-link">다음</span>
-            </li>
-        `;
-    }
+    paginationHTML += `
+        <li class="page-item ${current >= totalPages ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="changeCategoryPage(${current + 1}); return false;">다음</a>
+        </li>
+    `;
     
     paginationContainer.innerHTML = paginationHTML;
 }
@@ -1442,12 +1256,6 @@ function renderCategoryPagination(current, totalPages, totalItems) {
 function changeCategoryPage(page) {
     currentCategoryPage = page;
     renderCategoryContent();
-    
-    // URL 업데이트 (브라우저 히스토리에 추가)
-    const newUrl = `#category/${encodeURIComponent(currentCategoryName)}/${page}`;
-    if (window.location.hash !== newUrl) {
-        window.location.hash = newUrl;
-    }
 }
 
 // English 페이지 전역 변수
@@ -1542,9 +1350,7 @@ function renderEnglishGridView(items) {
         return;
     }
     
-    container.innerHTML = items.map(item => {
-        const eraInfo = getEraInformation(item);
-        return `
+    container.innerHTML = items.map(item => `
         <div class="heritage-grid-item">
             <div class="card heritage-card h-100" onclick="viewHeritageDetail('${item.name}')">
                 <div class="card-img-top heritage-image">
@@ -1560,20 +1366,19 @@ function renderEnglishGridView(items) {
                     </div>
                     <h6 class="card-title">${item.name}</h6>
                     <p class="card-text text-truncate-2">
-                        ${item.content_en && item.content_en.trim() 
-                            ? item.content_en.substring(0, 100) + '...' 
-                            : (item.content ? '[Korean] ' + item.content.substring(0, 80) + '...' : 'Description not available')
+                        ${item.english_description && item.english_description.trim() 
+                            ? item.english_description.substring(0, 100) + '...' 
+                            : (item.korean_description ? '[Korean] ' + item.korean_description.substring(0, 80) + '...' : 'Description not available')
                         }
                     </p>
                     <div class="d-flex justify-content-between align-items-center">
-                        <small class="text-muted">${eraInfo || 'Period unknown'}</small>
+                        <small class="text-muted">${item.period || 'Period unknown'}</small>
                         <small class="text-primary">${item.designation_no || ''}</small>
                     </div>
                 </div>
             </div>
         </div>
-        `;
-    }).join('');
+    `).join('');
 }
 
 /**
@@ -1596,9 +1401,7 @@ function renderEnglishListView(items) {
         return;
     }
     
-    tbody.innerHTML = items.map(item => {
-        const eraInfo = getEraInformation(item);
-        return `
+    tbody.innerHTML = items.map(item => `
         <tr class="heritage-list-row" onclick="viewHeritageDetail('${item.name}')" style="cursor: pointer;">
             <td>
                 <div class="heritage-list-image">
@@ -1612,9 +1415,9 @@ function renderEnglishListView(items) {
                 </div>
             </td>
             <td>
-                <div class="fw-semibold text-primary">${dataManager.currentLanguage === 'ko' ? item.name : (item.name_en || item.name)}</div>
+                <div class="fw-semibold text-primary">${item.name}</div>
                 ${item.designation_no ? `<small class="text-muted">${item.designation_no}</small>` : ''}
-                ${eraInfo ? `<br><small class="text-muted">${eraInfo}</small>` : ''}
+                ${item.period ? `<br><small class="text-muted">${item.period}</small>` : ''}
             </td>
             <td>
                 <span class="badge category-badge category-${item.category}">${getCategoryEnglishName(item.category)}</span>
@@ -1624,9 +1427,9 @@ function renderEnglishListView(items) {
             </td>
             <td>
                 <div class="heritage-list-desc">
-                    ${item.content_en && item.content_en.trim()
-                        ? item.content_en.substring(0, 150) + '...'
-                        : (item.content ? '[Korean] ' + item.content.substring(0, 120) + '...' : 'Description not available')
+                    ${item.english_description && item.english_description.trim()
+                        ? item.english_description.substring(0, 150) + '...'
+                        : (item.korean_description ? '[Korean] ' + item.korean_description.substring(0, 120) + '...' : 'Description not available')
                     }
                 </div>
             </td>
@@ -1636,8 +1439,7 @@ function renderEnglishListView(items) {
                 </button>
             </td>
         </tr>
-        `;
-    }).join('');
+    `).join('');
 }
 
 /**
@@ -1778,20 +1580,405 @@ function changeEnglishPage(page) {
     renderEnglishContent();
 }
 
+// 미분류 항목 페이지 전역 변수
+let currentUnclassifiedPage = 1;
+let currentUnclassifiedData = [];
+let currentUnclassifiedType = 'all';
+
+/**
+ * 미분류 항목 뷰 로드
+ */
+function loadUnclassifiedView(type = 'sido-type') {
+    console.log('미분류 항목 뷰 로드:', type);
+    currentUnclassifiedType = type;
+    currentUnclassifiedPage = 1;
+    
+    // 미분류 항목 필터링
+    const allItems = dataManager.heritageData;
+    let filteredItems = [];
+    
+    if (type === 'sido-type') {
+        // 시도유형문화재
+        filteredItems = allItems.filter(item => 
+            item.kdcd_name === '시도유형문화재'
+        );
+    } else if (type === 'sido-folklore') {
+        // 시도민속문화재
+        filteredItems = allItems.filter(item => 
+            item.kdcd_name === '시도민속문화재'
+        );
+    } else if (type === 'cultural-data') {
+        // 문화재자료
+        filteredItems = allItems.filter(item => 
+            item.kdcd_name === '문화재자료'
+        );
+    } else if (type === 'others') {
+        // 기타 미분류 (실제로 분류가 안된 것들)
+        filteredItems = allItems.filter(item => 
+            item.kdcd_name === '미분류' || item.ctcd_name === '미분류' || 
+            item.category === '미분류' || item.location === '미분류'
+        );
+    }
+    
+    console.log('미분류 항목 데이터:', type, '→', filteredItems.length, '건');
+    currentUnclassifiedData = filteredItems;
+    
+    // 제목 업데이트
+    const titleElement = document.getElementById('unclassified-title');
+    if (titleElement) {
+        const titles = {
+            'sido-type': '시도유형문화재',
+            'sido-folklore': '시도민속문화재',
+            'cultural-data': '문화재자료',
+            'others': '기타 미분류 항목'
+        };
+        titleElement.textContent = titles[type] || '미분류 항목';
+    }
+    
+    // 카운트 업데이트
+    updateUnclassifiedCount(filteredItems.length);
+    
+    // 컨텐츠 렌더링
+    renderUnclassifiedContent();
+    
+    // 이벤트 리스너 설정
+    setupUnclassifiedEventListeners();
+}
+
+/**
+ * 미분류 항목 컨텐츠 렌더링
+ */
+function renderUnclassifiedContent() {
+    console.log('미분류 항목 컨텐츠 렌더링 시작:', currentUnclassifiedData.length, '건');
+    
+    // 페이지네이션
+    const totalPages = Math.ceil(currentUnclassifiedData.length / itemsPerPage);
+    const startIndex = (currentUnclassifiedPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const pageData = currentUnclassifiedData.slice(startIndex, endIndex);
+    
+    // 카운트 업데이트
+    updateUnclassifiedCount(currentUnclassifiedData.length);
+    
+    // 뷰 모드에 따라 렌더링
+    const isGridView = document.getElementById('unclassified-grid-btn')?.checked !== false;
+    
+    if (isGridView) {
+        renderUnclassifiedGridView(pageData);
+        document.getElementById('unclassified-grid').style.display = 'block';
+        document.getElementById('unclassified-table').style.display = 'none';
+    } else {
+        renderUnclassifiedListView(pageData);
+        document.getElementById('unclassified-grid').style.display = 'none';
+        document.getElementById('unclassified-table').style.display = 'block';
+    }
+    
+    // 페이지네이션 렌더링
+    renderUnclassifiedPagination(currentUnclassifiedPage, totalPages, currentUnclassifiedData.length);
+}
+
+/**
+ * 미분류 항목 그리드 뷰 렌더링
+ */
+function renderUnclassifiedGridView(items) {
+    const container = document.getElementById('unclassified-grid');
+    console.log('미분류 그리드 뷰 렌더링:', items.length, '건', 'container:', !!container);
+    if (!container) {
+        console.error('unclassified-grid 컨테이너를 찾을 수 없음!');
+        return;
+    }
+    
+    if (items.length === 0) {
+        container.innerHTML = `
+            <div class="col-12 text-center py-5">
+                <div class="empty-state">
+                    <i class="fas fa-question-circle fa-3x text-muted mb-3"></i>
+                    <h4>미분류 항목이 없습니다</h4>
+                    <p class="text-muted">모든 항목이 적절히 분류되었습니다.</p>
+                </div>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = items.map(item => `
+        <div class="heritage-grid-item">
+            <div class="card heritage-card h-100" onclick="viewHeritageDetail('${item.name}')">
+                <div class="card-img-top heritage-image">
+                    ${item.image_url ? 
+                        `<img src="${item.image_url}" alt="${item.name}" onerror="this.style.display='none'; this.parentElement.classList.add('no-image')">` : 
+                        `<div class="no-image-placeholder"><i class="fas fa-image"></i><span>이미지 없음</span></div>`
+                    }
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge bg-warning text-dark">미분류</span>
+                        <small class="text-muted">${item.location || '지역 정보 없음'}</small>
+                    </div>
+                    <h6 class="card-title">${item.name}</h6>
+                    <p class="card-text text-truncate-2">
+                        ${dataManager.currentLanguage === 'ko' 
+                            ? (item.korean_description ? item.korean_description.substring(0, 100) + '...' : '설명 없음')
+                            : (item.english_description ? item.english_description.substring(0, 100) + '...' : '영문 설명 준비 중...')
+                        }
+                    </p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">${item.period || '시대 정보 없음'}</small>
+                        <small class="text-primary">${item.designation_no || ''}</small>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-warning">
+                            <i class="fas fa-exclamation-triangle me-1"></i>
+                            ${getUnclassifiedReason(item)}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+/**
+ * 미분류 항목 리스트 뷰 렌더링
+ */
+function renderUnclassifiedListView(items) {
+    const tbody = document.getElementById('unclassified-list-tbody');
+    if (!tbody) return;
+    
+    if (items.length === 0) {
+        tbody.innerHTML = `
+            <tr><td colspan="6" class="text-center py-5">
+                <div class="empty-state">
+                    <i class="fas fa-question-circle fa-2x text-muted mb-2"></i>
+                    <h5>미분류 항목이 없습니다</h5>
+                    <p class="text-muted mb-0">모든 항목이 적절히 분류되었습니다.</p>
+                </div>
+            </td></tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = items.map(item => `
+        <tr class="heritage-list-row" onclick="viewHeritageDetail('${item.name}')" style="cursor: pointer;">
+            <td>
+                <div class="heritage-list-image">
+                    ${item.image_url ? 
+                        `<img src="${item.image_url}" alt="${item.name}" class="rounded" style="width: 60px; height: 60px; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : 
+                        ''
+                    }
+                    <div class="no-image-mini ${item.image_url ? 'd-none' : 'd-flex'}" style="width: 60px; height: 60px; background: #f8f9fa; border-radius: 0.375rem; align-items: center; justify-content: center; color: #6c757d; font-size: 0.8rem;">
+                        <i class="fas fa-image"></i>
+                    </div>
+                </div>
+            </td>
+            <td>
+                <div class="fw-semibold text-primary">${item.name}</div>
+                ${item.designation_no ? `<small class="text-muted">${item.designation_no}</small>` : ''}
+                ${item.period ? `<br><small class="text-muted">${item.period}</small>` : ''}
+            </td>
+            <td>
+                <span class="badge bg-warning text-dark">미분류</span>
+                <br><small class="text-warning">${getUnclassifiedReason(item)}</small>
+            </td>
+            <td>
+                <span class="text-muted">${item.location || '정보 없음'}</span>
+            </td>
+            <td>
+                <div class="heritage-list-desc">
+                    ${dataManager.currentLanguage === 'ko' 
+                        ? (item.korean_description ? item.korean_description.substring(0, 150) + '...' : '설명 없음')
+                        : (item.english_description ? item.english_description.substring(0, 150) + '...' : '영문 설명 준비 중...')
+                    }
+                </div>
+            </td>
+            <td>
+                <button class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation(); viewHeritageDetail('${item.name}')">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+/**
+ * 미분류 이유 반환
+ */
+function getUnclassifiedReason(item) {
+    const reasons = [];
+    
+    if (item.kdcd_name === '미분류' || item.category === '미분류') {
+        reasons.push('카테고리 미분류');
+    }
+    
+    if (item.ctcd_name === '미분류' || item.location === '미분류') {
+        reasons.push('지역 미분류');
+    }
+    
+    return reasons.join(', ') || '분류 정보 없음';
+}
+
+/**
+ * 미분류 항목 카운트 업데이트
+ */
+function updateUnclassifiedCount(count) {
+    const countElement = document.getElementById('unclassified-count');
+    if (countElement) {
+        countElement.textContent = count.toLocaleString();
+    }
+}
+
+/**
+ * 미분류 항목 페이지 이벤트 리스너 설정
+ */
+function setupUnclassifiedEventListeners() {
+    // 뷰 모드 전환
+    const gridBtn = document.getElementById('unclassified-grid-btn');
+    const listBtn = document.getElementById('unclassified-list-btn');
+    
+    if (gridBtn && listBtn) {
+        gridBtn.addEventListener('change', () => {
+            if (gridBtn.checked) {
+                renderUnclassifiedContent();
+            }
+        });
+        
+        listBtn.addEventListener('change', () => {
+            if (listBtn.checked) {
+                renderUnclassifiedContent();
+            }
+        });
+    }
+    
+    // 타입 필터
+    const typeFilter = document.getElementById('unclassified-type-filter');
+    if (typeFilter) {
+        typeFilter.addEventListener('change', () => {
+            currentUnclassifiedPage = 1; // 첫 페이지로 리셋
+            loadUnclassifiedView(typeFilter.value);
+        });
+    }
+}
+
+/**
+ * 미분류 항목 페이지네이션 렌더링
+ */
+function renderUnclassifiedPagination(current, totalPages, totalItems) {
+    const paginationContainer = document.getElementById('unclassified-pagination');
+    if (!paginationContainer || totalPages <= 1) {
+        if (paginationContainer) paginationContainer.innerHTML = '';
+        return;
+    }
+    
+    let paginationHTML = '';
+    
+    // 이전 버튼
+    paginationHTML += `
+        <li class="page-item ${current <= 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="changeUnclassifiedPage(${current - 1}); return false;">이전</a>
+        </li>
+    `;
+    
+    // 페이지 번호
+    const maxVisible = 5;
+    let startPage = Math.max(1, current - Math.floor(maxVisible / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+    
+    if (endPage - startPage + 1 < maxVisible) {
+        startPage = Math.max(1, endPage - maxVisible + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        paginationHTML += `
+            <li class="page-item ${i === current ? 'active' : ''}">
+                <a class="page-link" href="#" onclick="changeUnclassifiedPage(${i}); return false;">${i}</a>
+            </li>
+        `;
+    }
+    
+    // 다음 버튼
+    paginationHTML += `
+        <li class="page-item ${current >= totalPages ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="changeUnclassifiedPage(${current + 1}); return false;">다음</a>
+        </li>
+    `;
+    
+    paginationContainer.innerHTML = paginationHTML;
+}
+
+/**
+ * 미분류 항목 페이지 변경
+ */
+function changeUnclassifiedPage(page) {
+    currentUnclassifiedPage = page;
+    renderUnclassifiedContent();
+}
+
+/**
+ * 미분류 항목 통계 업데이트
+ */
+function updateUnclassifiedStats() {
+    if (!dataManager || !dataManager.heritageData) return;
+    
+    const allItems = dataManager.heritageData;
+    
+    // 시도유형문화재 수
+    const sidoTypeCount = allItems.filter(item => 
+        item.kdcd_name === '시도유형문화재'
+    ).length;
+    
+    // 시도민속문화재 수
+    const sidoFolkloreCount = allItems.filter(item => 
+        item.kdcd_name === '시도민속문화재'
+    ).length;
+    
+    // 문화재자료 수
+    const culturalDataCount = allItems.filter(item => 
+        item.kdcd_name === '문화재자료'
+    ).length;
+    
+    // 기타 미분류 수 (실제로 분류가 안된 것들)
+    const othersCount = allItems.filter(item => 
+        item.kdcd_name === '미분류' || item.ctcd_name === '미분류' || 
+        item.category === '미분류' || item.location === '미분류'
+    ).length;
+    
+    // 사이드바 배지 업데이트
+    updateElement('sido-type-count', sidoTypeCount);
+    updateElement('sido-folklore-count', sidoFolkloreCount);
+    updateElement('cultural-data-count', culturalDataCount);
+    updateElement('others-count', othersCount);
+    
+    console.log('미분류 항목 통계 업데이트:', {
+        시도유형문화재: sidoTypeCount,
+        시도민속문화재: sidoFolkloreCount,
+        문화재자료: culturalDataCount,
+        기타미분류: othersCount
+    });
+}
+
 /**
  * 글로벌 검색 수행
  */
-function performGlobalSearch(query) {
-    // 검색 결과를 목록 뷰에 표시
-    router.navigate(`search/${encodeURIComponent(query)}`);
+function performGlobalSearch(query, searchOption = 'title+description') {
+    // 검색 옵션을 URL에 포함하여 전달
+    const encodedQuery = encodeURIComponent(query);
+    const encodedOption = encodeURIComponent(searchOption);
+    router.navigate(`search/${encodedQuery}?option=${encodedOption}`);
 }
 
 /**
  * 검색 수행 (라우터에서 호출)
  */
-function performSearch(query) {
+function performSearch(query, searchOption = 'title+description') {
     currentPage = 1;
     document.getElementById('globalSearch').value = query;
+    
+    // 검색 옵션 드롭다운 업데이트
+    const searchOptionSelect = document.getElementById('searchOption');
+    if (searchOptionSelect) {
+        searchOptionSelect.value = searchOption;
+    }
+    
     loadHeritageList(query);
 }
 
@@ -1833,16 +2020,6 @@ function changePage(page) {
     currentPage = page;
     loadHeritageList();
     window.scrollTo(0, 0);
-    
-    // 현재 뷰가 상세 페이지인 경우에만 라우터 히스토리 관리
-    if (router.currentView === 'detail-view') {
-        // 상세 페이지에서 페이지네이션을 사용하는 경우는 없지만, 
-        // 혹시 모를 상황을 대비해 현재 경로를 히스토리에 유지
-        const currentHash = window.location.hash;
-        if (router.history.length > 0) {
-            router.history[router.history.length - 1] = currentHash;
-        }
-    }
 }
 
 /**
@@ -1930,105 +2107,4 @@ document.addEventListener('click', (e) => {
     if (e.target.closest('a[href="#"]')) {
         e.preventDefault();
     }
-});
-
-/**
- * 서브메뉴 토글 기능
- */
-function toggleSubmenu(menuId) {
-    const menu = document.getElementById(menuId);
-    const toggle = menu.parentElement;
-    
-    if (menu.classList.contains('show')) {
-        menu.classList.remove('show');
-        toggle.classList.remove('active');
-    } else {
-        menu.classList.add('show');
-        toggle.classList.add('active');
-    }
-}
-
-/**
- * 문화재 공유하기
- */
-function shareHeritage(heritageName) {
-    const url = window.location.href;
-    const text = `${heritageName} - 한국 문화유산 정보`;
-    
-    if (navigator.share) {
-        navigator.share({
-            title: text,
-            text: text,
-            url: url
-        }).catch(err => console.log('공유 실패:', err));
-    } else {
-        // 클립보드에 복사
-        navigator.clipboard.writeText(`${text}\n${url}`).then(() => {
-            alert('링크가 클립보드에 복사되었습니다!');
-        }).catch(() => {
-            alert('공유 기능을 사용할 수 없습니다.');
-        });
-    }
-}
-
-/**
- * 즐겨찾기 추가
- */
-function addToFavorites(heritageName) {
-    try {
-        let favorites = JSON.parse(localStorage.getItem('heritage_favorites') || '[]');
-        
-        if (!favorites.includes(heritageName)) {
-            favorites.push(heritageName);
-            localStorage.setItem('heritage_favorites', JSON.stringify(favorites));
-            alert(`"${heritageName}"이(가) 즐겨찾기에 추가되었습니다!`);
-        } else {
-            alert(`"${heritageName}"은(는) 이미 즐겨찾기에 있습니다.`);
-        }
-    } catch (error) {
-        console.error('즐겨찾기 추가 실패:', error);
-        alert('즐겨찾기 추가에 실패했습니다.');
-    }
-}
-
-/**
- * 메인 언어 토글 이벤트 설정
- */
-function setupMainLanguageToggle() {
-    const langButtons = document.querySelectorAll('input[name="lang"]');
-    langButtons.forEach(button => {
-        button.addEventListener('change', (e) => {
-            const language = e.target.id === 'lang-ko' ? 'ko' : 'en';
-            console.log('언어 변경:', language);
-            
-            // i18n 시스템에 언어 변경 알림
-            if (window.i18n) {
-                i18n.setLanguage(language);
-            }
-            
-            // dataManager에도 언어 설정
-            if (window.dataManager) {
-                dataManager.currentLanguage = language;
-            }
-            
-            // 현재 뷰 새로고침
-            const currentHash = window.location.hash.slice(1) || 'home';
-            const [route] = currentHash.split('/');
-            
-            setTimeout(() => {
-                if (route === 'home' && typeof updateDashboard === 'function') {
-                    updateDashboard();
-                } else if (route === 'list' && typeof loadHeritageList === 'function') {
-                    loadHeritageList();
-                } else if (route === 'category' && typeof renderCategoryContent === 'function') {
-                    renderCategoryContent();
-                }
-            }, 100);
-        });
-    });
-}
-
-// DOM 로드 완료 후 언어 토글 이벤트 설정
-document.addEventListener('DOMContentLoaded', function() {
-    setupMainLanguageToggle();
 });

@@ -2649,9 +2649,9 @@ async function changePage(page) {
     setLoadingTimeout();
     
     try {
-        // URL 업데이트만 하고 라우터는 건드리지 않음
+        // 🚨 중요: URL 업데이트를 router.navigate()로 변경하여 상태 관리 개선
         const newUrl = createPageUrl(page);
-        window.location.hash = newUrl;
+        router.navigate(newUrl);
         
         // 직접 데이터 로드 (라우터를 거치지 않음)
         await loadHeritageList();
@@ -2814,15 +2814,36 @@ window.addEventListener('error', (event) => {
 function createPageUrl(newPage) {
     const currentHash = window.location.hash.slice(1) || 'home';
     
-    // 🚨 간단하고 빠른 URL 생성
+    // 🚨 중요: URL 파싱 개선 - 더 정확한 컨텍스트 파악
+    console.log(`🔗 URL 생성: 현재 해시=${currentHash}, 새 페이지=${newPage}`);
+    
+    // 카테고리 페이지인 경우
     if (currentHash.includes('category/')) {
         const categoryPart = currentHash.split('/page/')[0]; // 기존 페이지 부분 제거
-        return `${categoryPart}/page/${newPage}`;
-    } else if (currentHash === 'home' || currentHash === '') {
-        return `home?page=${newPage}`;
-    } else {
-        return `${currentHash}?page=${newPage}`;
+        const newUrl = `${categoryPart}/page/${newPage}`;
+        console.log(`📂 카테고리 페이지 URL: ${newUrl}`);
+        return newUrl;
     }
+    
+    // 홈 페이지인 경우
+    if (currentHash === 'home' || currentHash === '' || currentHash.startsWith('home?')) {
+        const newUrl = `home?page=${newPage}`;
+        console.log(`🏠 홈 페이지 URL: ${newUrl}`);
+        return newUrl;
+    }
+    
+    // 리스트 페이지인 경우
+    if (currentHash === 'list' || currentHash.startsWith('list?')) {
+        const newUrl = `list?page=${newPage}`;
+        console.log(`📋 리스트 페이지 URL: ${newUrl}`);
+        return newUrl;
+    }
+    
+    // 기타 경우 - 현재 라우트에 페이지 파라미터 추가
+    const baseRoute = currentHash.split('?')[0];
+    const newUrl = `${baseRoute}?page=${newPage}`;
+    console.log(`🔄 기타 페이지 URL: ${newUrl}`);
+    return newUrl;
 }
 
 // 🔥 6단계: 성능 모니터링 함수
@@ -2877,6 +2898,48 @@ window.getImageCacheStats = function() {
 window.clearImageCache = function() {
     imageCacheManager.clearCache();
     console.log('🧹 이미지 캐시 클리어됨');
+};
+
+// 🧪 상세페이지 → 2페이지 테스트 함수
+window.testDetailToPage2 = function() {
+    console.log('🧪 상세페이지 → 2페이지 테스트 시작');
+    
+    // 현재 상태 로깅
+    console.log('📍 현재 상태:');
+    console.log('- URL:', window.location.href);
+    console.log('- Hash:', window.location.hash);
+    console.log('- Current Page:', currentPage);
+    console.log('- Router Navigating:', router.isNavigating);
+    console.log('- Data Manager Loaded:', dataManager.isLoaded);
+    
+    // 시나리오 시뮬레이션
+    console.log('🎭 시나리오 시뮬레이션:');
+    
+    // 1. 상세페이지로 이동
+    console.log('1️⃣ 상세페이지로 이동');
+    router.navigate('detail/테스트문화재');
+    
+    setTimeout(() => {
+        // 2. 뒤로가기
+        console.log('2️⃣ 뒤로가기');
+        goBack();
+        
+        setTimeout(() => {
+            // 3. 2페이지로 이동
+            console.log('3️⃣ 2페이지로 이동');
+            changePage(2);
+            
+            setTimeout(() => {
+                console.log('✅ 테스트 완료');
+                console.log('📍 최종 상태:');
+                console.log('- URL:', window.location.href);
+                console.log('- Hash:', window.location.hash);
+                console.log('- Current Page:', currentPage);
+            }, 1000);
+        }, 1000);
+    }, 1000);
+    
+    return '테스트 시작됨 - 콘솔을 확인하세요';
 };
 
 // 🔥 안전한 라우팅 함수 래퍼

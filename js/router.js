@@ -453,6 +453,12 @@ const router = new Router();
 function goBack() {
     console.log('뒤로가기 요청, 현재 히스토리:', router.history);
     
+    // 🚨 중요: 무한 루프 방지를 위한 플래그 체크
+    if (router.isNavigating) {
+        console.log('이미 네비게이션 중이므로 뒤로가기 무시');
+        return;
+    }
+    
     // 라우터 히스토리 사용
     if (router.history.length > 1) {
         // 현재 경로를 히스토리에서 제거
@@ -462,27 +468,43 @@ function goBack() {
         console.log('이전 경로로 이동:', previousPath);
         
         if (previousPath && previousPath !== '') {
-            // navigate 함수를 직접 호출하지 않고 해시를 직접 변경
-            window.location.hash = previousPath;
+            // 🚨 중요: router.navigate() 사용하여 무한 루프 방지
+            router.navigate(previousPath);
         } else {
             // 이전 경로가 없거나 비어있으면 홈으로
-            window.location.hash = 'home';
+            router.navigate('home');
         }
     } else {
         // 히스토리가 없으면 홈으로
         console.log('히스토리 없음, 홈으로 이동');
-        window.location.hash = 'home';
+        router.navigate('home');
     }
 }
 
 // 라우트 등록
-router.addRoute('home', (params) => {
-    console.log('🏠 홈 라우트 실행');
+router.addRoute('home', async (params) => {
+    console.log('🏠 홈 라우트 실행:', params);
     router.showView('home-view');
-    if (window.loadHomeView) {
-        window.loadHomeView();
-    } else if (typeof updateDashboard === 'function') {
-        updateDashboard();
+    
+    // 🚀 페이지 파라미터 처리
+    const page = parseInt(params.page) || 1;
+    console.log('📄 홈 페이지 요청:', page);
+    
+    if (page > 1) {
+        // 페이지가 1보다 크면 리스트 뷰로 전환
+        router.showView('list-view');
+        if (typeof window.loadListView === 'function') {
+            await window.loadListView(page, params);
+        } else if (typeof loadHeritageList === 'function') {
+            await loadHeritageList();
+        }
+    } else {
+        // 첫 페이지면 홈 대시보드 표시
+        if (window.loadHomeView) {
+            window.loadHomeView();
+        } else if (typeof updateDashboard === 'function') {
+            updateDashboard();
+        }
     }
 });
 

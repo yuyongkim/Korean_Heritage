@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>상세페이지 → 2페이지 테스트</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .test-result { margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 3px; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>🔍 상세페이지 → 2페이지 테스트 시나리오</h1>
+    
+    <div class="test-section">
+        <h2>📋 테스트 시나리오</h2>
+        <ol>
+            <li>홈페이지에서 문화재 목록 확인</li>
+            <li>첫 번째 문화재 상세페이지로 이동</li>
+            <li>뒤로가기 버튼 클릭</li>
+            <li>2페이지로 이동</li>
+            <li>URL 상태 및 데이터 로딩 확인</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>🧪 테스트 실행</h2>
+        <button onclick="runTest()">테스트 시작</button>
+        <button onclick="clearResults()">결과 초기화</button>
+    </div>
+
+    <div id="test-results"></div>
+
+    <div class="test-section">
+        <h2>🔍 예상 문제점 분석</h2>
+        <div class="test-result warning">
+            <strong>⚠️ 잠재적 문제 1:</strong> 상세페이지에서 뒤로가기 시 이전 페이지 상태 복원 문제
+        </div>
+        <div class="test-result warning">
+            <strong>⚠️ 잠재적 문제 2:</strong> URL 해시 변경 시 라우터 충돌 가능성
+        </div>
+        <div class="test-result warning">
+            <strong>⚠️ 잠재적 문제 3:</strong> 페이지네이션 상태 초기화 문제
+        </div>
+        <div class="test-result warning">
+            <strong>⚠️ 잠재적 문제 4:</strong> 이미지 캐시 상태 유지 문제
+        </div>
+    </div>
+
+    <script>
+        let testResults = [];
+        
+        function addResult(message, type = 'info') {
+            const result = { message, type, timestamp: new Date().toLocaleTimeString() };
+            testResults.push(result);
+            updateDisplay();
+        }
+        
+        function updateDisplay() {
+            const container = document.getElementById('test-results');
+            container.innerHTML = testResults.map(result => 
+                `<div class="test-result ${result.type}">
+                    <strong>[${result.timestamp}]</strong> ${result.message}
+                </div>`
+            ).join('');
+        }
+        
+        function clearResults() {
+            testResults = [];
+            updateDisplay();
+        }
+        
+        async function runTest() {
+            addResult('🚀 테스트 시작', 'info');
+            
+            try {
+                // 1단계: 현재 URL 상태 확인
+                addResult(`📍 현재 URL: ${window.location.href}`, 'info');
+                addResult(`📍 현재 Hash: ${window.location.hash}`, 'info');
+                
+                // 2단계: 상세페이지 시뮬레이션
+                addResult('📄 상세페이지 시뮬레이션 시작', 'info');
+                
+                // 가상의 상세페이지 URL 생성
+                const detailUrl = '#detail/테스트문화재';
+                window.location.hash = detailUrl;
+                addResult(`📍 상세페이지 URL 설정: ${detailUrl}`, 'info');
+                
+                // 3단계: 뒤로가기 시뮬레이션
+                addResult('⬅️ 뒤로가기 시뮬레이션', 'info');
+                
+                // 2페이지 URL 생성
+                const page2Url = '#home?page=2';
+                window.location.hash = page2Url;
+                addResult(`📍 2페이지 URL 설정: ${page2Url}`, 'info');
+                
+                // 4단계: URL 파싱 테스트
+                const hash = window.location.hash.slice(1);
+                const parts = hash.split('?');
+                const baseRoute = parts[0];
+                const queryParams = parts[1] ? new URLSearchParams(parts[1]) : null;
+                
+                addResult(`📍 파싱된 기본 라우트: ${baseRoute}`, 'info');
+                if (queryParams) {
+                    addResult(`📍 쿼리 파라미터: ${Array.from(queryParams.entries()).map(([k,v]) => `${k}=${v}`).join(', ')}`, 'info');
+                }
+                
+                // 5단계: createPageUrl 함수 테스트
+                if (typeof createPageUrl === 'function') {
+                    const testUrl = createPageUrl(2);
+                    addResult(`📍 createPageUrl(2) 결과: ${testUrl}`, 'info');
+                } else {
+                    addResult('❌ createPageUrl 함수를 찾을 수 없음', 'error');
+                }
+                
+                // 6단계: 라우터 상태 확인
+                if (typeof router !== 'undefined') {
+                    addResult(`📍 라우터 상태: ${router.isLoading ? '로딩중' : '대기중'}`, 'info');
+                } else {
+                    addResult('❌ 라우터 객체를 찾을 수 없음', 'error');
+                }
+                
+                // 7단계: 데이터 매니저 상태 확인
+                if (typeof dataManager !== 'undefined') {
+                    addResult(`📍 데이터 매니저 상태: ${dataManager.isLoaded ? '로드됨' : '로딩중'}`, 'info');
+                    addResult(`📍 총 데이터 수: ${dataManager.heritageData ? dataManager.heritageData.length : 0}`, 'info');
+                } else {
+                    addResult('❌ 데이터 매니저 객체를 찾을 수 없음', 'error');
+                }
+                
+                // 8단계: 페이지네이션 상태 확인
+                if (typeof currentPage !== 'undefined') {
+                    addResult(`📍 현재 페이지: ${currentPage}`, 'info');
+                } else {
+                    addResult('❌ currentPage 변수를 찾을 수 없음', 'error');
+                }
+                
+                addResult('✅ 테스트 완료', 'success');
+                
+            } catch (error) {
+                addResult(`❌ 테스트 중 오류 발생: ${error.message}`, 'error');
+                console.error('테스트 오류:', error);
+            }
+        }
+        
+        // 페이지 로드 시 자동으로 메인 앱 로드
+        window.addEventListener('load', () => {
+            addResult('📱 페이지 로드 완료', 'info');
+            
+            // 메인 앱 스크립트 로드
+            const scripts = [
+                'js/config.js',
+                'js/indexeddb-manager.js',
+                'js/i18n.js',
+                'js/image-resolver.js',
+                'js/image-cache-manager.js',
+                'js/map-manager-simple.js',
+                'js/pagination-manager.js',
+                'js/app.js',
+                'js/router.js',
+                'js/data-manager.js',
+                'js/sidebar.js'
+            ];
+            
+            let loadedCount = 0;
+            scripts.forEach(src => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = () => {
+                    loadedCount++;
+                    addResult(`📜 스크립트 로드: ${src}`, 'info');
+                    if (loadedCount === scripts.length) {
+                        addResult('✅ 모든 스크립트 로드 완료', 'success');
+                    }
+                };
+                script.onerror = () => {
+                    addResult(`❌ 스크립트 로드 실패: ${src}`, 'error');
+                };
+                document.head.appendChild(script);
+            });
+        });
+    </script>
+</body>
+</html>

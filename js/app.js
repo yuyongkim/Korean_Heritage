@@ -1069,7 +1069,8 @@ function setupDetailLanguageToggle(item) {
     const detailLangButtons = document.querySelectorAll('input[name="detail-lang"]');
     detailLangButtons.forEach(button => {
         button.addEventListener('change', (e) => {
-            dataManager.currentLanguage = e.target.id === 'detail-lang-ko' ? 'ko' : 'en';
+            const newLang = e.target.id === 'detail-lang-ko' ? 'ko' : 'en';
+            dataManager.currentLanguage = newLang;
             updateHeritageDescription(item);
         });
     });

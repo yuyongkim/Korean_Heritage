@@ -329,6 +329,7 @@ class DataManager {
                                 key_kdcd: row.key_kdcd || '',
                                 key_ctcd: row.key_ctcd || '',
                                 content: row.content || '',
+                                content_en: row.content_en || '', // 영문 설명 필드 보존
                                 // 원본 데이터 보존
                                 original_data: {
                                     key_asno: row.key_asno,

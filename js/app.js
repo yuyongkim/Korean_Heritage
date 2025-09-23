@@ -792,6 +792,22 @@ async function loadDetailView(itemId) {
 window.loadDetailView = loadDetailView;
 
 /**
+ * 리스트 뷰 로드 (페이지 파라미터 지원)
+ */
+async function loadListView(page = 1, params = {}) {
+    console.log('📋 리스트 뷰 로드:', page, params);
+    
+    // 현재 페이지 업데이트
+    currentPage = page;
+    
+    // 헤리티지 리스트 로드
+    await loadHeritageList();
+}
+
+// 전역으로 함수 등록
+window.loadListView = loadListView;
+
+/**
  * 문화재를 찾을 수 없을 때 표시할 페이지
  */
 function showHeritageNotFound(name) {
@@ -864,10 +880,12 @@ function renderHeritageDetail(item) {
     // 이미지 영역
     const imageContainer = document.getElementById('heritage-image');
     if (imageContainer) {
-        if (item.imageUrl && item.imageUrl.trim() !== '') {
+        // Handle both raw data format (imageUrl) and transformed format (image_url)
+        const imageUrl = item.imageUrl || item.image_url || '';
+        if (imageUrl && imageUrl.trim() !== '') {
             imageContainer.innerHTML = `
                 <div class="heritage-image-wrapper">
-                    <img src="${item.imageUrl}" alt="${item.name}" class="heritage-main-image" 
+                    <img src="${imageUrl}" alt="${item.name}" class="heritage-main-image" 
                          onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                     <div class="heritage-image-placeholder d-none" style="min-height: 400px;">
                         <div class="text-center text-muted">
@@ -877,7 +895,7 @@ function renderHeritageDetail(item) {
                         </div>
                     </div>
                     <div class="heritage-image-overlay">
-                        <button class="btn btn-light btn-sm" onclick="openImageModal('${item.imageUrl}', '${item.name}')">
+                        <button class="btn btn-light btn-sm" onclick="openImageModal('${imageUrl}', '${item.name}')">
                             <i class="fas fa-expand"></i> 확대보기
                         </button>
                     </div>
@@ -958,12 +976,38 @@ function renderHeritageDetail(item) {
             `}
         `;
 
-        // 지도 표시
-        if (window.mapManager && item.longitude && item.latitude) {
-            setTimeout(() => {
-                const coords = { lat: item.latitude, lng: item.longitude };
-                mapManager.showMap('heritage-map', coords, item.name);
-            }, 100);
+        // 지도 표시 - Static map fallback since Kakao API key not available
+        const mapContainer = document.getElementById('heritage-map');
+        if (mapContainer && item.longitude && item.latitude) {
+            // Use Google Static Maps API as fallback
+            const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${item.latitude},${item.longitude}&zoom=15&size=400x200&markers=color:red%7C${item.latitude},${item.longitude}&key=AIzaSyDummy`;
+            
+            mapContainer.innerHTML = `
+                <div class="map-container">
+                    <iframe 
+                        src="https://maps.google.com/maps?q=${item.latitude},${item.longitude}&hl=ko&z=15&output=embed"
+                        width="100%" 
+                        height="200" 
+                        style="border:0; border-radius: 8px;" 
+                        allowfullscreen="" 
+                        loading="lazy" 
+                        referrerpolicy="no-referrer-when-downgrade">
+                    </iframe>
+                    <div class="map-overlay mt-2">
+                        <small class="text-muted">
+                            <i class="fas fa-map-marker-alt me-1"></i>
+                            위도: ${item.latitude}, 경도: ${item.longitude}
+                        </small>
+                    </div>
+                </div>
+            `;
+        } else if (mapContainer) {
+            mapContainer.innerHTML = `
+                <div class="text-center text-muted p-4">
+                    <i class="fas fa-map-marked-alt fa-2x mb-2"></i>
+                    <p>위치 정보가 없습니다</p>
+                </div>
+            `;
         }
     }
     

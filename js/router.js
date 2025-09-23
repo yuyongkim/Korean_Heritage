@@ -120,6 +120,35 @@ class Router {
                 params: { type: unclassifiedType, page: 1 }
             };
         }
+        // 🚀 list 페이지네이션 처리 (list?page=X)
+        else if (decodedHash.startsWith('list?page=')) {
+            const pageMatch = decodedHash.match(/page=(\d+)/);
+            const pageNum = pageMatch ? parseInt(pageMatch[1]) : 1;
+            result = {
+                route: 'list',
+                params: { page: pageNum }
+            };
+        }
+        // 🚀 일반 쿼리 파라미터 처리 (route?param=value)
+        else if (decodedHash.includes('?')) {
+            const [routePart, queryPart] = decodedHash.split('?', 2);
+            const params = {};
+            
+            // 쿼리 파라미터 파싱
+            if (queryPart) {
+                queryPart.split('&').forEach(param => {
+                    const [key, value] = param.split('=');
+                    if (key && value !== undefined) {
+                        params[key] = isNaN(value) ? decodeURIComponent(value) : parseInt(value);
+                    }
+                });
+            }
+            
+            result = {
+                route: routePart || 'home',
+                params: params
+            };
+        }
         // 기본 라우트
         else {
             const parts = decodedHash.split('/');

@@ -290,7 +290,7 @@ class DataManager {
             // 동적으로 스크립트 로드
             return new Promise((resolve, reject) => {
                 const script = document.createElement('script');
-                script.src = 'js/heritage-data-complete-20250917_031007.js';
+                script.src = 'js/heritage-data.js';
                 script.onload = () => {
                     debugLog('✅ 대용량 JavaScript 파일 로드 완료');
                     if (typeof HERITAGE_DATA !== 'undefined' && Array.isArray(HERITAGE_DATA)) {

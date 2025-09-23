@@ -261,12 +261,9 @@ function setupEventListeners() {
 /**
  * 대시보드 업데이트
  */
-function updateDashboard() {
-    // 데이터가 로딩되지 않았으면 대기
-    if (!dataManager || !dataManager.isLoaded || !dataManager.heritageData || dataManager.heritageData.length === 0) {
-        console.log('📊 데이터가 아직 로딩되지 않음, 대시보드 업데이트 대기');
-        return;
-    }
+async function updateDashboard() {
+    // 데이터 매니저가 준비될 때까지 기다리기
+    await dataManager.waitForData();
     
     const stats = dataManager.getStatistics();
     
@@ -400,28 +397,9 @@ function toggleViewMode(mode) {
 /**
  * 문화재 목록 로드
  */
-function loadHeritageList(searchQuery = '') {
-    // 🚨 중요: 데이터 매니저 로딩 상태 확인
-    if (!dataManager) {
-        console.error('데이터 매니저가 초기화되지 않았습니다');
-        return;
-    }
-    
-    if (dataManager.isLoading) {
-        console.log('데이터 매니저가 로딩 중입니다. 잠시 후 다시 시도합니다.');
-        setTimeout(() => loadHeritageList(searchQuery), 500);
-        return;
-    }
-    
-    if (!dataManager.isLoaded) {
-        console.log('데이터가 아직 로딩되지 않았습니다. 데이터 로딩 완료를 기다립니다...');
-        // 데이터 로딩 완료를 기다리는 이벤트 리스너 등록
-        dataManager.addEventListener('dataLoaded', () => {
-            console.log('데이터 로딩 완료, 문화재 목록 로드 재시도');
-            loadHeritageList(searchQuery);
-        });
-        return;
-    }
+async function loadHeritageList(searchQuery = '') {
+    // 데이터 매니저가 준비될 때까지 기다리기
+    await dataManager.waitForData();
     
     const query = searchQuery || document.getElementById('globalSearch')?.value || '';
     const categoryFilter = document.getElementById('category-filter')?.value || '';
@@ -749,7 +727,10 @@ function renderPagination(current, total, totalItems, containerId = 'pagination'
 /**
  * 문화재 상세 정보 로드
  */
-function loadHeritageDetail(name) {
+async function loadHeritageDetail(name) {
+    // 데이터 매니저가 준비될 때까지 기다리기
+    await dataManager.waitForData();
+    
     const item = dataManager.getByName(name);
     if (!item) {
         console.error('문화재를 찾을 수 없습니다:', name);
@@ -1008,26 +989,13 @@ let currentCategoryName = '';
 /**
  * 카테고리별 뷰 로드
  */
-function loadCategoryView(category) {
+async function loadCategoryView(category) {
     console.log('카테고리 뷰 로드 시작:', category);
     currentCategoryName = category;
     currentCategoryPage = 1;
     
-    // 데이터 매니저 확인 및 대기 메커니즘
-    if (!dataManager) {
-        console.error('데이터 매니저가 초기화되지 않았습니다');
-        return;
-    }
-    
-    if (!dataManager.isLoaded) {
-        console.log('데이터가 아직 로딩 중입니다. 잠시 후 다시 시도합니다...');
-        // 데이터 로딩 완료를 기다리는 이벤트 리스너 등록
-        dataManager.addEventListener('dataLoaded', () => {
-            console.log('데이터 로딩 완료, 카테고리 뷰 재시도');
-            loadCategoryView(category);
-        });
-        return;
-    }
+    // 데이터 매니저가 준비될 때까지 기다리기
+    await dataManager.waitForData();
     
     // 기본 데이터 로드
     const allItems = dataManager.getByCategory(category);
@@ -1548,8 +1516,11 @@ let currentEnglishData = [];
 /**
  * English 페이지 로드
  */
-function loadEnglishView() {
+async function loadEnglishView() {
     currentEnglishPage = 1;
+    
+    // 데이터 매니저가 준비될 때까지 기다리기
+    await dataManager.waitForData();
     
     // 모든 데이터 로드 (영문 설명 유무 상관없이)
     const allItems = dataManager.heritageData;
@@ -1919,10 +1890,13 @@ let currentUnclassifiedType = 'all';
 /**
  * 미분류 항목 뷰 로드
  */
-function loadUnclassifiedView(type = 'sido-type') {
+async function loadUnclassifiedView(type = 'sido-type') {
     console.log('미분류 항목 뷰 로드:', type);
     currentUnclassifiedType = type;
     currentUnclassifiedPage = 1;
+    
+    // 데이터 매니저가 준비될 때까지 기다리기
+    await dataManager.waitForData();
     
     // 미분류 항목 필터링
     const allItems = dataManager.heritageData;

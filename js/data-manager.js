@@ -263,6 +263,38 @@ class DataManager {
     }
     
     /**
+     * 🚀 데이터가 준비될 때까지 기다리는 메서드
+     */
+    async waitForData() {
+        // 이미 로딩이 완료되었다면 즉시 반환
+        if (this.isLoaded && this.heritageData && this.heritageData.length > 0) {
+            return this.heritageData;
+        }
+        
+        // 로딩 중이라면 완료될 때까지 기다림
+        if (this.isLoading && this.loadPromise) {
+            return await this.loadPromise;
+        }
+        
+        // 아직 로딩이 시작되지 않았다면 로딩 시작
+        if (!this.isLoaded && !this.isLoading) {
+            return await this.loadData();
+        }
+        
+        // 데이터가 로딩될 때까지 폴링으로 기다림
+        return new Promise((resolve) => {
+            const checkData = () => {
+                if (this.isLoaded && this.heritageData && this.heritageData.length > 0) {
+                    resolve(this.heritageData);
+                } else {
+                    setTimeout(checkData, 100); // 100ms마다 확인
+                }
+            };
+            checkData();
+        });
+    }
+    
+    /**
      * 대용량 JavaScript 데이터 로드
      */
     async loadLargeHeritageData() {

@@ -61,13 +61,14 @@ class Router {
                 if (this.routes[route]) {
                     this.routes[route](params);
                 } else {
-                    // 기본 라우트 (홈)
-                    this.routes['home']();
+                    // 알 수 없는 라우트에 대한 처리
+                    console.warn('알 수 없는 라우트:', route);
+                    this.showRouteNotFound(route);
                 }
                 this.updateNavigation(route);
             } catch (error) {
                 console.error('라우팅 오류:', error);
-                this.routes['home']();
+                this.showRouteError(error);
             }
             
             this.hideLoading();
@@ -175,6 +176,100 @@ class Router {
         if (activeLink) {
             activeLink.classList.add('active');
         }
+    }
+    
+    /**
+     * 알 수 없는 라우트 처리
+     */
+    showRouteNotFound(route) {
+        console.warn('알 수 없는 라우트:', route);
+        // 홈으로 리다이렉트하지 않고 404 페이지 표시
+        this.showView('home-view');
+        this.showNotFoundMessage(route);
+    }
+    
+    /**
+     * 라우트 에러 처리
+     */
+    showRouteError(error) {
+        console.error('라우트 처리 중 오류:', error);
+        // 홈으로 리다이렉트하지 않고 에러 페이지 표시
+        this.showView('home-view');
+        this.showErrorMessage(error);
+    }
+    
+    /**
+     * 404 메시지 표시
+     */
+    showNotFoundMessage(route) {
+        // 기존 알림 제거
+        const existingAlert = document.querySelector('.route-not-found-alert');
+        if (existingAlert) {
+            existingAlert.remove();
+        }
+        
+        // 새 알림 생성
+        const alert = document.createElement('div');
+        alert.className = 'route-not-found-alert alert alert-warning alert-dismissible fade show';
+        alert.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            min-width: 300px;
+        `;
+        alert.innerHTML = `
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>페이지를 찾을 수 없습니다</strong><br>
+            <small>요청하신 경로 "${route}"를 찾을 수 없습니다.</small>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(alert);
+        
+        // 5초 후 자동 제거
+        setTimeout(() => {
+            if (alert && alert.parentNode) {
+                alert.remove();
+            }
+        }, 5000);
+    }
+    
+    /**
+     * 에러 메시지 표시
+     */
+    showErrorMessage(error) {
+        // 기존 알림 제거
+        const existingAlert = document.querySelector('.route-error-alert');
+        if (existingAlert) {
+            existingAlert.remove();
+        }
+        
+        // 새 알림 생성
+        const alert = document.createElement('div');
+        alert.className = 'route-error-alert alert alert-danger alert-dismissible fade show';
+        alert.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            min-width: 300px;
+        `;
+        alert.innerHTML = `
+            <i class="fas fa-exclamation-circle me-2"></i>
+            <strong>페이지 로딩 오류</strong><br>
+            <small>페이지를 불러오는 중 오류가 발생했습니다.</small>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(alert);
+        
+        // 5초 후 자동 제거
+        setTimeout(() => {
+            if (alert && alert.parentNode) {
+                alert.remove();
+            }
+        }, 5000);
     }
 }
 

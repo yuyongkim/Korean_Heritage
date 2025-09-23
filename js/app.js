@@ -113,6 +113,36 @@ class AppController {
 const appController = new AppController();
 
 /**
+ * 카테고리별 첫 페이지 미리 로드
+ */
+async function preloadCategoryFirstPages(data) {
+    console.log('🏛️ 카테고리별 첫 페이지 미리 로드 시작');
+    
+    const categories = ['국보', '보물', '사적', '명승', '천연기념물', '국가무형문화재'];
+    
+    for (const category of categories) {
+        try {
+            const categoryItems = data.filter(item => item.category === category);
+            if (categoryItems.length > 0) {
+                // 첫 페이지만 미리 로드 (20개)
+                const firstPageItems = categoryItems.slice(0, 20);
+                console.log(`📦 ${category} 카테고리 첫 페이지 미리 로드: ${firstPageItems.length}개`);
+                
+                // 이미지 미리 로드
+                await imageCacheManager.preloadImages(firstPageItems);
+                
+                // 잠시 대기 (브라우저 블로킹 방지)
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
+        } catch (error) {
+            console.warn(`${category} 카테고리 미리 로드 실패:`, error);
+        }
+    }
+    
+    console.log('✅ 카테고리별 첫 페이지 미리 로드 완료');
+}
+
+/**
  * 애플리케이션 초기화
  */
 document.addEventListener('DOMContentLoaded', async () => {
@@ -158,10 +188,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 🚀 최적화된 대시보드 업데이트
     appController.updateDashboard(dataManager.heritageData);
     
+    // 🖼️ 이미지 미리 로드 (첫 3페이지)
+    setTimeout(() => {
+        const firstThreePages = dataManager.heritageData.slice(0, 60); // 20 * 3 = 60개
+        imageCacheManager.preloadImages(firstThreePages);
+    }, 2000); // 2초 후 시작 (초기 로딩 완료 후)
+    
     // 데이터 변경 이벤트 리스너 설정
     dataManager.addEventListener('dataLoaded', (data) => {
         console.log('📊 데이터 로딩 완료 이벤트 수신:', data.length, '개 항목');
         appController.updateDashboard(data);
+        
+        // 🖼️ 이미지 미리 로드
+        setTimeout(() => {
+            const firstThreePages = data.slice(0, 60);
+            imageCacheManager.preloadImages(firstThreePages);
+        }, 1000);
+        
+        // 🏛️ 카테고리별 첫 페이지 미리 로드
+        setTimeout(() => {
+            preloadCategoryFirstPages(data);
+        }, 3000); // 3초 후 시작
     });
     
     dataManager.addEventListener('dataUpdated', (data) => {
@@ -496,7 +543,7 @@ function renderGridView(items) {
             <div class="card heritage-card h-100" onclick="viewHeritageDetail('${item.name}')">
                 <div class="card-img-top heritage-image">
                     ${item.image_url ? 
-                        `<img src="${item.image_url}" alt="${item.name}" onerror="this.style.display='none'; this.parentElement.classList.add('no-image')">` : 
+                        `<img src="${imageCacheManager.getCachedImageUrl(item.image_url)}" alt="${item.name}" onerror="this.style.display='none'; this.parentElement.classList.add('no-image')">` : 
                         `<div class="no-image-placeholder"><i class="fas fa-image"></i><span>이미지 없음</span></div>`
                     }
                 </div>
@@ -534,7 +581,7 @@ function renderListView(items) {
             <td>
                 <div class="heritage-list-image">
                     ${item.image_url ? 
-                        `<img src="${item.image_url}" alt="${item.name}" class="rounded" style="width: 60px; height: 60px; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : 
+                        `<img src="${imageCacheManager.getCachedImageUrl(item.image_url)}" alt="${item.name}" class="rounded" style="width: 60px; height: 60px; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : 
                         ''
                     }
                     <div class="no-image-mini ${item.image_url ? 'd-none' : 'd-flex'}" style="width: 60px; height: 60px; background: #f8f9fa; border-radius: 0.375rem; align-items: center; justify-content: center; color: #6c757d; font-size: 0.8rem;">
@@ -885,7 +932,7 @@ function renderHeritageDetail(item) {
         if (imageUrl && imageUrl.trim() !== '') {
             imageContainer.innerHTML = `
                 <div class="heritage-image-wrapper">
-                    <img src="${imageUrl}" alt="${item.name}" class="heritage-main-image" 
+                    <img src="${imageCacheManager.getCachedImageUrl(imageUrl)}" alt="${item.name}" class="heritage-main-image" 
                          onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                     <div class="heritage-image-placeholder d-none" style="min-height: 400px;">
                         <div class="text-center text-muted">
@@ -976,31 +1023,14 @@ function renderHeritageDetail(item) {
             `}
         `;
 
-        // 지도 표시 - Static map fallback since Kakao API key not available
+        // 지도 표시 - Kakao Maps API 사용
         const mapContainer = document.getElementById('heritage-map');
         if (mapContainer && item.longitude && item.latitude) {
-            // Use Google Static Maps API as fallback
-            const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${item.latitude},${item.longitude}&zoom=15&size=400x200&markers=color:red%7C${item.latitude},${item.longitude}&key=AIzaSyDummy`;
-            
-            mapContainer.innerHTML = `
-                <div class="map-container">
-                    <iframe 
-                        src="https://maps.google.com/maps?q=${item.latitude},${item.longitude}&hl=ko&z=15&output=embed"
-                        width="100%" 
-                        height="200" 
-                        style="border:0; border-radius: 8px;" 
-                        allowfullscreen="" 
-                        loading="lazy" 
-                        referrerpolicy="no-referrer-when-downgrade">
-                    </iframe>
-                    <div class="map-overlay mt-2">
-                        <small class="text-muted">
-                            <i class="fas fa-map-marker-alt me-1"></i>
-                            위도: ${item.latitude}, 경도: ${item.longitude}
-                        </small>
-                    </div>
-                </div>
-            `;
+            // Kakao Maps API 사용
+            mapManager.showMap('heritage-map', {
+                lat: item.latitude,
+                lng: item.longitude
+            }, item.name);
         } else if (mapContainer) {
             mapContainer.innerHTML = `
                 <div class="text-center text-muted p-4">
@@ -1112,6 +1142,14 @@ async function loadCategoryView(category) {
     // 컨텐츠 렌더링
     renderCategoryContent();
     
+    // 🖼️ 카테고리 이미지 미리 로드 (다음 페이지들)
+    setTimeout(() => {
+        const nextPages = allItems.slice(20, 60); // 2-3페이지
+        if (nextPages.length > 0) {
+            imageCacheManager.preloadImages(nextPages);
+        }
+    }, 1000);
+    
     // 이벤트 리스너 설정
     setupCategoryEventListeners();
     
@@ -1127,15 +1165,8 @@ window.loadCategoryView = loadCategoryView;
 async function renderCategoryContent() {
     console.log('카테고리 컨텐츠 렌더링 시작:', currentCategoryData.length, '건');
     
-    // URL 업데이트 (페이지네이션을 위한) - 첫 페이지에서만 업데이트
-    if (currentCategoryPage > 1) {
-        const newUrl = `category/${currentCategoryName}/page/${currentCategoryPage}`;
-        console.log(`🛣️ 카테고리 페이지 URL 업데이트: ${window.location.hash.slice(1)} -> ${newUrl}`);
-        // 무한 루프 방지를 위해 조건부 navigate
-        if (!window.location.hash.includes(`/page/${currentCategoryPage}`)) {
-            router.navigate(newUrl);
-        }
-    }
+    // 🚨 중요: URL 업데이트 로직 제거 - 라우터에서 처리하도록 변경
+    // URL 업데이트는 라우터에서 자동으로 처리되므로 여기서는 제거
     
     // 지역 필터 적용
     const locationFilter = document.getElementById('category-location-filter')?.value || '';
@@ -1246,7 +1277,7 @@ function renderCategoryGridView(items) {
             <div class="card heritage-card h-100" onclick="viewHeritageDetail('${item.name}')">
                 <div class="card-img-top heritage-image">
                     ${item.image_url ? 
-                        `<img src="${item.image_url}" alt="${item.name}" onerror="this.style.display='none'; this.parentElement.classList.add('no-image')">` : 
+                        `<img src="${imageCacheManager.getCachedImageUrl(item.image_url)}" alt="${item.name}" onerror="this.style.display='none'; this.parentElement.classList.add('no-image')">` : 
                         `<div class="no-image-placeholder"><i class="fas fa-image"></i><span>이미지 없음</span></div>`
                     }
                 </div>
@@ -1297,7 +1328,7 @@ function renderCategoryListView(items) {
             <td>
                 <div class="heritage-list-image">
                     ${item.image_url ? 
-                        `<img src="${item.image_url}" alt="${item.name}" class="rounded" style="width: 60px; height: 60px; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : 
+                        `<img src="${imageCacheManager.getCachedImageUrl(item.image_url)}" alt="${item.name}" class="rounded" style="width: 60px; height: 60px; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : 
                         ''
                     }
                     <div class="no-image-mini ${item.image_url ? 'd-none' : 'd-flex'}" style="width: 60px; height: 60px; background: #f8f9fa; border-radius: 0.375rem; align-items: center; justify-content: center; color: #6c757d; font-size: 0.8rem;">
@@ -1604,9 +1635,9 @@ async function changeCategoryPage(page) {
     setLoadingTimeout();
     
     try {
-        // URL 직접 업데이트
+        // 🚨 중요: router.navigate() 사용하여 무한 루프 방지
         const newUrl = `category/${currentCategoryName}/page/${page}`;
-        window.location.hash = newUrl;
+        router.navigate(newUrl);
         
         // 컨텐츠 렌더링 (URL 업데이트 없이)
         await renderCategoryContentOnly();
@@ -1725,6 +1756,51 @@ async function renderEnglishContent() {
 }
 
 /**
+ * English 컨텐츠만 렌더링 (URL 업데이트 없이)
+ */
+async function renderEnglishContentOnly() {
+    // 필터 적용
+    const categoryFilter = document.getElementById('english-category-filter')?.value || '';
+    const locationFilter = document.getElementById('english-location-filter')?.value || '';
+    let filteredData = currentEnglishData;
+    
+    if (categoryFilter) {
+        filteredData = filteredData.filter(item => item.category === categoryFilter);
+    }
+    
+    if (locationFilter) {
+        filteredData = filteredData.filter(item => 
+            item.location && item.location.includes(locationFilter)
+        );
+    }
+    
+    // 페이지네이션
+    const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+    const startIndex = (currentEnglishPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const pageData = filteredData.slice(startIndex, endIndex);
+    
+    // 카운트 업데이트
+    updateEnglishCount(filteredData.length);
+    
+    // 뷰 모드에 따라 렌더링
+    const isGridView = document.getElementById('english-grid-btn')?.checked !== false;
+    
+    if (isGridView) {
+        renderEnglishGridView(pageData);
+        document.getElementById('english-grid').style.display = 'block';
+        document.getElementById('english-table').style.display = 'none';
+    } else {
+        renderEnglishListView(pageData);
+        document.getElementById('english-grid').style.display = 'none';
+        document.getElementById('english-table').style.display = 'block';
+    }
+    
+    // 페이지네이션 렌더링
+    renderEnglishPagination(currentEnglishPage, totalPages, filteredData.length);
+}
+
+/**
  * English 그리드 뷰 렌더링
  */
 function renderEnglishGridView(items) {
@@ -1749,7 +1825,7 @@ function renderEnglishGridView(items) {
             <div class="card heritage-card h-100" onclick="viewHeritageDetail('${item.name}')">
                 <div class="card-img-top heritage-image">
                     ${item.image_url ? 
-                        `<img src="${item.image_url}" alt="${item.name}" onerror="this.style.display='none'; this.parentElement.classList.add('no-image')">` : 
+                        `<img src="${imageCacheManager.getCachedImageUrl(item.image_url)}" alt="${item.name}" onerror="this.style.display='none'; this.parentElement.classList.add('no-image')">` : 
                         `<div class="no-image-placeholder"><i class="fas fa-image"></i><span>No Image</span></div>`
                     }
                 </div>
@@ -1800,7 +1876,7 @@ function renderEnglishListView(items) {
             <td>
                 <div class="heritage-list-image">
                     ${item.image_url ? 
-                        `<img src="${item.image_url}" alt="${item.name}" class="rounded" style="width: 60px; height: 60px; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : 
+                        `<img src="${imageCacheManager.getCachedImageUrl(item.image_url)}" alt="${item.name}" class="rounded" style="width: 60px; height: 60px; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : 
                         ''
                     }
                     <div class="no-image-mini ${item.image_url ? 'd-none' : 'd-flex'}" style="width: 60px; height: 60px; background: #f8f9fa; border-radius: 0.375rem; align-items: center; justify-content: center; color: #6c757d; font-size: 0.8rem;">
@@ -1996,9 +2072,12 @@ async function changeEnglishPage(page) {
     setLoadingTimeout();
     
     try {
-        // router.navigate()를 여기서 직접 호출하는 대신,
-        // renderEnglishContent가 URL을 처리하도록 둡니다.
-        await renderEnglishContent();
+        // URL 직접 업데이트
+        const newUrl = `english/page/${page}`;
+        window.location.hash = newUrl;
+        
+        // 컨텐츠만 렌더링 (URL 업데이트 없이)
+        await renderEnglishContentOnly();
     } catch (error) {
         console.error('English 페이지 로딩 오류:', error);
         showErrorMessage('English 페이지를 불러오는 중 오류가 발생했습니다.');
@@ -2144,7 +2223,7 @@ function renderUnclassifiedGridView(items) {
             <div class="card heritage-card h-100" onclick="viewHeritageDetail('${item.name}')">
                 <div class="card-img-top heritage-image">
                     ${item.image_url ? 
-                        `<img src="${item.image_url}" alt="${item.name}" onerror="this.style.display='none'; this.parentElement.classList.add('no-image')">` : 
+                        `<img src="${imageCacheManager.getCachedImageUrl(item.image_url)}" alt="${item.name}" onerror="this.style.display='none'; this.parentElement.classList.add('no-image')">` : 
                         `<div class="no-image-placeholder"><i class="fas fa-image"></i><span>이미지 없음</span></div>`
                     }
                 </div>
@@ -2201,7 +2280,7 @@ function renderUnclassifiedListView(items) {
             <td>
                 <div class="heritage-list-image">
                     ${item.image_url ? 
-                        `<img src="${item.image_url}" alt="${item.name}" class="rounded" style="width: 60px; height: 60px; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : 
+                        `<img src="${imageCacheManager.getCachedImageUrl(item.image_url)}" alt="${item.name}" class="rounded" style="width: 60px; height: 60px; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : 
                         ''
                     }
                     <div class="no-image-mini ${item.image_url ? 'd-none' : 'd-flex'}" style="width: 60px; height: 60px; background: #f8f9fa; border-radius: 0.375rem; align-items: center; justify-content: center; color: #6c757d; font-size: 0.8rem;">
@@ -2563,8 +2642,23 @@ async function changePage(page) {
     setLoadingTimeout();
     
     try {
-        router.navigate(createPageUrl(page)); // URL 먼저 변경
-        await loadHeritageList(); // loadHeritageList가 끝날 때까지 기다림
+        // 🚨 중요: URL 업데이트를 router.navigate()로 변경하여 상태 관리 개선
+        const newUrl = createPageUrl(page);
+        router.navigate(newUrl);
+        
+        // 직접 데이터 로드 (라우터를 거치지 않음)
+        await loadHeritageList();
+        
+        // 🖼️ 다음 페이지 이미지 미리 로드
+        setTimeout(() => {
+            const nextPageStart = page * itemsPerPage;
+            const nextPageEnd = nextPageStart + itemsPerPage;
+            const nextPageItems = dataManager.heritageData.slice(nextPageStart, nextPageEnd);
+            if (nextPageItems.length > 0) {
+                imageCacheManager.preloadImages(nextPageItems);
+            }
+        }, 500);
+        
         window.scrollTo(0, 0);
     } catch (error) {
         console.error('페이지 로딩 오류:', error);
@@ -2713,15 +2807,36 @@ window.addEventListener('error', (event) => {
 function createPageUrl(newPage) {
     const currentHash = window.location.hash.slice(1) || 'home';
     
-    // 🚨 간단하고 빠른 URL 생성
+    // 🚨 중요: URL 파싱 개선 - 더 정확한 컨텍스트 파악
+    console.log(`🔗 URL 생성: 현재 해시=${currentHash}, 새 페이지=${newPage}`);
+    
+    // 카테고리 페이지인 경우
     if (currentHash.includes('category/')) {
         const categoryPart = currentHash.split('/page/')[0]; // 기존 페이지 부분 제거
-        return `${categoryPart}/page/${newPage}`;
-    } else if (currentHash === 'home' || currentHash === '') {
-        return `home?page=${newPage}`;
-    } else {
-        return `${currentHash}?page=${newPage}`;
+        const newUrl = `${categoryPart}/page/${newPage}`;
+        console.log(`📂 카테고리 페이지 URL: ${newUrl}`);
+        return newUrl;
     }
+    
+    // 홈 페이지인 경우
+    if (currentHash === 'home' || currentHash === '' || currentHash.startsWith('home?')) {
+        const newUrl = `home?page=${newPage}`;
+        console.log(`🏠 홈 페이지 URL: ${newUrl}`);
+        return newUrl;
+    }
+    
+    // 리스트 페이지인 경우
+    if (currentHash === 'list' || currentHash.startsWith('list?')) {
+        const newUrl = `list?page=${newPage}`;
+        console.log(`📋 리스트 페이지 URL: ${newUrl}`);
+        return newUrl;
+    }
+    
+    // 기타 경우 - 현재 라우트에 페이지 파라미터 추가
+    const baseRoute = currentHash.split('?')[0];
+    const newUrl = `${baseRoute}?page=${newPage}`;
+    console.log(`🔄 기타 페이지 URL: ${newUrl}`);
+    return newUrl;
 }
 
 // 🔥 6단계: 성능 모니터링 함수
@@ -2763,6 +2878,116 @@ window.emergencyPerformanceFix = function() {
     
     console.log('✅ 긴급 성능 복구 완료');
     location.reload(); // 최후의 수단
+};
+
+// 🖼️ 이미지 캐시 통계 확인 함수
+window.getImageCacheStats = function() {
+    const stats = imageCacheManager.getCacheStats();
+    console.log('🖼️ 이미지 캐시 통계:', stats);
+    return stats;
+};
+
+// 🖼️ 이미지 캐시 클리어 함수
+window.clearImageCache = function() {
+    imageCacheManager.clearCache();
+    console.log('🧹 이미지 캐시 클리어됨');
+};
+
+// 🧪 상세페이지 → 2페이지 테스트 함수
+window.testDetailToPage2 = function() {
+    console.log('🧪 상세페이지 → 2페이지 테스트 시작');
+    
+    // 현재 상태 로깅
+    console.log('📍 현재 상태:');
+    console.log('- URL:', window.location.href);
+    console.log('- Hash:', window.location.hash);
+    console.log('- Current Page:', currentPage);
+    console.log('- Router Navigating:', router.isNavigating);
+    console.log('- Data Manager Loaded:', dataManager.isLoaded);
+    
+    // 시나리오 시뮬레이션
+    console.log('🎭 시나리오 시뮬레이션:');
+    
+    // 1. 상세페이지로 이동
+    console.log('1️⃣ 상세페이지로 이동');
+    router.navigate('detail/테스트문화재');
+    
+    setTimeout(() => {
+        // 2. 뒤로가기
+        console.log('2️⃣ 뒤로가기');
+        goBack();
+        
+        setTimeout(() => {
+            // 3. 2페이지로 이동
+            console.log('3️⃣ 2페이지로 이동');
+            changePage(2);
+            
+            setTimeout(() => {
+                console.log('✅ 테스트 완료');
+                console.log('📍 최종 상태:');
+                console.log('- URL:', window.location.href);
+                console.log('- Hash:', window.location.hash);
+                console.log('- Current Page:', currentPage);
+            }, 1000);
+        }, 1000);
+    }, 1000);
+    
+    return '테스트 시작됨 - 콘솔을 확인하세요';
+};
+
+// 🧪 보물 카테고리 페이지네이션 테스트 함수
+window.testTreasureCategoryPagination = function() {
+    console.log('🧪 보물 카테고리 페이지네이션 테스트 시작');
+    
+    // 현재 상태 로깅
+    console.log('📍 현재 상태:');
+    console.log('- URL:', window.location.href);
+    console.log('- Hash:', window.location.hash);
+    console.log('- Current Category Page:', currentCategoryPage);
+    console.log('- Current Category Name:', currentCategoryName);
+    console.log('- Router Navigating:', router.isNavigating);
+    
+    // 시나리오 시뮬레이션
+    console.log('🎭 보물 카테고리 시나리오 시뮬레이션:');
+    
+    // 1. 보물 카테고리로 이동
+    console.log('1️⃣ 보물 카테고리로 이동');
+    router.navigate('category/보물');
+    
+    setTimeout(() => {
+        // 2. 2페이지로 이동
+        console.log('2️⃣ 2페이지로 이동');
+        changeCategoryPage(2);
+        
+        setTimeout(() => {
+            // 3. 3페이지로 이동
+            console.log('3️⃣ 3페이지로 이동');
+            changeCategoryPage(3);
+            
+            setTimeout(() => {
+                // 4. 4페이지로 이동
+                console.log('4️⃣ 4페이지로 이동');
+                changeCategoryPage(4);
+                
+                setTimeout(() => {
+                    // 5. 5페이지로 이동
+                    console.log('5️⃣ 5페이지로 이동');
+                    changeCategoryPage(5);
+                    
+                    setTimeout(() => {
+                        console.log('✅ 보물 카테고리 테스트 완료');
+                        console.log('📍 최종 상태:');
+                        console.log('- URL:', window.location.href);
+                        console.log('- Hash:', window.location.hash);
+                        console.log('- Current Category Page:', currentCategoryPage);
+                        console.log('- Current Category Name:', currentCategoryName);
+                    }, 1000);
+                }, 1000);
+            }, 1000);
+        }, 1000);
+    }, 1000);
+    
+    return '보물 카테고리 테스트 시작됨 - 콘솔을 확인하세요';
 };
 
 // 🔥 안전한 라우팅 함수 래퍼

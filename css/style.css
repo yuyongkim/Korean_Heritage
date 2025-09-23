@@ -1283,6 +1283,20 @@ body.sidebar-hidden .sidebar-toggle-desktop {
     font-size: 0.75rem;
 }
 
+.heritage-badge-scenic {
+    background-color: #4A90E2;
+    color: white;
+    font-weight: 600;
+    font-size: 0.75rem;
+}
+
+.heritage-badge-intangible {
+    background-color: #9B59B6;
+    color: white;
+    font-weight: 600;
+    font-size: 0.75rem;
+}
+
 /* 검색 및 필터 */
 .filter-section {
     background-color: white;

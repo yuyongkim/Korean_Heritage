@@ -105,6 +105,15 @@ class Router {
                 params: { category: categoryName, page: 1 }
             };
         }
+        // 미분류 항목 처리
+        else if (decodedHash.startsWith('unclassified/')) {
+            const parts = decodedHash.split('/');
+            const unclassifiedType = parts[1] || 'sido-type';
+            result = {
+                route: 'unclassified',
+                params: { type: unclassifiedType, page: 1 }
+            };
+        }
         // 기본 라우트
         else {
             const parts = decodedHash.split('/');
@@ -130,6 +139,7 @@ class Router {
             'list': 'list-view',
             'detail': 'detail-view',
             'category': 'category-view',
+            'unclassified': 'unclassified-view',
             'search': 'list-view',
             'english': 'english-view'
         };
@@ -525,10 +535,16 @@ router.addRoute('english', async () => {
 });
 
 router.addRoute('unclassified', async (params) => {
+    console.log('🗂️ 미분류 라우트 실행:', params);
     router.showView('unclassified-view');
-    if (params[0] && typeof loadUnclassifiedView === 'function') {
-        await loadUnclassifiedView(params[0]);
+    
+    const unclassifiedType = params.type || 'sido-type';
+    
+    if (typeof window.loadUnclassifiedView === 'function') {
+        await window.loadUnclassifiedView(unclassifiedType);
     } else if (typeof loadUnclassifiedView === 'function') {
-        await loadUnclassifiedView('all');
+        await loadUnclassifiedView(unclassifiedType);
+    } else {
+        console.error('❌ loadUnclassifiedView 함수를 찾을 수 없습니다');
     }
 });

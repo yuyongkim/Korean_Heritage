@@ -731,7 +731,9 @@ function renderPagination(current, total, totalItems, containerId = 'pagination'
         return;
     }
     
+
     const html = paginationManager.generatePaginationHTML(current, total, totalItems);
+
     container.innerHTML = html;
 }
 
@@ -1628,8 +1630,8 @@ function renderEnglishGridView(items) {
                     </div>
                     <h6 class="card-title">${item.name}</h6>
                     <p class="card-text text-truncate-2">
-                        ${item.english_description && item.english_description.trim() 
-                            ? item.english_description.substring(0, 100) + '...' 
+                        ${String(item.english_description || '').trim() 
+                            ? String(item.english_description || '').substring(0, 100) + '...' 
                             : (item.korean_description ? '[Korean] ' + item.korean_description.substring(0, 80) + '...' : 'Description not available')
                         }
                     </p>
@@ -1689,8 +1691,8 @@ function renderEnglishListView(items) {
             </td>
             <td>
                 <div class="heritage-list-desc">
-                    ${item.english_description && item.english_description.trim()
-                        ? item.english_description.substring(0, 150) + '...'
+                    ${String(item.english_description || '').trim()
+                        ? String(item.english_description || '').substring(0, 150) + '...'
                         : (item.korean_description ? '[Korean] ' + item.korean_description.substring(0, 120) + '...' : 'Description not available')
                     }
                 </div>

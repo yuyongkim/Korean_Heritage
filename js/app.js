@@ -1,3 +1,13 @@
+// 🚨 긴급 성능 복구 - 과도한 로깅 제거
+// 🔥 1단계: 로깅 레벨 조정 (모든 파일 상단에 추가)
+const DEBUG_MODE = false; // 🚨 false로 설정하여 로깅 비활성화
+
+function debugLog(...args) {
+    if (DEBUG_MODE) {
+        console.log(...args);
+    }
+}
+
 /**
  * 메인 애플리케이션 - 뷰 컨트롤러 및 이벤트 핸들러
  */
@@ -5,47 +15,184 @@
 // 전역 변수
 let currentPage = 1;
 const itemsPerPage = 20;
+let isLoading = false;
+
+// 🚀 성능 최적화: 중복 호출 방지 시스템
+class AppController {
+    constructor() {
+        this.updateQueue = new Set();
+        this.isUpdating = false;
+        this.lastUpdateData = null;
+        this.updateTimeout = null;
+        this.DEBOUNCE_TIME = 300; // 300ms로 증가
+    }
+
+    // 🚀 디바운스된 업데이트 시스템
+    scheduleUpdate(updateType, data) {
+        // 🚨 동일한 데이터 체크 강화
+        const dataHash = this._hashData(data);
+        if (this.lastUpdateData === dataHash) {
+            return; // 완전히 무시
+        }
+
+        this.updateQueue.add(updateType);
+        
+        // 🚨 디바운싱 강화
+        clearTimeout(this.updateTimeout);
+        this.updateTimeout = setTimeout(() => {
+            this._processUpdateQueue(data, dataHash);
+        }, this.DEBOUNCE_TIME);
+    }
+
+    async _processUpdateQueue(data, dataHash) {
+        if (this.isUpdating) {
+            return;
+        }
+
+        this.isUpdating = true;
+        debugLog('🔄 업데이트 큐 처리:', Array.from(this.updateQueue));
+
+        try {
+            // 🚀 한 번에 모든 업데이트 처리
+            if (this.updateQueue.has('dashboard')) {
+                await this._updateDashboard(data);
+            }
+            
+            if (this.updateQueue.has('filters')) {
+                await this._updateFilters(data);
+            }
+            
+            if (this.updateQueue.has('stats')) {
+                await this._updateStats(data);
+            }
+
+            this.lastUpdateData = dataHash;
+            debugLog('✅ 모든 업데이트 완료');
+            
+        } catch (error) {
+            debugLog('❌ 업데이트 에러:', error);
+        } finally {
+            this.updateQueue.clear();
+            this.isUpdating = false;
+        }
+    }
+
+    _hashData(data) {
+        if (!data || !Array.isArray(data)) return 'empty';
+        return `${data.length}-${data[0]?.name || 'unknown'}`;
+    }
+
+    // 🚀 개별 업데이트 함수들
+    async _updateDashboard(data) {
+        if (typeof updateDashboard === 'function') {
+            updateDashboard();
+        }
+    }
+
+    async _updateFilters(data) {
+        if (dataManager && typeof dataManager.updateFilters === 'function') {
+            dataManager.updateFilters();
+        }
+    }
+
+    async _updateStats(data) {
+        if (dataManager && typeof dataManager.getStatistics === 'function') {
+            dataManager.getStatistics();
+        }
+    }
+
+    // 🚀 공개 메서드들
+    updateDashboard(data) {
+        this.scheduleUpdate('dashboard', data);
+    }
+
+    updateFilters(data) {
+        this.scheduleUpdate('filters', data);
+    }
+
+    updateStats(data) {
+        this.scheduleUpdate('stats', data);
+    }
+}
+
+// 🚀 전역 앱 컨트롤러
+const appController = new AppController();
 
 /**
  * 애플리케이션 초기화
  */
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('애플리케이션 시작...');
-console.log('전역 객체들 확인:', {
-    dataManager: typeof dataManager,
-    router: typeof router,
-    i18n: typeof i18n,
-    imageResolver: typeof imageResolver,
-    mapManager: typeof mapManager
-});
+    debugLog('🚀 애플리케이션 시작...');
+    debugLog('전역 객체들 확인:', {
+        dataManager: typeof dataManager,
+        router: typeof router,
+        i18n: typeof i18n,
+        imageResolver: typeof imageResolver,
+        mapManager: typeof mapManager
+    });
+    
+    // 🚨 중요: 디버깅을 위한 전역 상태 로깅 함수
+    window.logCurrentState = function() {
+        console.log('=== 현재 상태 ===');
+        console.log('현재 페이지:', currentPage);
+        console.log('로딩 중:', isLoading);
+        console.log('URL 해시:', window.location.hash);
+        console.log('라우터 로딩 중:', router.isLoading);
+        console.log('데이터 매니저 로딩 중:', dataManager.isLoading);
+        console.log('데이터 로드됨:', dataManager.isLoaded);
+        console.log('총 데이터 수:', dataManager.heritageData?.length || 0);
+        console.log('=================');
+    };
+    
+    // 🚨 중요: 페이지 로딩 타임아웃 설정 (10초)
+    window.setLoadingTimeout = function() {
+        setTimeout(() => {
+            if (isLoading) {
+                console.error('⚠️ 10초 타임아웃: 강제로 로딩 상태 해제');
+                isLoading = false;
+                showErrorMessage('페이지 로딩이 너무 오래 걸립니다. 새로고침을 시도해보세요.');
+            }
+        }, 10000);
+    };
     
     // 데이터 로드 (로컬 스토리지 우선)
     await dataManager.loadData();
     
     // 초기 통계 표시
-    console.log('현재 총 문화재 수:', dataManager.heritageData.length);
+    debugLog('현재 총 문화재 수:', dataManager.heritageData.length);
     
-    // 대시보드 업데이트
-    updateDashboard();
+    // 🚀 최적화된 대시보드 업데이트
+    appController.updateDashboard(dataManager.heritageData);
     
     // 데이터 변경 이벤트 리스너 설정
     dataManager.addEventListener('dataLoaded', (data) => {
         console.log('📊 데이터 로딩 완료 이벤트 수신:', data.length, '개 항목');
-        updateDashboard();
+        appController.updateDashboard(data);
     });
     
     dataManager.addEventListener('dataUpdated', (data) => {
         console.log('📊 데이터 업데이트 이벤트 수신');
-        updateDashboard();
+        appController.updateDashboard(data);
+    });
+    
+    dataManager.addEventListener('statisticsChanged', (stats) => {
+        console.log('📊 통계 변경 이벤트 수신:', stats);
+        appController.updateStats(dataManager.heritageData);
     });
     
     // 이벤트 리스너 설정
     setupEventListeners();
     
+    // 🚨 중요: 해시 변경 이벤트 디버깅
+    window.addEventListener('hashchange', () => {
+        debugLog('🔗 Hash 변경됨:', window.location.hash);
+        logCurrentState();
+    });
+    
     // 초기 라우팅
     router.handleRoute();
     
-    console.log('애플리케이션 초기화 완료');
+    debugLog('✅ 애플리케이션 초기화 완료');
 });
 
 /**
@@ -137,6 +284,9 @@ function updateDashboard() {
     updateElement('treasure-count', stats.categories['보물'] || 0);
     updateElement('location-count', stats.locationCount);
     
+    // 히어로 섹션 통계 업데이트
+    updateElement('hero-total-count', stats.total.toLocaleString());
+    
     // 카테고리별 통계
     updateElement('site-count', (stats.categories['사적'] || 0) + (stats.categories['명승'] || 0));
     updateElement('natural-count', stats.categories['천연기념물'] || 0);
@@ -152,19 +302,25 @@ function updateDashboard() {
     // 사이드바 통계 업데이트
     updateElement('sidebar-total', stats.total);
     
+    // 번역률 계산 및 업데이트
+    updateTranslationRate();
+    
     // 미분류 항목 통계 업데이트
     updateUnclassifiedStats();
     
-    // 4축 필터링 시스템 업데이트
-    if (dataManager && typeof dataManager.updateFilters === 'function') {
-        dataManager.updateFilters();
-    }
+    // 4축 필터링 시스템 업데이트는 초기 로딩 시에만 실행
+    // if (dataManager && typeof dataManager.updateFilters === 'function') {
+    //     dataManager.updateFilters();
+    // }
     
     // 결과 개수 실시간 업데이트
     updateResultsCount();
     
     // 애니메이션 효과
     animateNumbers();
+    
+    // 대시보드 업데이트 완료 이벤트 발생
+    console.log('✅ 대시보드 업데이트 완료');
 }
 
 /**
@@ -251,25 +407,53 @@ function toggleViewMode(mode) {
  * 문화재 목록 로드
  */
 function loadHeritageList(searchQuery = '') {
+    // 🚨 중요: 데이터 매니저 로딩 상태 확인
+    if (dataManager.isLoading) {
+        console.log('데이터 매니저가 로딩 중입니다. 잠시 후 다시 시도합니다.');
+        setTimeout(() => loadHeritageList(searchQuery), 500);
+        return;
+    }
+    
     const query = searchQuery || document.getElementById('globalSearch')?.value || '';
     const categoryFilter = document.getElementById('category-filter')?.value || '';
     const locationFilter = document.getElementById('location-filter')?.value || '';
     const searchOption = document.getElementById('searchOption')?.value || 'title+description';
     
-    // 검색 및 필터링
-    const results = dataManager.search(query, categoryFilter, locationFilter, searchOption);
+    console.log('문화재 목록 로드 시작:', { query, categoryFilter, locationFilter, currentPage });
     
-    // 페이지네이션
-    const totalPages = Math.ceil(results.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const pageData = results.slice(startIndex, endIndex);
-    
-    // 목록 렌더링
-    renderHeritageList(pageData);
-    
-    // 페이지네이션 렌더링
-    renderPagination(currentPage, totalPages, results.length);
+    try {
+        // 검색 및 필터링
+        const results = dataManager.search(query, categoryFilter, locationFilter, searchOption);
+        
+        // 🚨 중요: 빈 결과 처리
+        if (!results || results.length === 0) {
+            console.log('검색 결과가 없습니다');
+            renderHeritageList([]);
+            renderPagination(1, 1, 0);
+            return;
+        }
+        
+        // 🚀 최적화된 페이지네이션 (캐싱 사용)
+        const paginationData = getPaginatedData(results, currentPage);
+        
+        if (!paginationData) {
+            console.warn('페이지네이션 데이터 없음');
+            renderHeritageList([]);
+            return;
+        }
+        
+        console.log(`🚀 페이지 데이터 로드 완료: ${paginationData.items.length}개 항목 (${paginationData.currentPage}/${paginationData.totalPages})`);
+        
+        // 목록 렌더링
+        renderHeritageList(paginationData.items);
+        
+        // 페이지네이션 렌더링
+        renderPagination(paginationData.currentPage, paginationData.totalPages, paginationData.totalItems, 'pagination');
+        
+    } catch (error) {
+        console.error('문화재 목록 로드 오류:', error);
+        showErrorMessage('문화재 목록을 불러오는 중 오류가 발생했습니다.');
+    }
 }
 
 /**
@@ -538,62 +722,19 @@ function changeEnglishPage(page) {
 }
 
 /**
- * 페이지네이션 렌더링
+ * 🚀 최적화된 페이지네이션 렌더링 (PaginationManager 사용)
  */
-function renderPagination(current, total, totalItems) {
-    const container = document.getElementById('pagination');
+function renderPagination(current, total, totalItems, containerId = 'pagination') {
+    const container = document.getElementById(containerId);
     if (!container || total <= 1) {
-        container.innerHTML = '';
+        if (container) container.innerHTML = '';
         return;
     }
     
-    let html = '';
-    
-    // 이전 버튼
-    html += `
-        <li class="page-item ${current === 1 ? 'disabled' : ''}">
-            <a class="page-link" href="#" onclick="changePage(${current - 1}); return false;">이전</a>
-        </li>
-    `;
-    
-    // 페이지 번호들
-    const start = Math.max(1, current - 2);
-    const end = Math.min(total, current + 2);
-    
-    if (start > 1) {
-        html += `<li class="page-item"><a class="page-link" href="#" onclick="changePage(1); return false;">1</a></li>`;
-        if (start > 2) html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
-    }
-    
-    for (let i = start; i <= end; i++) {
-        html += `
-            <li class="page-item ${i === current ? 'active' : ''}">
-                <a class="page-link" href="#" onclick="changePage(${i}); return false;">${i}</a>
-            </li>
-        `;
-    }
-    
-    if (end < total) {
-        if (end < total - 1) html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
-        html += `<li class="page-item"><a class="page-link" href="#" onclick="changePage(${total}); return false;">${total}</a></li>`;
-    }
-    
-    // 다음 버튼
-    html += `
-        <li class="page-item ${current === total ? 'disabled' : ''}">
-            <a class="page-link" href="#" onclick="changePage(${current + 1}); return false;">다음</a>
-        </li>
-    `;
-    
+
+    const html = paginationManager.generatePaginationHTML(current, total, totalItems);
+
     container.innerHTML = html;
-    
-    // 결과 수 표시
-    const resultInfo = document.querySelector('.result-info');
-    if (resultInfo) {
-        const start = (current - 1) * itemsPerPage + 1;
-        const end = Math.min(current * itemsPerPage, totalItems);
-        resultInfo.textContent = `${start}-${end} / 총 ${totalItems}개`;
-    }
 }
 
 /**
@@ -603,11 +744,48 @@ function loadHeritageDetail(name) {
     const item = dataManager.getByName(name);
     if (!item) {
         console.error('문화재를 찾을 수 없습니다:', name);
-        router.navigate('home');
+        // 홈으로 리다이렉트하지 않고 에러 페이지 표시
+        showHeritageNotFound(name);
         return;
     }
     
     renderHeritageDetail(item);
+}
+
+/**
+ * 문화재를 찾을 수 없을 때 표시할 페이지
+ */
+function showHeritageNotFound(name) {
+    const detailView = document.getElementById('detail-view');
+    if (!detailView) return;
+    
+    // 상세 뷰 표시
+    router.showView('detail-view');
+    
+    // 에러 메시지 표시
+    const mainContent = detailView.querySelector('.col-lg-8');
+    if (mainContent) {
+        mainContent.innerHTML = `
+            <div class="heritage-not-found text-center py-5">
+                <div class="container">
+                    <i class="fas fa-search fa-3x text-muted mb-4"></i>
+                    <h2 class="mb-3">문화재를 찾을 수 없습니다</h2>
+                    <p class="text-muted mb-4">
+                        요청하신 문화재 "<strong>${name}</strong>"를 찾을 수 없습니다.<br>
+                        문화재 이름이 변경되었거나 삭제되었을 수 있습니다.
+                    </p>
+                    <div class="d-flex gap-3 justify-content-center">
+                        <button class="btn btn-primary" onclick="router.navigate('list')">
+                            <i class="fas fa-list me-2"></i>전체 목록 보기
+                        </button>
+                        <button class="btn btn-outline-primary" onclick="router.navigate('home')">
+                            <i class="fas fa-home me-2"></i>홈으로 이동
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
 }
 
 /**
@@ -822,9 +1000,15 @@ let currentCategoryName = '';
  * 카테고리별 뷰 로드
  */
 function loadCategoryView(category) {
-    console.log('카테고리 뷰 로드:', category);
+    console.log('카테고리 뷰 로드 시작:', category);
     currentCategoryName = category;
     currentCategoryPage = 1;
+    
+    // 데이터 매니저 확인
+    if (!dataManager || !dataManager.isLoaded) {
+        console.error('데이터 매니저가 로드되지 않았습니다');
+        return;
+    }
     
     // 기본 데이터 로드
     const allItems = dataManager.getByCategory(category);
@@ -848,6 +1032,8 @@ function loadCategoryView(category) {
     
     // 이벤트 리스너 설정
     setupCategoryEventListeners();
+    
+    console.log('카테고리 뷰 로드 완료:', category);
 }
 
 /**
@@ -1254,9 +1440,87 @@ function renderCategoryPagination(current, totalPages, totalItems) {
  * 카테고리 페이지 변경
  */
 function changeCategoryPage(page) {
+    // 🚨 중요: 로딩 중이면 무시
+    if (isLoading) {
+        console.log('이미 로딩 중이므로 카테고리 페이지 변경 무시:', page);
+        return;
+    }
+    
+    // 🚨 중요: 페이지 번호 유효성 검사
+    if (page < 1 || isNaN(page)) {
+        console.warn('유효하지 않은 카테고리 페이지 번호:', page);
+        return;
+    }
+    
+    // 🚨 중요: 현재 페이지와 동일하면 무시
+    if (page === currentCategoryPage) {
+        console.log('현재 카테고리 페이지와 동일하므로 무시:', page);
+        return;
+    }
+    
+    console.log(`카테고리 페이지 변경: ${currentCategoryPage} -> ${page}`);
     currentCategoryPage = page;
-    renderCategoryContent();
+    isLoading = true;
+    
+    // 🚨 중요: 로딩 타임아웃 설정
+    setLoadingTimeout();
+    
+    // 🚨 중요: URL 업데이트 - 현재 카테고리 정보 가져오기
+    const currentHash = window.location.hash.slice(1);
+    let newUrl = '';
+    
+    if (currentHash.includes('category/')) {
+        // 카테고리 페이지인 경우: category/보물/page/2
+        const categoryMatch = currentHash.match(/category\/([^\/]+)/);
+        if (categoryMatch) {
+            const categoryName = categoryMatch[1];
+            newUrl = `category/${categoryName}/page/${page}`;
+        } else {
+            // 폴백: 현재 해시에 /page/ 추가
+            newUrl = currentHash + `/page/${page}`;
+        }
+    } else {
+        // 홈 페이지인 경우: home?page=2
+        newUrl = `home?page=${page}`;
+    }
+    
+    console.log(`🛣️ 카테고리 페이지 URL 업데이트: ${currentHash} -> ${newUrl}`);
+    
+    try {
+        // 🚨 중요: 라우터에 URL 변경 알리기
+        router.navigate(newUrl);
+        
+        renderCategoryContent();
+    } catch (error) {
+        console.error('카테고리 페이지 로딩 오류:', error);
+        showErrorMessage('카테고리 페이지를 불러오는 중 오류가 발생했습니다.');
+    } finally {
+        isLoading = false;
+    }
 }
+
+// 🧪 테스트용 함수들
+window.testPagination = function(page) {
+    console.log('🧪 페이지네이션 테스트:', page);
+    changeCategoryPage(page);
+};
+
+window.getCurrentRouteInfo = function() {
+    const currentHash = window.location.hash.slice(1);
+    console.log('📍 현재 라우트 정보:');
+    console.log('- Hash:', currentHash);
+    console.log('- Category Page:', currentCategoryPage);
+    console.log('- Home Page:', currentPage);
+    console.log('- English Page:', currentEnglishPage);
+    console.log('- Unclassified Page:', currentUnclassifiedPage);
+    return {
+        hash: currentHash,
+        categoryPage: currentCategoryPage,
+        homePage: currentPage,
+        englishPage: currentEnglishPage,
+        unclassifiedPage: currentUnclassifiedPage
+    };
+};
 
 // English 페이지 전역 변수
 let currentEnglishPage = 1;
@@ -1576,8 +1840,56 @@ function renderEnglishPagination(current, totalPages, totalItems) {
  * English 페이지 변경
  */
 function changeEnglishPage(page) {
+    // 🚨 중요: 로딩 중이면 무시
+    if (isLoading) {
+        console.log('이미 로딩 중이므로 English 페이지 변경 무시:', page);
+        return;
+    }
+    
+    // 🚨 중요: 페이지 번호 유효성 검사
+    if (page < 1 || isNaN(page)) {
+        console.warn('유효하지 않은 English 페이지 번호:', page);
+        return;
+    }
+    
+    // 🚨 중요: 현재 페이지와 동일하면 무시
+    if (page === currentEnglishPage) {
+        console.log('현재 English 페이지와 동일하므로 무시:', page);
+        return;
+    }
+    
+    console.log(`English 페이지 변경: ${currentEnglishPage} -> ${page}`);
     currentEnglishPage = page;
-    renderEnglishContent();
+    isLoading = true;
+    
+    // 🚨 중요: 로딩 타임아웃 설정
+    setLoadingTimeout();
+    
+    // 🚨 중요: URL 업데이트
+    const currentHash = window.location.hash.slice(1);
+    let newUrl = '';
+    
+    if (currentHash.includes('english')) {
+        // English 페이지인 경우: english/page/2
+        newUrl = `english/page/${page}`;
+    } else {
+        // 폴백: home?page=2
+        newUrl = `home?page=${page}`;
+    }
+    
+    console.log(`🛣️ English 페이지 URL 업데이트: ${currentHash} -> ${newUrl}`);
+    
+    try {
+        // 🚨 중요: 라우터에 URL 변경 알리기
+        router.navigate(newUrl);
+        
+        renderEnglishContent();
+    } catch (error) {
+        console.error('English 페이지 로딩 오류:', error);
+        showErrorMessage('English 페이지를 불러오는 중 오류가 발생했습니다.');
+    } finally {
+        isLoading = false;
+    }
 }
 
 // 미분류 항목 페이지 전역 변수
@@ -1909,8 +2221,103 @@ function renderUnclassifiedPagination(current, totalPages, totalItems) {
  * 미분류 항목 페이지 변경
  */
 function changeUnclassifiedPage(page) {
+    // 🚨 중요: 로딩 중이면 무시
+    if (isLoading) {
+        console.log('이미 로딩 중이므로 미분류 페이지 변경 무시:', page);
+        return;
+    }
+    
+    // 🚨 중요: 페이지 번호 유효성 검사
+    if (page < 1 || isNaN(page)) {
+        console.warn('유효하지 않은 미분류 페이지 번호:', page);
+        return;
+    }
+    
+    // 🚨 중요: 현재 페이지와 동일하면 무시
+    if (page === currentUnclassifiedPage) {
+        console.log('현재 미분류 페이지와 동일하므로 무시:', page);
+        return;
+    }
+    
+    console.log(`미분류 페이지 변경: ${currentUnclassifiedPage} -> ${page}`);
     currentUnclassifiedPage = page;
-    renderUnclassifiedContent();
+    isLoading = true;
+    
+    // 🚨 중요: 로딩 타임아웃 설정
+    setLoadingTimeout();
+    
+    // 🚨 중요: URL 업데이트
+    const currentHash = window.location.hash.slice(1);
+    let newUrl = '';
+    
+    if (currentHash.includes('unclassified')) {
+        // 미분류 페이지인 경우: unclassified/page/2
+        newUrl = `unclassified/page/${page}`;
+    } else {
+        // 폴백: home?page=2
+        newUrl = `home?page=${page}`;
+    }
+    
+    console.log(`🛣️ 미분류 페이지 URL 업데이트: ${currentHash} -> ${newUrl}`);
+    
+    try {
+        // 🚨 중요: 라우터에 URL 변경 알리기
+        router.navigate(newUrl);
+        
+        renderUnclassifiedContent();
+    } catch (error) {
+        console.error('미분류 페이지 로딩 오류:', error);
+        showErrorMessage('미분류 페이지를 불러오는 중 오류가 발생했습니다.');
+    } finally {
+        isLoading = false;
+    }
+}
+
+/**
+ * 번역률 계산 및 업데이트
+ */
+function updateTranslationRate() {
+    if (!dataManager || !dataManager.heritageData || dataManager.heritageData.length === 0) {
+        console.log('📊 번역률 계산: 데이터 없음');
+        return;
+    }
+    
+    const totalItems = dataManager.heritageData.length;
+    const translatedItems = dataManager.heritageData.filter(item => {
+        // 안전한 문자열 체크 및 변환
+        const englishDesc = item.english_description;
+        
+        // null, undefined, 빈 문자열 체크
+        if (!englishDesc) return false;
+        
+        // 문자열로 변환 후 trim (숫자나 다른 타입일 경우 대비)
+        const descStr = String(englishDesc).trim();
+        
+        return descStr !== '' && 
+               descStr !== 'null' && 
+               descStr !== 'undefined' &&
+               descStr !== '영문 설명 준비 중입니다.' &&
+               !descStr.includes('Description not available');
+    }).length;
+    
+    const translationRate = totalItems > 0 ? Math.round((translatedItems / totalItems) * 100) : 0;
+    
+    console.log(`📊 번역률 계산: ${translatedItems}/${totalItems} = ${translationRate}%`);
+    
+    // 번역률 업데이트
+    updateElement('translation-rate', `${translationRate}%`);
+    updateElement('hero-translation-rate', `${translationRate}%`);
+    
+    // 번역 완료 수 업데이트 (사이드바)
+    updateElement('sidebar-translation-count', translatedItems);
+    
+    // 메인 대시보드 번역 완료 수 업데이트
+    const translationCountElements = document.querySelectorAll('.stat-number');
+    translationCountElements.forEach(element => {
+        if (element.textContent.includes('AI 번역 완료') || element.textContent.includes('번역 완료율')) {
+            element.textContent = `${translationRate}%`;
+        }
+    });
 }
 
 /**
@@ -2016,10 +2423,63 @@ function resetFilters() {
  * 페이지 변경
  */
 function changePage(page) {
-    if (page < 1) return;
+    // 🚨 중요: 로딩 중이면 무시
+    if (isLoading) {
+        console.log('이미 로딩 중이므로 페이지 변경 무시:', page);
+        return;
+    }
+    
+    // 🚨 중요: 페이지 번호 유효성 검사
+    if (page < 1 || isNaN(page)) {
+        console.warn('유효하지 않은 페이지 번호:', page);
+        return;
+    }
+    
+    // 🚨 중요: 현재 페이지와 동일하면 무시
+    if (page === currentPage) {
+        console.log('현재 페이지와 동일하므로 무시:', page);
+        return;
+    }
+    
+    console.log(`페이지 변경: ${currentPage} -> ${page}`);
     currentPage = page;
-    loadHeritageList();
-    window.scrollTo(0, 0);
+    isLoading = true;
+    
+    // 🚨 중요: 로딩 타임아웃 설정
+    setLoadingTimeout();
+    
+    // 🚨 중요: URL 업데이트
+    const currentHash = window.location.hash.slice(1);
+    let newUrl = '';
+    
+    if (currentHash.includes('category/')) {
+        // 카테고리 페이지인 경우: category/보물/page/2
+        const categoryMatch = currentHash.match(/category\/([^\/]+)/);
+        if (categoryMatch) {
+            const categoryName = categoryMatch[1];
+            newUrl = `category/${categoryName}/page/${page}`;
+        } else {
+            newUrl = currentHash + `/page/${page}`;
+        }
+    } else {
+        // 홈 페이지인 경우: home?page=2
+        newUrl = `home?page=${page}`;
+    }
+    
+    console.log(`🛣️ 페이지 URL 업데이트: ${currentHash} -> ${newUrl}`);
+    
+    try {
+        // 🚨 중요: 라우터에 URL 변경 알리기
+        router.navigate(newUrl);
+        
+        loadHeritageList();
+        window.scrollTo(0, 0);
+    } catch (error) {
+        console.error('페이지 로딩 오류:', error);
+        showErrorMessage('페이지를 불러오는 중 오류가 발생했습니다.');
+    } finally {
+        isLoading = false;
+    }
 }
 
 /**
@@ -2102,9 +2562,122 @@ function requestImageUpload(heritageName) {
     alert(`"${heritageName}"의 이미지를 업로드하려면 관리자에게 문의하세요.\n\n이미지 업로드 기능은 추후 구현 예정입니다.`);
 }
 
+// 🚨 중요: 에러 메시지 표시 함수
+function showErrorMessage(message) {
+    // 기존 에러 메시지 제거
+    const existingError = document.querySelector('.error-message');
+    if (existingError) {
+        existingError.remove();
+    }
+    
+    // 새 에러 메시지 생성
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error-message alert alert-danger alert-dismissible fade show';
+    errorDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        min-width: 300px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    `;
+    errorDiv.innerHTML = `
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <strong>오류 발생</strong><br>
+        <small>${message}</small>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(errorDiv);
+    
+    // 5초 후 자동 제거
+    setTimeout(() => {
+        if (errorDiv && errorDiv.parentNode) {
+            errorDiv.remove();
+        }
+    }, 5000);
+}
+
 // 이벤트 방지
 document.addEventListener('click', (e) => {
     if (e.target.closest('a[href="#"]')) {
         e.preventDefault();
     }
 });
+
+// 🔥 전역 에러 핸들러 추가
+window.addEventListener('error', (event) => {
+    console.error('전역 에러 캐치:', event.error);
+    showErrorMessage('예상치 못한 오류가 발생했습니다.');
+});
+
+// 🔥 5단계: 페이지네이션 URL 생성 수정 (app.js)
+function createPageUrl(newPage) {
+    const currentHash = window.location.hash.slice(1) || 'home';
+    
+    // 🚨 간단하고 빠른 URL 생성
+    if (currentHash.includes('category/')) {
+        const categoryPart = currentHash.split('/page/')[0]; // 기존 페이지 부분 제거
+        return `${categoryPart}/page/${newPage}`;
+    } else if (currentHash === 'home' || currentHash === '') {
+        return `home?page=${newPage}`;
+    } else {
+        return `${currentHash}?page=${newPage}`;
+    }
+}
+
+// 🔥 6단계: 성능 모니터링 함수
+window.performanceCheck = function() {
+    const start = performance.now();
+    
+    // 기본 동작 테스트
+    router.parseHash();
+    
+    const end = performance.now();
+    console.log(`⚡ 라우팅 성능: ${(end - start).toFixed(2)}ms`);
+    
+    // 메모리 사용량 체크
+    if (performance.memory) {
+        const memory = performance.memory;
+        console.log(`🧠 메모리: ${(memory.usedJSHeapSize / 1024 / 1024).toFixed(2)}MB`);
+    }
+    
+    // 데이터 로드 상태
+    console.log(`📊 캐시된 데이터: ${window.dataManager?.cachedData?.length || 0}개`);
+};
+
+// 🔥 7단계: 긴급 성능 복구 함수
+window.emergencyPerformanceFix = function() {
+    console.log('🚨 긴급 성능 복구 시작...');
+    
+    // 모든 타이머 클리어
+    for (let i = 1; i < 99999; i++) window.clearTimeout(i);
+    for (let i = 1; i < 99999; i++) window.clearInterval(i);
+    
+    // 불필요한 이벤트 리스너 제거
+    const newBody = document.body.cloneNode(true);
+    document.body.parentNode.replaceChild(newBody, document.body);
+    
+    // 캐시 클리어
+    if (window.dataManager) {
+        window.dataManager.lastStatsUpdate = 0;
+    }
+    
+    console.log('✅ 긴급 성능 복구 완료');
+    location.reload(); // 최후의 수단
+};
+
+// 🔥 안전한 라우팅 함수 래퍼
+function safeExecute(fn, fallback = null) {
+    try {
+        return fn();
+    } catch (error) {
+        console.error('❌ 함수 실행 중 에러:', error);
+        console.error('📍 에러 스택:', error.stack);
+        
+        // 사용자에게 친화적인 에러 메시지 표시
+        showErrorMessage('데이터 처리 중 오류가 발생했습니다. 페이지를 새로고침해 주세요.');
+        
+        return fallback;
+    }
+}

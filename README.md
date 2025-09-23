@@ -2,6 +2,27 @@
 
 한국의 문화재 정보를 체계적으로 관리하고 다국어로 제공하는 웹 기반 디지털 아카이브 시스템입니다.
 
+## 🌐 접속 주소
+
+### 로컬 개발 환경
+```bash
+# 로컬 서버 실행
+python -m http.server 8080 --bind 0.0.0.0
+
+# 브라우저에서 접속
+http://localhost:8080
+```
+
+### 배포 환경
+- **GitHub Pages**: `https://USERNAME.github.io/korean-heritage-wiki`
+- **Netlify**: `https://your-site-name.netlify.app`
+- **Vercel**: `https://your-project.vercel.app`
+- **Firebase Hosting**: `https://your-project.web.app`
+
+### 직접 파일 접속
+- **메인 페이지**: `index.html` (자동으로 `main.html`로 리다이렉트)
+- **애플리케이션**: `main.html`
+
 ## 🌟 주요 기능
 
 ### 📊 대시보드 및 통계
@@ -40,6 +61,99 @@
 - **실시간 처리**: 진행률 표시와 오류 검증
 - **데이터 검증**: 필수 필드 및 형식 검사
 - **로컬 저장**: 브라우저 로컬 스토리지 활용
+- **번역 데이터 업로드**: 영어 번역 완료된 CSV 파일 업로드 지원
+
+## 📝 번역 완료된 CSV 업로드 방법
+
+### 1. 번역 완료된 CSV 파일 준비
+번역이 완료된 CSV 파일은 다음 형식을 따라야 합니다:
+
+```csv
+name,key_asno,key_kdcd,key_ctcd,longitude,latitude,collected_at,composite_key,kdcd_name,ctcd_name,content,imageUrl,content_length,has_image,detail_collected_at,api_success,api_error,english_description
+서울 숭례문,10000000,11,11,126.975312652739,37.559975221378,2025-09-13T06:35:01.196603,11-11-10000000,국보,서울특별시,"조선시대 한양도성의 정문...","https://example.com/image.jpg",1500,true,2025-09-13T06:35:01.196603,true,,Sungnyemun Gate, the main gate of Hanyangdoseong Fortress...
+```
+# Korean Heritage Translation Project
+
+## 📊 프로젝트 현황
+
+```mermaid
+mindmap
+  root((Korean Heritage<br/>Translation))
+    [완료작업]
+      데이터정제
+        7109개완료
+        복합데이터제거
+        허깅페이스업로드
+      Solar Mini테스트
+        30개완료
+        0.03달러비용
+        토큰측정완료
+    [현재진행]
+      원본보호
+        heritage-data.js
+        홈페이지연동중
+      결과분석
+        CSV파일생성
+        품질비용비교
+    [다음단계]
+      Solar Pro2테스트
+        0.06달러예상
+        Reasoning비교
+      Qwen3비교
+        RunPod예산필요
+        성능측정
+      대량번역
+        16656개전체
+        최적모델선정
+    [예산현황]
+      Upstage
+        10달러충분
+      RunPod
+        부족상태
+      전체예상
+        15-25달러
+```
+        
+**중요한 필드:**
+- `name`: 문화재명 (한국어)
+- `content`: 한국어 설명
+- `english_description`: **새로 추가된 영어 번역 필드**
+- 기타 모든 기존 필드 유지
+
+### 2. CSV 파일 업로드 방법
+
+#### 방법 1: 웹 인터페이스 사용 (권장)
+1. 웹사이트 접속 후 우상단 "CSV 업로드" 버튼 클릭
+2. 번역 완료된 CSV 파일 선택
+3. 업로드 진행률 확인
+4. 완료 후 자동으로 영어 설명이 적용됨
+
+#### 방법 2: 로컬 서버 사용
+```bash
+# 1. 번역 완료된 CSV 파일을 data 폴더에 복사
+cp translated_heritage_data.csv ./data/heritage_master.csv
+
+# 2. 서버 재시작
+python -m http.server 8080 --bind 0.0.0.0
+
+# 3. 브라우저에서 새로고침 (Ctrl+F5)
+```
+
+### 3. 번역 데이터 확인
+- 상세 페이지에서 언어 토글 버튼으로 한국어/영어 전환 확인
+- 영어 설명이 제대로 표시되는지 확인
+- 번역 품질 및 완성도 검증
+
+### 4. 백업 및 버전 관리
+```bash
+# 번역 완료된 CSV 백업
+cp heritage_master.csv heritage_master_translated_$(date +%Y%m%d).csv
+
+# Git에 커밋 (선택사항)
+git add heritage_master.csv
+git commit -m "Add English translations for cultural heritage data"
+git push origin main
+```
 
 ## 🚀 배포 및 관리 방법
 
@@ -167,13 +281,13 @@ name,category,location,korean_description,english_description,period,designation
 ## 🔧 향후 개발 계획
 
 ### Phase 2
-- [ ] 지도 통합 (Kakao Map API)
-- [ ] 이미지 업로드 기능
+- [v] 지도 통합 (Kakao Map API)
+- [v] 이미지 업로드 기능
 - [ ] 데이터 백업/복원 기능
 - [ ] 사용자 즐겨찾기 시스템
 
 ### Phase 3  
-- [ ] 백엔드 API 연동
+- [v] 백엔드 API 연동
 - [ ] 사용자 인증 시스템
 - [ ] 협업 편집 기능
 - [ ] AI 번역 품질 개선

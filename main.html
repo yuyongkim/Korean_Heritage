@@ -124,7 +124,7 @@
                         <div class="stat-label">총 문화재</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-number">87%</div>
+                        <div class="stat-number" id="translation-rate">로딩 중...</div>
                         <div class="stat-label">번역률</div>
                     </div>
                 </div>
@@ -168,13 +168,13 @@
                     <div class="row justify-content-center">
                         <div class="col-auto">
                             <div class="stat-item">
-                                <div class="stat-number">11,247</div>
+                                <div class="stat-number" id="hero-total-count">로딩 중...</div>
                                 <div class="stat-label">총 문화유산</div>
                             </div>
                         </div>
                         <div class="col-auto">
                             <div class="stat-item">
-                                <div class="stat-number">87.3%</div>
+                                <div class="stat-number" id="hero-translation-rate">로딩 중...</div>
                                 <div class="stat-label">AI 번역 완료</div>
                             </div>
                         </div>
@@ -772,14 +772,14 @@
     
 
 
-    <!-- 문화재 데이터 (CSV 대신 JavaScript) -->
-    <script src="js/heritage-data.js"></script>
+    <!-- 문화재 데이터는 data-manager.js에서 자동 로드 -->
     
     <!-- 메인 앱 스크립트 -->
     <script src="js/indexeddb-manager.js"></script>
     <script src="js/i18n.js"></script>
     <script src="js/image-resolver.js"></script>
-    <script src="js/map-manager.js"></script>
+    <script src="js/map-manager-simple.js"></script>
+    <script src="js/pagination-manager.js"></script>
     <script src="js/app.js"></script>
     <script src="js/router.js"></script>
     <script src="js/data-manager.js"></script>

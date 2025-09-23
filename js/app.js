@@ -152,6 +152,9 @@ function updateDashboard() {
     // 사이드바 통계 업데이트
     updateElement('sidebar-total', stats.total);
     
+    // 번역률 계산 및 업데이트
+    updateTranslationRate();
+    
     // 미분류 항목 통계 업데이트
     updateUnclassifiedStats();
     
@@ -1911,6 +1914,31 @@ function renderUnclassifiedPagination(current, totalPages, totalItems) {
 function changeUnclassifiedPage(page) {
     currentUnclassifiedPage = page;
     renderUnclassifiedContent();
+}
+
+/**
+ * 번역률 계산 및 업데이트
+ */
+function updateTranslationRate() {
+    if (!dataManager || !dataManager.heritageData || dataManager.heritageData.length === 0) {
+        console.log('📊 번역률 계산: 데이터 없음');
+        return;
+    }
+    
+    const totalItems = dataManager.heritageData.length;
+    const translatedItems = dataManager.heritageData.filter(item => 
+        item.english_description && 
+        item.english_description.trim() !== '' && 
+        item.english_description !== '영문 설명 준비 중입니다.' &&
+        !item.english_description.includes('Description not available')
+    ).length;
+    
+    const translationRate = totalItems > 0 ? Math.round((translatedItems / totalItems) * 100) : 0;
+    
+    console.log(`📊 번역률 계산: ${translatedItems}/${totalItems} = ${translationRate}%`);
+    
+    // 번역률 업데이트
+    updateElement('translation-rate', `${translationRate}%`);
 }
 
 /**

@@ -552,7 +552,7 @@ function renderPagination(current, total, totalItems) {
     // 이전 버튼
     html += `
         <li class="page-item ${current === 1 ? 'disabled' : ''}">
-            <a class="page-link" href="#" onclick="changePage(${current - 1})">이전</a>
+            <a class="page-link" href="#" onclick="changePage(${current - 1}); return false;">이전</a>
         </li>
     `;
     
@@ -561,27 +561,27 @@ function renderPagination(current, total, totalItems) {
     const end = Math.min(total, current + 2);
     
     if (start > 1) {
-        html += `<li class="page-item"><a class="page-link" href="#" onclick="changePage(1)">1</a></li>`;
+        html += `<li class="page-item"><a class="page-link" href="#" onclick="changePage(1); return false;">1</a></li>`;
         if (start > 2) html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
     }
     
     for (let i = start; i <= end; i++) {
         html += `
             <li class="page-item ${i === current ? 'active' : ''}">
-                <a class="page-link" href="#" onclick="changePage(${i})">${i}</a>
+                <a class="page-link" href="#" onclick="changePage(${i}); return false;">${i}</a>
             </li>
         `;
     }
     
     if (end < total) {
         if (end < total - 1) html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
-        html += `<li class="page-item"><a class="page-link" href="#" onclick="changePage(${total})">${total}</a></li>`;
+        html += `<li class="page-item"><a class="page-link" href="#" onclick="changePage(${total}); return false;">${total}</a></li>`;
     }
     
     // 다음 버튼
     html += `
         <li class="page-item ${current === total ? 'disabled' : ''}">
-            <a class="page-link" href="#" onclick="changePage(${current + 1})">다음</a>
+            <a class="page-link" href="#" onclick="changePage(${current + 1}); return false;">다음</a>
         </li>
     `;
     
@@ -1366,8 +1366,8 @@ function renderEnglishGridView(items) {
                     </div>
                     <h6 class="card-title">${item.name}</h6>
                     <p class="card-text text-truncate-2">
-                        ${item.english_description && item.english_description.trim() 
-                            ? item.english_description.substring(0, 100) + '...' 
+                        ${String(item.english_description || '').trim() 
+                            ? String(item.english_description || '').substring(0, 100) + '...' 
                             : (item.korean_description ? '[Korean] ' + item.korean_description.substring(0, 80) + '...' : 'Description not available')
                         }
                     </p>
@@ -1427,8 +1427,8 @@ function renderEnglishListView(items) {
             </td>
             <td>
                 <div class="heritage-list-desc">
-                    ${item.english_description && item.english_description.trim()
-                        ? item.english_description.substring(0, 150) + '...'
+                    ${String(item.english_description || '').trim()
+                        ? String(item.english_description || '').substring(0, 150) + '...'
                         : (item.korean_description ? '[Korean] ' + item.korean_description.substring(0, 120) + '...' : 'Description not available')
                     }
                 </div>

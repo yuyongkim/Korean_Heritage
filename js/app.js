@@ -581,7 +581,7 @@ function renderListView(items) {
             <td>
                 <div class="heritage-list-image">
                     ${item.image_url ? 
-                        `<img src="${imageCacheManager.getCachedImageUrl(item.image_url)}" alt="${item.name}" class="rounded" style="width: 60px; height: 60px; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : 
+                        `<img src="${imageCacheManager.getCachedImageUrl(item.image_url)}" alt="${item.name}" class="rounded" style="width: 60px; height: 60px; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" crossorigin="anonymous">` : 
                         ''
                     }
                     <div class="no-image-mini ${item.image_url ? 'd-none' : 'd-flex'}" style="width: 60px; height: 60px; background: #f8f9fa; border-radius: 0.375rem; align-items: center; justify-content: center; color: #6c757d; font-size: 0.8rem;">
@@ -1277,7 +1277,7 @@ function renderCategoryGridView(items) {
             <div class="card heritage-card h-100" onclick="viewHeritageDetail('${item.name}')">
                 <div class="card-img-top heritage-image">
                     ${item.image_url ? 
-                        `<img src="${imageCacheManager.getCachedImageUrl(item.image_url)}" alt="${item.name}" onerror="this.style.display='none'; this.parentElement.classList.add('no-image')">` : 
+                        `<img src="${imageCacheManager.getCachedImageUrl(item.image_url)}" alt="${item.name}" onerror="this.style.display='none'; this.parentElement.classList.add('no-image'); this.parentElement.innerHTML='<div class=\"no-image-placeholder\"><i class=\"fas fa-image\"></i><span>이미지 없음</span></div>';" crossorigin="anonymous">` : 
                         `<div class="no-image-placeholder"><i class="fas fa-image"></i><span>이미지 없음</span></div>`
                     }
                 </div>
@@ -1328,7 +1328,7 @@ function renderCategoryListView(items) {
             <td>
                 <div class="heritage-list-image">
                     ${item.image_url ? 
-                        `<img src="${imageCacheManager.getCachedImageUrl(item.image_url)}" alt="${item.name}" class="rounded" style="width: 60px; height: 60px; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : 
+                        `<img src="${imageCacheManager.getCachedImageUrl(item.image_url)}" alt="${item.name}" class="rounded" style="width: 60px; height: 60px; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" crossorigin="anonymous">` : 
                         ''
                     }
                     <div class="no-image-mini ${item.image_url ? 'd-none' : 'd-flex'}" style="width: 60px; height: 60px; background: #f8f9fa; border-radius: 0.375rem; align-items: center; justify-content: center; color: #6c757d; font-size: 0.8rem;">
@@ -1876,7 +1876,7 @@ function renderEnglishListView(items) {
             <td>
                 <div class="heritage-list-image">
                     ${item.image_url ? 
-                        `<img src="${imageCacheManager.getCachedImageUrl(item.image_url)}" alt="${item.name}" class="rounded" style="width: 60px; height: 60px; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : 
+                        `<img src="${imageCacheManager.getCachedImageUrl(item.image_url)}" alt="${item.name}" class="rounded" style="width: 60px; height: 60px; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" crossorigin="anonymous">` : 
                         ''
                     }
                     <div class="no-image-mini ${item.image_url ? 'd-none' : 'd-flex'}" style="width: 60px; height: 60px; background: #f8f9fa; border-radius: 0.375rem; align-items: center; justify-content: center; color: #6c757d; font-size: 0.8rem;">
@@ -2280,7 +2280,7 @@ function renderUnclassifiedListView(items) {
             <td>
                 <div class="heritage-list-image">
                     ${item.image_url ? 
-                        `<img src="${imageCacheManager.getCachedImageUrl(item.image_url)}" alt="${item.name}" class="rounded" style="width: 60px; height: 60px; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : 
+                        `<img src="${imageCacheManager.getCachedImageUrl(item.image_url)}" alt="${item.name}" class="rounded" style="width: 60px; height: 60px; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" crossorigin="anonymous">` : 
                         ''
                     }
                     <div class="no-image-mini ${item.image_url ? 'd-none' : 'd-flex'}" style="width: 60px; height: 60px; background: #f8f9fa; border-radius: 0.375rem; align-items: center; justify-content: center; color: #6c757d; font-size: 0.8rem;">

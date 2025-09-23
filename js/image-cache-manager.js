@@ -78,30 +78,38 @@ class ImageCacheManager {
     }
 
     /**
-     * 이미지 로드
+     * 이미지 로드 (CORS 문제 해결)
      */
     _loadImage(url) {
         return new Promise((resolve, reject) => {
             const img = new Image();
             
             img.onload = () => {
-                // 이미지를 캔버스로 변환하여 base64로 저장
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                
-                canvas.width = img.width;
-                canvas.height = img.height;
-                ctx.drawImage(img, 0, 0);
-                
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                resolve(dataUrl);
+                try {
+                    // 이미지를 캔버스로 변환하여 base64로 저장
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                    resolve(dataUrl);
+                } catch (error) {
+                    // CORS 문제로 캔버스 접근 실패 시 원본 URL 반환
+                    console.warn('⚠️ CORS 문제로 캔버스 접근 실패, 원본 URL 사용:', url);
+                    resolve(url);
+                }
             };
             
-            img.onerror = () => {
-                reject(new Error('이미지 로드 실패'));
+            img.onerror = (error) => {
+                console.warn('❌ 이미지 로드 실패:', url, error);
+                // 이미지 로드 실패 시 기본 이미지나 원본 URL 반환
+                resolve(url);
             };
             
-            // CORS 문제 방지
+            // CORS 설정 (서버에서 허용하지 않을 수 있음)
             img.crossOrigin = 'anonymous';
             img.src = url;
         });

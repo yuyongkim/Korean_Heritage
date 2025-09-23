@@ -217,9 +217,10 @@ class Router {
                 this.navigate('home');
             }
         } finally {
+            // 🚨 중요: 네비게이션 완료 후 플래그 해제 (더 긴 지연)
             setTimeout(() => {
                 this.isNavigating = false;
-            }, 100);
+            }, 300);
         }
     }
     

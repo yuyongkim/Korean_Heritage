@@ -70,7 +70,15 @@ class Router {
             try {
                 if (this.routes[route]) {
                     console.log('라우트 실행:', route, params);
-                    this.routes[route](params);
+                    try {
+                        this.routes[route](params);
+                    } catch (routeError) {
+                        console.error(`❌ 라우트 ${route} 실행 실패:`, routeError);
+                        this.showErrorMessage('페이지 로딩 중 오류가 발생했습니다.');
+                        if (route !== 'home') {
+                            window.location.hash = '#home';
+                        }
+                    }
                 } else {
                     // 알 수 없는 라우트에 대한 처리
                     console.warn('알 수 없는 라우트:', route);
@@ -258,7 +266,7 @@ class Router {
     /**
      * 에러 메시지 표시
      */
-    showErrorMessage(error) {
+    showErrorMessage(message) {
         // 기존 알림 제거
         const existingAlert = document.querySelector('.route-error-alert');
         if (existingAlert) {
@@ -274,11 +282,12 @@ class Router {
             right: 20px;
             z-index: 9999;
             min-width: 300px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         `;
         alert.innerHTML = `
             <i class="fas fa-exclamation-circle me-2"></i>
-            <strong>페이지 로딩 오류</strong><br>
-            <small>페이지를 불러오는 중 오류가 발생했습니다.</small>
+            <strong>오류 발생</strong><br>
+            <small>${message}</small>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         `;
         

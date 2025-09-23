@@ -2138,12 +2138,22 @@ function updateTranslationRate() {
     }
     
     const totalItems = dataManager.heritageData.length;
-    const translatedItems = dataManager.heritageData.filter(item => 
-        item.english_description && 
-        item.english_description.trim() !== '' && 
-        item.english_description !== '영문 설명 준비 중입니다.' &&
-        !item.english_description.includes('Description not available')
-    ).length;
+    const translatedItems = dataManager.heritageData.filter(item => {
+        // 안전한 문자열 체크 및 변환
+        const englishDesc = item.english_description;
+        
+        // null, undefined, 빈 문자열 체크
+        if (!englishDesc) return false;
+        
+        // 문자열로 변환 후 trim (숫자나 다른 타입일 경우 대비)
+        const descStr = String(englishDesc).trim();
+        
+        return descStr !== '' && 
+               descStr !== 'null' && 
+               descStr !== 'undefined' &&
+               descStr !== '영문 설명 준비 중입니다.' &&
+               !descStr.includes('Description not available');
+    }).length;
     
     const translationRate = totalItems > 0 ? Math.round((translatedItems / totalItems) * 100) : 0;
     
@@ -2426,3 +2436,24 @@ document.addEventListener('click', (e) => {
         e.preventDefault();
     }
 });
+
+// 🔥 전역 에러 핸들러 추가
+window.addEventListener('error', (event) => {
+    console.error('전역 에러 캐치:', event.error);
+    showErrorMessage('예상치 못한 오류가 발생했습니다.');
+});
+
+// 🔥 안전한 라우팅 함수 래퍼
+function safeExecute(fn, fallback = null) {
+    try {
+        return fn();
+    } catch (error) {
+        console.error('❌ 함수 실행 중 에러:', error);
+        console.error('📍 에러 스택:', error.stack);
+        
+        // 사용자에게 친화적인 에러 메시지 표시
+        showErrorMessage('데이터 처리 중 오류가 발생했습니다. 페이지를 새로고침해 주세요.');
+        
+        return fallback;
+    }
+}

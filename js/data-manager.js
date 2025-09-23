@@ -1,5 +1,5 @@
 /**
- * 데이터 관리자 - CSV 로딩 및 데이터 처리
+ * 데이터 관리자 - CSV 로딩 및 데이터 처리 (성능 최적화)
  */
 class DataManager {
     constructor() {
@@ -8,8 +8,14 @@ class DataManager {
         this.categories = new Set();
         this.locations = new Set();
         this.isLoaded = false;
-        this.isLoading = false; // 🚨 중요: 로딩 상태 추적
+        this.isLoading = false;
         this.currentLanguage = 'ko';
+        
+        // 🚀 성능 최적화: 캐싱 시스템 강화
+        this.cachedData = null;
+        this.loadPromise = null;
+        this.lastLoadTime = 0;
+        this.cacheTimeout = 5 * 60 * 1000; // 5분 캐시 유효시간
         
         // 이벤트 시스템 초기화
         this.eventListeners = {
@@ -46,222 +52,210 @@ class DataManager {
     }
     
     /**
-     * 문화재 데이터 로드 (JavaScript 데이터 우선)
+     * 🚀 최적화된 데이터 로드 (캐싱 시스템)
      */
     async loadData() {
-        // 🚨 중요: 이미 로딩 중이면 대기
-        if (this.isLoading) {
-            console.log('이미 데이터 로딩 중... 대기');
-            return new Promise((resolve) => {
-                const checkLoading = () => {
-                    if (!this.isLoading) {
-                        resolve(this.heritageData);
-                    } else {
-                        setTimeout(checkLoading, 100);
-                    }
-                };
-                checkLoading();
-            });
+        // 🚀 이미 캐시된 데이터가 있고 유효하면 즉시 반환
+        if (this.cachedData && this.cachedData.length > 0 && this._isCacheValid()) {
+            console.log('🚀 캐시된 데이터 사용:', this.cachedData.length, '개 항목');
+            this.heritageData = this.cachedData;
+            this.isLoaded = true;
+            return this.cachedData;
+        }
+
+        // 🚀 이미 로딩 중이면 기존 프로미스 반환 (중복 방지)
+        if (this.isLoading && this.loadPromise) {
+            console.log('⏳ 기존 로딩 프로세스 대기 중...');
+            return await this.loadPromise;
+        }
+
+        // 🚀 새로운 로딩 시작
+        console.log('🔄 새로운 데이터 로드 시작...');
+        this.isLoading = true;
+        this.loadPromise = this._performDataLoad();
+
+        try {
+            this.cachedData = await this.loadPromise;
+            this.heritageData = this.cachedData;
+            this.isLoaded = true;
+            this.lastLoadTime = Date.now();
+            console.log('✅ 데이터 로딩 및 캐싱 완료:', this.cachedData.length, '개 항목');
+            return this.cachedData;
+        } finally {
+            this.isLoading = false;
+            this.loadPromise = null;
+        }
+    }
+
+    /**
+     * 🚀 캐시 유효성 검사
+     */
+    _isCacheValid() {
+        return (Date.now() - this.lastLoadTime) < this.cacheTimeout;
+    }
+
+    /**
+     * 🚀 실제 데이터 로딩 수행
+     */
+    async _performDataLoad() {
+        const methods = [
+            { name: 'JavaScript', fn: () => this._loadFromJavaScript() },
+            { name: 'IndexedDB', fn: () => this._loadFromIndexedDB() },
+            { name: 'LocalStorage', fn: () => this._loadFromLocalStorage() },
+            { name: 'CSV', fn: () => this._loadFromCSV() }
+        ];
+
+        for (const method of methods) {
+            try {
+                console.log(`🔄 ${method.name} 데이터 로드 시도...`);
+                const data = await method.fn();
+                
+                if (data && Array.isArray(data) && data.length > 0) {
+                    console.log(`✅ ${method.name} 성공: ${data.length}개 항목`);
+                    
+                    // 🚀 성공한 데이터는 다른 저장소에도 백업
+                    this._backupToStorage(data, method.name);
+                    
+                    return this._validateAndCleanData(data);
+                }
+            } catch (error) {
+                console.warn(`❌ ${method.name} 실패:`, error.message);
+            }
+        }
+
+        throw new Error('모든 데이터 로딩 방법이 실패했습니다.');
+    }
+
+    /**
+     * 🚀 JavaScript 데이터 로드
+     */
+    async _loadFromJavaScript() {
+        await this.loadLargeHeritageData();
+        return this.heritageData;
+    }
+
+    /**
+     * 🚀 IndexedDB 데이터 로드
+     */
+    async _loadFromIndexedDB() {
+        if (!IndexedDBManager.isSupported()) {
+            throw new Error('IndexedDB 미지원');
+        }
+        const indexedData = await window.indexedDBManager.loadData();
+        if (indexedData && indexedData.data) {
+            this.heritageData = indexedData.data;
+            return this.heritageData;
+        }
+        throw new Error('IndexedDB 데이터 없음');
+    }
+
+    /**
+     * 🚀 LocalStorage 데이터 로드
+     */
+    async _loadFromLocalStorage() {
+        const userData = localStorage.getItem('heritage_user_data');
+        if (!userData) {
+            throw new Error('LocalStorage 데이터 없음');
         }
         
-        if (this.isLoaded) return this.heritageData;
-        
-        console.log('🔄 데이터 로드 시작...');
-        this.isLoading = true;
-        
-        // 방법 1: 대용량 JavaScript 데이터 로드 시도 (최우선)
-        try {
-            console.log('방법 1: 대용량 JavaScript 데이터 로드 시도');
-            await this.loadLargeHeritageData();
-            if (this.heritageData && this.heritageData.length > 0) {
-                console.log('✅ 대용량 JavaScript 데이터 로드 성공:', this.heritageData.length, '개 항목');
-                
-                // JavaScript 데이터를 대용량 저장소에 저장
-                await this.saveData();
-                
-                this.processData();
-                this.isLoaded = true;
-                this.isLoading = false; // 🚨 중요: 로딩 상태 해제
-                
-                // 데이터 로딩 완료 이벤트 발생
-                this.emit('dataLoaded', this.heritageData);
-                
-                // 데이터 로딩 완료 후 대시보드 업데이트
-                if (typeof updateDashboard === 'function') {
-                    updateDashboard();
-                }
-                
-                // 로딩 완료 알림 표시
-                this.showDataLoadedNotification();
-                
+        const parsedData = JSON.parse(userData);
+        if (parsedData && typeof parsedData === 'object') {
+            if (parsedData.data && Array.isArray(parsedData.data)) {
+                this.heritageData = parsedData.data;
+                return this.heritageData;
+            } else if (Array.isArray(parsedData) && parsedData.length > 0) {
+                this.heritageData = parsedData;
                 return this.heritageData;
             }
-        } catch (jsError) {
-            console.log('JavaScript 데이터 로드 실패, IndexedDB 시도');
+        }
+        throw new Error('LocalStorage 데이터 형식 오류');
+    }
+
+    /**
+     * 🚀 CSV 데이터 로드
+     */
+    async _loadFromCSV() {
+        await this.loadFromAutoCSV();
+        return this.heritageData;
+    }
+
+    /**
+     * 🚀 데이터 백업 (다른 저장소에)
+     */
+    _backupToStorage(data, source) {
+        // IndexedDB에 백업 (비동기, 에러 무시)
+        if (source !== 'IndexedDB') {
+            this._saveToIndexedDB(data).catch(console.warn);
         }
         
-        // 방법 2: IndexedDB에서 로드 시도
+        // LocalStorage에 메타데이터만 백업
+        if (source !== 'LocalStorage' && data.length < 1000) {
+            this._saveToLocalStorage(data).catch(console.warn);
+        }
+    }
+
+    /**
+     * 🚀 데이터 검증 및 정제
+     */
+    _validateAndCleanData(data) {
+        if (!Array.isArray(data)) {
+            throw new Error('데이터가 배열이 아닙니다');
+        }
+        
+        const validatedData = data.filter(item => 
+            item && item.name && item.name.trim() !== ''
+        );
+        
+        console.log(`🔍 데이터 검증: ${data.length} -> ${validatedData.length}개 항목`);
+        
+        // 데이터 처리
+        this.processData();
+        
+        // 이벤트 발생
+        this.emit('dataLoaded', validatedData);
+        
+        // 대시보드 업데이트
+        if (typeof updateDashboard === 'function') {
+            updateDashboard();
+        }
+        
+        // 알림 표시
+        this.showDataLoadedNotification();
+        
+        return validatedData;
+    }
+
+    /**
+     * 🚀 IndexedDB 저장
+     */
+    async _saveToIndexedDB(data) {
         if (IndexedDBManager.isSupported()) {
-            try {
-                console.log('방법 2: IndexedDB 로드 시도');
-                const indexedData = await window.indexedDBManager.loadData();
-                if (indexedData && indexedData.data) {
-                    this.heritageData = indexedData.data;
-                    console.log('✅ IndexedDB 로드 성공:', this.heritageData.length, '개 항목');
-                    
-                    this.processData();
-                    this.isLoaded = true;
-                    this.isLoading = false; // 🚨 중요: 로딩 상태 해제
-                    
-                    // 데이터 로딩 완료 이벤트 발생
-                    this.emit('dataLoaded', this.heritageData);
-                    
-                    // 데이터 로딩 완료 후 대시보드 업데이트
-                    if (typeof updateDashboard === 'function') {
-                        updateDashboard();
-                    }
-                    
-                    return this.heritageData;
-                }
-            } catch (indexedError) {
-                console.log('IndexedDB 로드 실패, 자동 CSV 시도');
-            }
+            await window.indexedDBManager.saveData(data);
         }
-        
-        // 방법 3: 자동 CSV 로드 시도
-        try {
-            console.log('방법 3: 자동 CSV 로드 시도');
-            await this.loadFromAutoCSV();
-            console.log('✅ 자동 CSV 로드 성공:', this.heritageData.length, '개 항목');
-            
-            // CSV 데이터를 대용량 저장소에 저장
-            await this.saveData();
-            
-            this.processData();
-            this.isLoaded = true;
-            this.isLoading = false; // 🚨 중요: 로딩 상태 해제
-            
-            // 데이터 로딩 완료 이벤트 발생
-            this.emit('dataLoaded', this.heritageData);
-            
-            // 데이터 로딩 완료 후 대시보드 업데이트
-            if (typeof updateDashboard === 'function') {
-                updateDashboard();
-            }
-            
-            return this.heritageData;
-            
-        } catch (autoCsvError) {
-            console.log('자동 CSV 로드 실패, 로컬 스토리지 시도');
-            
-            // 🚨 중요: 에러 발생 시 로딩 상태 해제
-            this.isLoading = false;
-            
-            // 방법 4: 로컬 스토리지에서 사용자 데이터 로드 시도
-            try {
-                console.log('방법 4: 로컬 스토리지 사용자 데이터 로드');
-            
-            const userData = localStorage.getItem('heritage_user_data');
-            const timestamp = localStorage.getItem('heritage_data_timestamp');
-            
-            if (userData) {
-                const parsedData = JSON.parse(userData);
-                    
-                    // 새로운 형식 (객체) 또는 기존 형식 (배열) 처리
-                    if (parsedData && typeof parsedData === 'object') {
-                        if (parsedData.data && Array.isArray(parsedData.data)) {
-                            // 새로운 형식: {data: [...], timestamp: ..., version: ...}
-                            this.heritageData = parsedData.data;
-                            const backupAge = parsedData.timestamp ? 
-                                Math.floor((Date.now() - parsedData.timestamp) / 1000 / 60) : '알 수 없음';
-                            
-                            console.log('✅ 사용자 데이터 로드 성공 (새 형식):', this.heritageData.length, '개 항목');
-                            console.log('데이터 버전:', parsedData.version || '1.0');
-                            console.log('데이터 소스:', parsedData.source || '알 수 없음');
-                    console.log('마지막 업데이트:', backupAge, '분 전');
-                    
-                            if (parsedData.compressed) {
-                                console.log('⚠️ 압축된 데이터입니다. 일부 설명이 축약되어 있을 수 있습니다.');
-                            }
-                            
-                        } else if (Array.isArray(parsedData) && parsedData.length > 0) {
-                            // 기존 형식: [...]
-                            this.heritageData = parsedData;
-                            const backupAge = timestamp ? 
-                                Math.floor((Date.now() - parseInt(timestamp)) / 1000 / 60) : '알 수 없음';
-                            
-                            console.log('✅ 사용자 데이터 로드 성공 (기존 형식):', this.heritageData.length, '개 항목');
-                            console.log('마지막 업데이트:', backupAge, '분 전');
-                        }
-                        
-                        if (this.heritageData && this.heritageData.length > 0) {
-                    this.processData();
-                    this.isLoaded = true;
-                    this.isLoading = false; // 🚨 중요: 로딩 상태 해제
-                    
-                    // 데이터 로딩 완료 후 대시보드 업데이트
-                    if (typeof updateDashboard === 'function') {
-                        updateDashboard();
-                    }
-                    
-                    return this.heritageData;
-                        }
-                }
-            }
-            
-            throw new Error('사용자 데이터 없음');
-            
-        } catch (userDataError) {
-                console.log('사용자 데이터 없음, 기존 CSV 파일 로드 시도');
-                
-                // 🚨 중요: 에러 발생 시 로딩 상태 해제
-                this.isLoading = false;
-                
-                // 방법 5: 기존 CSV 파일에서 로드 시도
-                try {
-                    await this.loadFromCSV();
-                    console.log('✅ 기존 CSV 파일 로드 성공:', this.heritageData.length, '개 항목');
-                    
-                    // CSV 데이터를 대용량 저장소에 저장
-                    await this.saveData();
-                    
-                    this.processData();
-                    this.isLoaded = true;
-                    this.isLoading = false; // 🚨 중요: 로딩 상태 해제
-                    
-                    // 데이터 로딩 완료 후 대시보드 업데이트
-                    if (typeof updateDashboard === 'function') {
-                        updateDashboard();
-                    }
-                    
-                    return this.heritageData;
-                    
-                } catch (csvError) {
-                    console.log('기존 CSV 파일 로드 실패, 샘플 데이터로 시작');
-                    
-                    // 🚨 중요: 에러 발생 시 로딩 상태 해제
-                    this.isLoading = false;
-                    
-                    // 방법 6: 샘플 데이터로 시작 (최후 수단)
-            this.heritageData = this.getSampleData();
-            console.log('✅ 샘플 데이터 로드:', this.heritageData.length, '개 항목');
-            
-            // 샘플 데이터를 로컬 스토리지에 저장
-            this.saveToLocalStorage();
-            
-            this.processData();
-            this.isLoaded = true;
-            this.isLoading = false; // 🚨 중요: 로딩 상태 해제
-            
-            // 데이터 로딩 완료 후 대시보드 업데이트
-            if (typeof updateDashboard === 'function') {
-                updateDashboard();
-            }
-            
-            return this.heritageData;
-        }
-            }
-        }
+    }
+
+    /**
+     * 🚀 LocalStorage 저장
+     */
+    async _saveToLocalStorage(data) {
+        const dataToSave = {
+            data: data,
+            timestamp: Date.now(),
+            version: '1.0',
+            source: 'heritage_perfect_dataset.csv',
+            count: data.length
+        };
+        localStorage.setItem('heritage_user_data', JSON.stringify(dataToSave));
+    }
+
+    /**
+     * 🚀 캐시 무효화 (새 데이터 업로드 시 사용)
+     */
+    invalidateCache() {
+        console.log('🔄 데이터 캐시 무효화');
+        this.cachedData = null;
+        this.isLoaded = false;
+        this.lastLoadTime = 0;
     }
     
     /**

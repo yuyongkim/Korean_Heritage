@@ -5,7 +5,109 @@
 // 전역 변수
 let currentPage = 1;
 const itemsPerPage = 20;
-let isLoading = false; // 🚨 중요: 전역 로딩 상태 추적
+let isLoading = false;
+
+// 🚀 성능 최적화: 중복 호출 방지 시스템
+class AppController {
+    constructor() {
+        this.updateQueue = new Set();
+        this.isUpdating = false;
+        this.lastUpdateData = null;
+        this.updateTimeout = null;
+    }
+
+    // 🚀 디바운스된 업데이트 시스템
+    async scheduleUpdate(updateType, data) {
+        // 동일한 데이터로 업데이트 요청 시 무시
+        const dataHash = this._hashData(data);
+        if (this.lastUpdateData === dataHash) {
+            console.log('🔄 동일한 데이터, 업데이트 스킵');
+            return;
+        }
+
+        this.updateQueue.add(updateType);
+        
+        // 100ms 디바운스
+        clearTimeout(this.updateTimeout);
+        this.updateTimeout = setTimeout(() => {
+            this._processUpdateQueue(data, dataHash);
+        }, 100);
+    }
+
+    async _processUpdateQueue(data, dataHash) {
+        if (this.isUpdating) {
+            console.log('⏳ 이미 업데이트 중, 대기');
+            return;
+        }
+
+        this.isUpdating = true;
+        console.log('🔄 업데이트 큐 처리:', Array.from(this.updateQueue));
+
+        try {
+            // 🚀 한 번에 모든 업데이트 처리
+            if (this.updateQueue.has('dashboard')) {
+                await this._updateDashboard(data);
+            }
+            
+            if (this.updateQueue.has('filters')) {
+                await this._updateFilters(data);
+            }
+            
+            if (this.updateQueue.has('stats')) {
+                await this._updateStats(data);
+            }
+
+            this.lastUpdateData = dataHash;
+            console.log('✅ 모든 업데이트 완료');
+            
+        } catch (error) {
+            console.error('❌ 업데이트 에러:', error);
+        } finally {
+            this.updateQueue.clear();
+            this.isUpdating = false;
+        }
+    }
+
+    _hashData(data) {
+        if (!data || !Array.isArray(data)) return 'empty';
+        return `${data.length}-${data[0]?.name || 'unknown'}`;
+    }
+
+    // 🚀 개별 업데이트 함수들
+    async _updateDashboard(data) {
+        if (typeof updateDashboard === 'function') {
+            updateDashboard();
+        }
+    }
+
+    async _updateFilters(data) {
+        if (dataManager && typeof dataManager.updateFilters === 'function') {
+            dataManager.updateFilters();
+        }
+    }
+
+    async _updateStats(data) {
+        if (dataManager && typeof dataManager.getStatistics === 'function') {
+            dataManager.getStatistics();
+        }
+    }
+
+    // 🚀 공개 메서드들
+    updateDashboard(data) {
+        this.scheduleUpdate('dashboard', data);
+    }
+
+    updateFilters(data) {
+        this.scheduleUpdate('filters', data);
+    }
+
+    updateStats(data) {
+        this.scheduleUpdate('stats', data);
+    }
+}
+
+// 🚀 전역 앱 컨트롤러
+const appController = new AppController();
 
 /**
  * 애플리케이션 초기화
@@ -50,23 +152,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 초기 통계 표시
     console.log('현재 총 문화재 수:', dataManager.heritageData.length);
     
-    // 대시보드 업데이트
-    updateDashboard();
+    // 🚀 최적화된 대시보드 업데이트
+    appController.updateDashboard(dataManager.heritageData);
     
     // 데이터 변경 이벤트 리스너 설정
     dataManager.addEventListener('dataLoaded', (data) => {
         console.log('📊 데이터 로딩 완료 이벤트 수신:', data.length, '개 항목');
-        updateDashboard();
+        appController.updateDashboard(data);
     });
     
     dataManager.addEventListener('dataUpdated', (data) => {
         console.log('📊 데이터 업데이트 이벤트 수신');
-        updateDashboard();
+        appController.updateDashboard(data);
     });
     
     dataManager.addEventListener('statisticsChanged', (stats) => {
         console.log('📊 통계 변경 이벤트 수신:', stats);
-        updateDashboard();
+        appController.updateStats(dataManager.heritageData);
     });
     
     // 이벤트 리스너 설정
@@ -322,26 +424,22 @@ function loadHeritageList(searchQuery = '') {
             return;
         }
         
-        // 페이지네이션
-        const totalPages = Math.ceil(results.length / itemsPerPage);
+        // 🚀 최적화된 페이지네이션 (캐싱 사용)
+        const paginationData = getPaginatedData(results, currentPage);
         
-        // 🚨 중요: 페이지 범위 검증
-        if (currentPage > totalPages && totalPages > 0) {
-            console.warn(`현재 페이지(${currentPage})가 총 페이지수(${totalPages})를 초과합니다. 첫 페이지로 이동합니다.`);
-            currentPage = 1;
+        if (!paginationData) {
+            console.warn('페이지네이션 데이터 없음');
+            renderHeritageList([]);
+            return;
         }
         
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        const endIndex = startIndex + itemsPerPage;
-        const pageData = results.slice(startIndex, endIndex);
-        
-        console.log(`페이지 데이터 로드 완료: ${pageData.length}개 항목 (${currentPage}/${totalPages})`);
+        console.log(`🚀 페이지 데이터 로드 완료: ${paginationData.items.length}개 항목 (${paginationData.currentPage}/${paginationData.totalPages})`);
         
         // 목록 렌더링
-        renderHeritageList(pageData);
+        renderHeritageList(paginationData.items);
         
         // 페이지네이션 렌더링
-        renderPagination(currentPage, totalPages, results.length);
+        renderPagination(paginationData.currentPage, paginationData.totalPages, paginationData.totalItems, 'pagination');
         
     } catch (error) {
         console.error('문화재 목록 로드 오류:', error);
@@ -615,62 +713,17 @@ function changeEnglishPage(page) {
 }
 
 /**
- * 페이지네이션 렌더링
+ * 🚀 최적화된 페이지네이션 렌더링 (PaginationManager 사용)
  */
-function renderPagination(current, total, totalItems) {
-    const container = document.getElementById('pagination');
+function renderPagination(current, total, totalItems, containerId = 'pagination') {
+    const container = document.getElementById(containerId);
     if (!container || total <= 1) {
-        container.innerHTML = '';
+        if (container) container.innerHTML = '';
         return;
     }
     
-    let html = '';
-    
-    // 이전 버튼
-    html += `
-        <li class="page-item ${current === 1 ? 'disabled' : ''}">
-            <a class="page-link" href="#" onclick="changePage(${current - 1})">이전</a>
-        </li>
-    `;
-    
-    // 페이지 번호들
-    const start = Math.max(1, current - 2);
-    const end = Math.min(total, current + 2);
-    
-    if (start > 1) {
-        html += `<li class="page-item"><a class="page-link" href="#" onclick="changePage(1)">1</a></li>`;
-        if (start > 2) html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
-    }
-    
-    for (let i = start; i <= end; i++) {
-        html += `
-            <li class="page-item ${i === current ? 'active' : ''}">
-                <a class="page-link" href="#" onclick="changePage(${i})">${i}</a>
-            </li>
-        `;
-    }
-    
-    if (end < total) {
-        if (end < total - 1) html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
-        html += `<li class="page-item"><a class="page-link" href="#" onclick="changePage(${total})">${total}</a></li>`;
-    }
-    
-    // 다음 버튼
-    html += `
-        <li class="page-item ${current === total ? 'disabled' : ''}">
-            <a class="page-link" href="#" onclick="changePage(${current + 1})">다음</a>
-        </li>
-    `;
-    
+    const html = paginationManager.generatePaginationHTML(current, total, totalItems);
     container.innerHTML = html;
-    
-    // 결과 수 표시
-    const resultInfo = document.querySelector('.result-info');
-    if (resultInfo) {
-        const start = (current - 1) * itemsPerPage + 1;
-        const end = Math.min(current * itemsPerPage, totalItems);
-        resultInfo.textContent = `${start}-${end} / 총 ${totalItems}개`;
-    }
 }
 
 /**

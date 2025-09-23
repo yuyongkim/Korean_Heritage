@@ -166,10 +166,10 @@ function updateDashboard() {
     // 미분류 항목 통계 업데이트
     updateUnclassifiedStats();
     
-    // 4축 필터링 시스템 업데이트
-    if (dataManager && typeof dataManager.updateFilters === 'function') {
-        dataManager.updateFilters();
-    }
+    // 4축 필터링 시스템 업데이트는 초기 로딩 시에만 실행
+    // if (dataManager && typeof dataManager.updateFilters === 'function') {
+    //     dataManager.updateFilters();
+    // }
     
     // 결과 개수 실시간 업데이트
     updateResultsCount();

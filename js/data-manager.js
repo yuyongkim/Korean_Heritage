@@ -921,7 +921,7 @@ class DataManager {
             if (item.location) this.locations.add(item.location);
         });
         
-        // 4축 필터링 시스템 업데이트
+        // 4축 필터링 시스템 업데이트 (초기 로딩 시에만)
         this.updateFilters();
         
         // 기존 필터 옵션도 업데이트 (호환성)
@@ -1079,7 +1079,11 @@ class DataManager {
      * 현재 필터링된 데이터 반환
      */
     getCurrentData() {
-        return this.filteredData && this.filteredData.length > 0 ? this.filteredData : this.heritageData;
+        // 필터가 적용되지 않았거나 빈 배열인 경우 원본 데이터 반환
+        if (!this.filteredData || this.filteredData.length === 0) {
+            return this.heritageData;
+        }
+        return this.filteredData;
     }
     
     /**
@@ -1110,7 +1114,7 @@ class DataManager {
             }
         }).filter(Boolean))].sort();
         
-        console.log('📊 발견된 전체 카테고리:', allCategories.length, allCategories);
+        console.log('📊 발견된 전체 카테고리:', allCategories.length);
         
         // 2. 카테고리 드롭다운 업데이트 (모든 카테고리 포함)
         const categorySelect = document.getElementById('category-filter');
@@ -1172,6 +1176,13 @@ class DataManager {
         
         console.log('🔍 필터 적용:', { searchTerm, categoryFilter, regionFilter });
         
+        // 필터가 모두 비어있으면 원본 데이터 사용
+        if (!searchTerm && !categoryFilter && !regionFilter) {
+            this.filteredData = null; // 필터링된 데이터 초기화
+            this.updateResultsCount();
+            return this.heritageData;
+        }
+        
         this.filteredData = this.heritageData.filter(item => {
             // 검색어 필터
             if (searchTerm) {
@@ -1214,7 +1225,7 @@ class DataManager {
      * 결과 개수 업데이트
      */
     updateResultsCount() {
-        const count = this.filteredData ? this.filteredData.length : this.heritageData.length;
+        const count = this.filteredData && this.filteredData.length > 0 ? this.filteredData.length : this.heritageData.length;
         
         console.log('🔢 결과 개수 업데이트:', count);
         

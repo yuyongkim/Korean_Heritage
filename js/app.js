@@ -1454,7 +1454,31 @@ function changeCategoryPage(page) {
     // 🚨 중요: 로딩 타임아웃 설정
     setLoadingTimeout();
     
+    // 🚨 중요: URL 업데이트 - 현재 카테고리 정보 가져오기
+    const currentHash = window.location.hash.slice(1);
+    let newUrl = '';
+    
+    if (currentHash.includes('category/')) {
+        // 카테고리 페이지인 경우: category/보물/page/2
+        const categoryMatch = currentHash.match(/category\/([^\/]+)/);
+        if (categoryMatch) {
+            const categoryName = categoryMatch[1];
+            newUrl = `category/${categoryName}/page/${page}`;
+        } else {
+            // 폴백: 현재 해시에 /page/ 추가
+            newUrl = currentHash + `/page/${page}`;
+        }
+    } else {
+        // 홈 페이지인 경우: home?page=2
+        newUrl = `home?page=${page}`;
+    }
+    
+    console.log(`🛣️ 카테고리 페이지 URL 업데이트: ${currentHash} -> ${newUrl}`);
+    
     try {
+        // 🚨 중요: 라우터에 URL 변경 알리기
+        router.navigate(newUrl);
+        
         renderCategoryContent();
     } catch (error) {
         console.error('카테고리 페이지 로딩 오류:', error);
@@ -1463,6 +1487,29 @@ function changeCategoryPage(page) {
         isLoading = false;
     }
 }
+
+// 🧪 테스트용 함수들
+window.testPagination = function(page) {
+    console.log('🧪 페이지네이션 테스트:', page);
+    changeCategoryPage(page);
+};
+
+window.getCurrentRouteInfo = function() {
+    const currentHash = window.location.hash.slice(1);
+    console.log('📍 현재 라우트 정보:');
+    console.log('- Hash:', currentHash);
+    console.log('- Category Page:', currentCategoryPage);
+    console.log('- Home Page:', currentPage);
+    console.log('- English Page:', currentEnglishPage);
+    console.log('- Unclassified Page:', currentUnclassifiedPage);
+    return {
+        hash: currentHash,
+        categoryPage: currentCategoryPage,
+        homePage: currentPage,
+        englishPage: currentEnglishPage,
+        unclassifiedPage: currentUnclassifiedPage
+    };
+};
 
 // English 페이지 전역 변수
 let currentEnglishPage = 1;
@@ -1807,7 +1854,24 @@ function changeEnglishPage(page) {
     // 🚨 중요: 로딩 타임아웃 설정
     setLoadingTimeout();
     
+    // 🚨 중요: URL 업데이트
+    const currentHash = window.location.hash.slice(1);
+    let newUrl = '';
+    
+    if (currentHash.includes('english')) {
+        // English 페이지인 경우: english/page/2
+        newUrl = `english/page/${page}`;
+    } else {
+        // 폴백: home?page=2
+        newUrl = `home?page=${page}`;
+    }
+    
+    console.log(`🛣️ English 페이지 URL 업데이트: ${currentHash} -> ${newUrl}`);
+    
     try {
+        // 🚨 중요: 라우터에 URL 변경 알리기
+        router.navigate(newUrl);
+        
         renderEnglishContent();
     } catch (error) {
         console.error('English 페이지 로딩 오류:', error);
@@ -2171,7 +2235,24 @@ function changeUnclassifiedPage(page) {
     // 🚨 중요: 로딩 타임아웃 설정
     setLoadingTimeout();
     
+    // 🚨 중요: URL 업데이트
+    const currentHash = window.location.hash.slice(1);
+    let newUrl = '';
+    
+    if (currentHash.includes('unclassified')) {
+        // 미분류 페이지인 경우: unclassified/page/2
+        newUrl = `unclassified/page/${page}`;
+    } else {
+        // 폴백: home?page=2
+        newUrl = `home?page=${page}`;
+    }
+    
+    console.log(`🛣️ 미분류 페이지 URL 업데이트: ${currentHash} -> ${newUrl}`);
+    
     try {
+        // 🚨 중요: 라우터에 URL 변경 알리기
+        router.navigate(newUrl);
+        
         renderUnclassifiedContent();
     } catch (error) {
         console.error('미분류 페이지 로딩 오류:', error);
@@ -2356,7 +2437,30 @@ function changePage(page) {
     // 🚨 중요: 로딩 타임아웃 설정
     setLoadingTimeout();
     
+    // 🚨 중요: URL 업데이트
+    const currentHash = window.location.hash.slice(1);
+    let newUrl = '';
+    
+    if (currentHash.includes('category/')) {
+        // 카테고리 페이지인 경우: category/보물/page/2
+        const categoryMatch = currentHash.match(/category\/([^\/]+)/);
+        if (categoryMatch) {
+            const categoryName = categoryMatch[1];
+            newUrl = `category/${categoryName}/page/${page}`;
+        } else {
+            newUrl = currentHash + `/page/${page}`;
+        }
+    } else {
+        // 홈 페이지인 경우: home?page=2
+        newUrl = `home?page=${page}`;
+    }
+    
+    console.log(`🛣️ 페이지 URL 업데이트: ${currentHash} -> ${newUrl}`);
+    
     try {
+        // 🚨 중요: 라우터에 URL 변경 알리기
+        router.navigate(newUrl);
+        
         loadHeritageList();
         window.scrollTo(0, 0);
     } catch (error) {

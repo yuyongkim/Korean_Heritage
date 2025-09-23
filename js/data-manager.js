@@ -8,6 +8,7 @@ class DataManager {
         this.categories = new Set();
         this.locations = new Set();
         this.isLoaded = false;
+        this.isLoading = false; // 🚨 중요: 로딩 상태 추적
         this.currentLanguage = 'ko';
         
         // 이벤트 시스템 초기화
@@ -48,9 +49,25 @@ class DataManager {
      * 문화재 데이터 로드 (JavaScript 데이터 우선)
      */
     async loadData() {
+        // 🚨 중요: 이미 로딩 중이면 대기
+        if (this.isLoading) {
+            console.log('이미 데이터 로딩 중... 대기');
+            return new Promise((resolve) => {
+                const checkLoading = () => {
+                    if (!this.isLoading) {
+                        resolve(this.heritageData);
+                    } else {
+                        setTimeout(checkLoading, 100);
+                    }
+                };
+                checkLoading();
+            });
+        }
+        
         if (this.isLoaded) return this.heritageData;
         
         console.log('🔄 데이터 로드 시작...');
+        this.isLoading = true;
         
         // 방법 1: 대용량 JavaScript 데이터 로드 시도 (최우선)
         try {
@@ -64,6 +81,7 @@ class DataManager {
                 
                 this.processData();
                 this.isLoaded = true;
+                this.isLoading = false; // 🚨 중요: 로딩 상태 해제
                 
                 // 데이터 로딩 완료 이벤트 발생
                 this.emit('dataLoaded', this.heritageData);
@@ -93,6 +111,7 @@ class DataManager {
                     
                     this.processData();
                     this.isLoaded = true;
+                    this.isLoading = false; // 🚨 중요: 로딩 상태 해제
                     
                     // 데이터 로딩 완료 이벤트 발생
                     this.emit('dataLoaded', this.heritageData);
@@ -120,6 +139,7 @@ class DataManager {
             
             this.processData();
             this.isLoaded = true;
+            this.isLoading = false; // 🚨 중요: 로딩 상태 해제
             
             // 데이터 로딩 완료 이벤트 발생
             this.emit('dataLoaded', this.heritageData);
@@ -133,6 +153,9 @@ class DataManager {
             
         } catch (autoCsvError) {
             console.log('자동 CSV 로드 실패, 로컬 스토리지 시도');
+            
+            // 🚨 중요: 에러 발생 시 로딩 상태 해제
+            this.isLoading = false;
             
             // 방법 4: 로컬 스토리지에서 사용자 데이터 로드 시도
             try {
@@ -174,6 +197,7 @@ class DataManager {
                         if (this.heritageData && this.heritageData.length > 0) {
                     this.processData();
                     this.isLoaded = true;
+                    this.isLoading = false; // 🚨 중요: 로딩 상태 해제
                     
                     // 데이터 로딩 완료 후 대시보드 업데이트
                     if (typeof updateDashboard === 'function') {
@@ -190,6 +214,9 @@ class DataManager {
         } catch (userDataError) {
                 console.log('사용자 데이터 없음, 기존 CSV 파일 로드 시도');
                 
+                // 🚨 중요: 에러 발생 시 로딩 상태 해제
+                this.isLoading = false;
+                
                 // 방법 5: 기존 CSV 파일에서 로드 시도
                 try {
                     await this.loadFromCSV();
@@ -200,6 +227,7 @@ class DataManager {
                     
                     this.processData();
                     this.isLoaded = true;
+                    this.isLoading = false; // 🚨 중요: 로딩 상태 해제
                     
                     // 데이터 로딩 완료 후 대시보드 업데이트
                     if (typeof updateDashboard === 'function') {
@@ -211,6 +239,9 @@ class DataManager {
                 } catch (csvError) {
                     console.log('기존 CSV 파일 로드 실패, 샘플 데이터로 시작');
                     
+                    // 🚨 중요: 에러 발생 시 로딩 상태 해제
+                    this.isLoading = false;
+                    
                     // 방법 6: 샘플 데이터로 시작 (최후 수단)
             this.heritageData = this.getSampleData();
             console.log('✅ 샘플 데이터 로드:', this.heritageData.length, '개 항목');
@@ -220,6 +251,7 @@ class DataManager {
             
             this.processData();
             this.isLoaded = true;
+            this.isLoading = false; // 🚨 중요: 로딩 상태 해제
             
             // 데이터 로딩 완료 후 대시보드 업데이트
             if (typeof updateDashboard === 'function') {

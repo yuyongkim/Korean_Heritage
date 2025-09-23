@@ -7,6 +7,7 @@ class Router {
         this.currentView = null;
         this.history = []; // 히스토리 스택 추가
         this.previousHash = null; // 이전 해시 저장
+        this.isLoading = false; // 🚨 중요: 로딩 상태 추적
         
         // 브라우저 뒤로가기/앞으로가기 이벤트 처리
         window.addEventListener('hashchange', () => this.handleRoute());
@@ -36,6 +37,15 @@ class Router {
             console.log('동일한 해시로의 중복 라우팅 무시:', currentHash);
             return;
         }
+        
+        // 🚨 중요: 로딩 상태 확인 (이미 로딩 중이면 리턴)
+        if (this.isLoading) {
+            console.log('이미 로딩 중이므로 라우팅 무시:', currentHash);
+            return;
+        }
+        
+        // 🚨 중요: 로딩 상태 설정
+        this.isLoading = true;
         
         // 히스토리에 현재 경로 추가 (중복 방지)
         const currentPath = hash;
@@ -70,12 +80,14 @@ class Router {
             } catch (error) {
                 console.error('라우팅 오류:', error);
                 this.showRouteError(error);
+            } finally {
+                // 🚨 중요: 로딩 상태 해제 (성공/실패 관계없이)
+                this.isLoading = false;
+                this.hideLoading();
+                
+                // 이전 해시 업데이트
+                this.previousHash = currentHash;
             }
-            
-            this.hideLoading();
-            
-            // 이전 해시 업데이트
-            this.previousHash = currentHash;
         }, 100);
     }
     
@@ -98,9 +110,16 @@ class Router {
      * 프로그래매틱 네비게이션
      */
     navigate(path) {
+        // 🚨 중요: 로딩 중이면 무시
+        if (this.isLoading) {
+            console.log('로딩 중이므로 네비게이션 무시:', path);
+            return;
+        }
+        
         // 경로가 현재 경로와 같으면 무시
         const currentHash = window.location.hash.slice(1) || 'home';
         if (currentHash === path) {
+            console.log('동일한 경로로의 네비게이션 무시:', path);
             return;
         }
         

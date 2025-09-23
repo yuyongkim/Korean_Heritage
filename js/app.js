@@ -261,12 +261,9 @@ function setupEventListeners() {
 /**
  * 대시보드 업데이트
  */
-function updateDashboard() {
-    // 데이터가 로딩되지 않았으면 대기
-    if (!dataManager || !dataManager.isLoaded || !dataManager.heritageData || dataManager.heritageData.length === 0) {
-        console.log('📊 데이터가 아직 로딩되지 않음, 대시보드 업데이트 대기');
-        return;
-    }
+async function updateDashboard() {
+    // 데이터 매니저가 준비될 때까지 기다리기
+    await dataManager.waitForData();
     
     const stats = dataManager.getStatistics();
     
@@ -381,7 +378,7 @@ function animateNumbers() {
 /**
  * 뷰 모드 전환 (그리드/리스트)
  */
-function toggleViewMode(mode) {
+async function toggleViewMode(mode) {
     const gridContainer = document.getElementById('heritage-grid');
     const tableContainer = document.getElementById('heritage-table');
     
@@ -394,19 +391,15 @@ function toggleViewMode(mode) {
     }
     
     // 현재 페이지의 데이터를 다시 렌더링
-    loadHeritageList();
+    await loadHeritageList();
 }
 
 /**
  * 문화재 목록 로드
  */
-function loadHeritageList(searchQuery = '') {
-    // 🚨 중요: 데이터 매니저 로딩 상태 확인
-    if (dataManager.isLoading) {
-        console.log('데이터 매니저가 로딩 중입니다. 잠시 후 다시 시도합니다.');
-        setTimeout(() => loadHeritageList(searchQuery), 500);
-        return;
-    }
+async function loadHeritageList(searchQuery = '') {
+    // 데이터 매니저가 준비될 때까지 기다리기
+    await dataManager.waitForData();
     
     const query = searchQuery || document.getElementById('globalSearch')?.value || '';
     const categoryFilter = document.getElementById('category-filter')?.value || '';
@@ -734,7 +727,10 @@ function renderPagination(current, total, totalItems, containerId = 'pagination'
 /**
  * 문화재 상세 정보 로드
  */
-function loadHeritageDetail(name) {
+async function loadHeritageDetail(name) {
+    // 데이터 매니저가 준비될 때까지 기다리기
+    await dataManager.waitForData();
+    
     const item = dataManager.getByName(name);
     if (!item) {
         console.error('문화재를 찾을 수 없습니다:', name);
@@ -993,16 +989,13 @@ let currentCategoryName = '';
 /**
  * 카테고리별 뷰 로드
  */
-function loadCategoryView(category) {
+async function loadCategoryView(category) {
     console.log('카테고리 뷰 로드 시작:', category);
     currentCategoryName = category;
     currentCategoryPage = 1;
     
-    // 데이터 매니저 확인
-    if (!dataManager || !dataManager.isLoaded) {
-        console.error('데이터 매니저가 로드되지 않았습니다');
-        return;
-    }
+    // 데이터 매니저가 준비될 때까지 기다리기
+    await dataManager.waitForData();
     
     // 기본 데이터 로드
     const allItems = dataManager.getByCategory(category);
@@ -1033,8 +1026,13 @@ function loadCategoryView(category) {
 /**
  * 카테고리 컨텐츠 렌더링
  */
-function renderCategoryContent() {
+async function renderCategoryContent() {
     console.log('카테고리 컨텐츠 렌더링 시작:', currentCategoryData.length, '건');
+    
+    // URL 업데이트 (페이지네이션을 위한)
+    const newUrl = `category/${currentCategoryName}/page/${currentCategoryPage}`;
+    console.log(`🛣️ 카테고리 페이지 URL 업데이트: ${window.location.hash.slice(1)} -> ${newUrl}`);
+    router.navigate(newUrl);
     
     // 지역 필터 적용
     const locationFilter = document.getElementById('category-location-filter')?.value || '';
@@ -1433,7 +1431,7 @@ function renderCategoryPagination(current, totalPages, totalItems) {
 /**
  * 카테고리 페이지 변경
  */
-function changeCategoryPage(page) {
+async function changeCategoryPage(page) {
     // 🚨 중요: 로딩 중이면 무시
     if (isLoading) {
         console.log('이미 로딩 중이므로 카테고리 페이지 변경 무시:', page);
@@ -1459,32 +1457,11 @@ function changeCategoryPage(page) {
     // 🚨 중요: 로딩 타임아웃 설정
     setLoadingTimeout();
     
-    // 🚨 중요: URL 업데이트 - 현재 카테고리 정보 가져오기
-    const currentHash = window.location.hash.slice(1);
-    let newUrl = '';
-    
-    if (currentHash.includes('category/')) {
-        // 카테고리 페이지인 경우: category/보물/page/2
-        const categoryMatch = currentHash.match(/category\/([^\/]+)/);
-        if (categoryMatch) {
-            const categoryName = categoryMatch[1];
-            newUrl = `category/${categoryName}/page/${page}`;
-        } else {
-            // 폴백: 현재 해시에 /page/ 추가
-            newUrl = currentHash + `/page/${page}`;
-        }
-    } else {
-        // 홈 페이지인 경우: home?page=2
-        newUrl = `home?page=${page}`;
-    }
-    
-    console.log(`🛣️ 카테고리 페이지 URL 업데이트: ${currentHash} -> ${newUrl}`);
-    
     try {
-        // 🚨 중요: 라우터에 URL 변경 알리기
-        router.navigate(newUrl);
-        
-        renderCategoryContent();
+        // router.navigate()를 여기서 직접 호출하는 대신,
+        // renderCategoryContent가 URL을 처리하도록 둡니다.
+        // 이렇게 하면 중복 호출을 막을 수 있습니다.
+        await renderCategoryContent();
     } catch (error) {
         console.error('카테고리 페이지 로딩 오류:', error);
         showErrorMessage('카테고리 페이지를 불러오는 중 오류가 발생했습니다.');
@@ -1523,8 +1500,11 @@ let currentEnglishData = [];
 /**
  * English 페이지 로드
  */
-function loadEnglishView() {
+async function loadEnglishView() {
     currentEnglishPage = 1;
+    
+    // 데이터 매니저가 준비될 때까지 기다리기
+    await dataManager.waitForData();
     
     // 모든 데이터 로드 (영문 설명 유무 상관없이)
     const allItems = dataManager.heritageData;
@@ -1546,7 +1526,12 @@ function loadEnglishView() {
 /**
  * English 컨텐츠 렌더링
  */
-function renderEnglishContent() {
+async function renderEnglishContent() {
+    // URL 업데이트 (페이지네이션을 위한)
+    const newUrl = `english/page/${currentEnglishPage}`;
+    console.log(`🛣️ English 페이지 URL 업데이트: ${window.location.hash.slice(1)} -> ${newUrl}`);
+    router.navigate(newUrl);
+    
     // 필터 적용
     const categoryFilter = document.getElementById('english-category-filter')?.value || '';
     const locationFilter = document.getElementById('english-location-filter')?.value || '';
@@ -1833,7 +1818,7 @@ function renderEnglishPagination(current, totalPages, totalItems) {
 /**
  * English 페이지 변경
  */
-function changeEnglishPage(page) {
+async function changeEnglishPage(page) {
     // 🚨 중요: 로딩 중이면 무시
     if (isLoading) {
         console.log('이미 로딩 중이므로 English 페이지 변경 무시:', page);
@@ -1859,25 +1844,10 @@ function changeEnglishPage(page) {
     // 🚨 중요: 로딩 타임아웃 설정
     setLoadingTimeout();
     
-    // 🚨 중요: URL 업데이트
-    const currentHash = window.location.hash.slice(1);
-    let newUrl = '';
-    
-    if (currentHash.includes('english')) {
-        // English 페이지인 경우: english/page/2
-        newUrl = `english/page/${page}`;
-    } else {
-        // 폴백: home?page=2
-        newUrl = `home?page=${page}`;
-    }
-    
-    console.log(`🛣️ English 페이지 URL 업데이트: ${currentHash} -> ${newUrl}`);
-    
     try {
-        // 🚨 중요: 라우터에 URL 변경 알리기
-        router.navigate(newUrl);
-        
-        renderEnglishContent();
+        // router.navigate()를 여기서 직접 호출하는 대신,
+        // renderEnglishContent가 URL을 처리하도록 둡니다.
+        await renderEnglishContent();
     } catch (error) {
         console.error('English 페이지 로딩 오류:', error);
         showErrorMessage('English 페이지를 불러오는 중 오류가 발생했습니다.');
@@ -1894,10 +1864,13 @@ let currentUnclassifiedType = 'all';
 /**
  * 미분류 항목 뷰 로드
  */
-function loadUnclassifiedView(type = 'sido-type') {
+async function loadUnclassifiedView(type = 'sido-type') {
     console.log('미분류 항목 뷰 로드:', type);
     currentUnclassifiedType = type;
     currentUnclassifiedPage = 1;
+    
+    // 데이터 매니저가 준비될 때까지 기다리기
+    await dataManager.waitForData();
     
     // 미분류 항목 필터링
     const allItems = dataManager.heritageData;
@@ -1954,8 +1927,13 @@ function loadUnclassifiedView(type = 'sido-type') {
 /**
  * 미분류 항목 컨텐츠 렌더링
  */
-function renderUnclassifiedContent() {
+async function renderUnclassifiedContent() {
     console.log('미분류 항목 컨텐츠 렌더링 시작:', currentUnclassifiedData.length, '건');
+    
+    // URL 업데이트 (페이지네이션을 위한)
+    const newUrl = `unclassified/page/${currentUnclassifiedPage}`;
+    console.log(`🛣️ 미분류 페이지 URL 업데이트: ${window.location.hash.slice(1)} -> ${newUrl}`);
+    router.navigate(newUrl);
     
     // 페이지네이션
     const totalPages = Math.ceil(currentUnclassifiedData.length / itemsPerPage);
@@ -2214,7 +2192,7 @@ function renderUnclassifiedPagination(current, totalPages, totalItems) {
 /**
  * 미분류 항목 페이지 변경
  */
-function changeUnclassifiedPage(page) {
+async function changeUnclassifiedPage(page) {
     // 🚨 중요: 로딩 중이면 무시
     if (isLoading) {
         console.log('이미 로딩 중이므로 미분류 페이지 변경 무시:', page);
@@ -2240,25 +2218,10 @@ function changeUnclassifiedPage(page) {
     // 🚨 중요: 로딩 타임아웃 설정
     setLoadingTimeout();
     
-    // 🚨 중요: URL 업데이트
-    const currentHash = window.location.hash.slice(1);
-    let newUrl = '';
-    
-    if (currentHash.includes('unclassified')) {
-        // 미분류 페이지인 경우: unclassified/page/2
-        newUrl = `unclassified/page/${page}`;
-    } else {
-        // 폴백: home?page=2
-        newUrl = `home?page=${page}`;
-    }
-    
-    console.log(`🛣️ 미분류 페이지 URL 업데이트: ${currentHash} -> ${newUrl}`);
-    
     try {
-        // 🚨 중요: 라우터에 URL 변경 알리기
-        router.navigate(newUrl);
-        
-        renderUnclassifiedContent();
+        // router.navigate()를 여기서 직접 호출하는 대신,
+        // renderUnclassifiedContent가 URL을 처리하도록 둡니다.
+        await renderUnclassifiedContent();
     } catch (error) {
         console.error('미분류 페이지 로딩 오류:', error);
         showErrorMessage('미분류 페이지를 불러오는 중 오류가 발생했습니다.');
@@ -2370,7 +2333,7 @@ function performGlobalSearch(query, searchOption = 'title+description') {
 /**
  * 검색 수행 (라우터에서 호출)
  */
-function performSearch(query, searchOption = 'title+description') {
+async function performSearch(query, searchOption = 'title+description') {
     currentPage = 1;
     document.getElementById('globalSearch').value = query;
     
@@ -2380,13 +2343,13 @@ function performSearch(query, searchOption = 'title+description') {
         searchOptionSelect.value = searchOption;
     }
     
-    loadHeritageList(query);
+    await loadHeritageList(query);
 }
 
 /**
  * 필터 적용
  */
-function applyFilters() {
+async function applyFilters() {
     currentPage = 1;
     
     // 4축 필터링 시스템 사용
@@ -2394,7 +2357,7 @@ function applyFilters() {
         dataManager.applyFilters();
     }
     
-    loadHeritageList();
+    await loadHeritageList();
     
     // 필터 적용 후 건수 업데이트
     setTimeout(() => {
@@ -2405,18 +2368,18 @@ function applyFilters() {
 /**
  * 필터 초기화
  */
-function resetFilters() {
+async function resetFilters() {
     document.getElementById('category-filter').value = '';
     document.getElementById('location-filter').value = '';
     document.getElementById('globalSearch').value = '';
     currentPage = 1;
-    loadHeritageList();
+    await loadHeritageList();
 }
 
 /**
  * 페이지 변경
  */
-function changePage(page) {
+async function changePage(page) {
     // 🚨 중요: 로딩 중이면 무시
     if (isLoading) {
         console.log('이미 로딩 중이므로 페이지 변경 무시:', page);
@@ -2442,31 +2405,9 @@ function changePage(page) {
     // 🚨 중요: 로딩 타임아웃 설정
     setLoadingTimeout();
     
-    // 🚨 중요: URL 업데이트
-    const currentHash = window.location.hash.slice(1);
-    let newUrl = '';
-    
-    if (currentHash.includes('category/')) {
-        // 카테고리 페이지인 경우: category/보물/page/2
-        const categoryMatch = currentHash.match(/category\/([^\/]+)/);
-        if (categoryMatch) {
-            const categoryName = categoryMatch[1];
-            newUrl = `category/${categoryName}/page/${page}`;
-        } else {
-            newUrl = currentHash + `/page/${page}`;
-        }
-    } else {
-        // 홈 페이지인 경우: home?page=2
-        newUrl = `home?page=${page}`;
-    }
-    
-    console.log(`🛣️ 페이지 URL 업데이트: ${currentHash} -> ${newUrl}`);
-    
     try {
-        // 🚨 중요: 라우터에 URL 변경 알리기
-        router.navigate(newUrl);
-        
-        loadHeritageList();
+        router.navigate(createPageUrl(page)); // URL 먼저 변경
+        await loadHeritageList(); // loadHeritageList가 끝날 때까지 기다림
         window.scrollTo(0, 0);
     } catch (error) {
         console.error('페이지 로딩 오류:', error);

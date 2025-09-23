@@ -65,6 +65,8 @@ class DataManager {
     async loadData() {
         // 🚀 캐시된 데이터가 있으면 즉시 반환 (로깅 최소화)
         if (this.cachedData && this.cachedData.length > 0) {
+            this.isLoaded = true;
+            this.isLoading = false;
             return this.cachedData;
         }
 
@@ -73,6 +75,7 @@ class DataManager {
         }
 
         this.isLoading = true;
+        this.isLoaded = false;
         this.loadPromise = this._performDataLoad();
 
         try {
@@ -208,6 +211,10 @@ class DataManager {
         // 데이터 처리
         this.processData();
         
+        // 🚨 중요: 데이터 로딩 완료 상태 설정
+        this.isLoaded = true;
+        this.isLoading = false;
+        
         // 이벤트 발생
         this.emit('dataLoaded', validatedData);
         
@@ -253,6 +260,24 @@ class DataManager {
         this.cachedData = null;
         this.isLoaded = false;
         this.lastLoadTime = 0;
+    }
+    
+    /**
+     * 🚀 데이터가 준비될 때까지 기다리는 메서드
+     */
+    async waitForData() {
+        // 이미 로딩이 완료되었다면, 즉시 종료
+        if (this.isLoaded) {
+            return Promise.resolve();
+        }
+
+        // 현재 로딩이 진행 중이라면, 그 로딩이 끝나기를 기다림
+        if (this.isLoading && this.loadPromise) {
+            return this.loadPromise;
+        }
+
+        // 로딩이 시작되지 않았다면, 직접 로딩을 시작하고 기다림
+        return this.loadData();
     }
     
     /**

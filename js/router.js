@@ -440,7 +440,7 @@ router.addRoute('home', (params) => {
     }
 });
 
-router.addRoute('list', (params) => {
+router.addRoute('list', async (params) => {
     console.log('📋 리스트 라우트 실행:', params);
     router.showView('list-view');
     
@@ -449,16 +449,16 @@ router.addRoute('list', (params) => {
     console.log('📄 요청된 페이지:', page);
     
     if (typeof window.loadListView === 'function') {
-        window.loadListView(page, params);
+        await window.loadListView(page, params);
     } else if (typeof loadHeritageList === 'function') {
-        loadHeritageList();
+        await loadHeritageList();
     } else {
         console.error('❌ loadListView 함수를 찾을 수 없습니다');
     }
 });
 
 // 🚨 세부페이지 라우트 핸들러 추가
-router.addRoute('detail', (params) => {
+router.addRoute('detail', async (params) => {
     debugLog('📄 세부페이지 라우트 실행:', params);
     router.showView('detail-view');
     
@@ -466,9 +466,9 @@ router.addRoute('detail', (params) => {
     if (itemId) {
         // 세부페이지 로드 함수 호출
         if (typeof window.loadDetailView === 'function') {
-            window.loadDetailView(itemId);
+            await window.loadDetailView(itemId);
         } else if (typeof loadDetailView === 'function') {
-            loadDetailView(itemId);
+            await loadDetailView(itemId);
         } else {
             // 🚨 대체 로직: 직접 데이터 찾기
             router.loadDetailDirectly(itemId);
@@ -476,7 +476,7 @@ router.addRoute('detail', (params) => {
     }
 });
 
-router.addRoute('category', (params) => {
+router.addRoute('category', async (params) => {
     console.log('📂 카테고리 라우트 실행:', params);
     router.showView('category-view');
     
@@ -486,9 +486,9 @@ router.addRoute('category', (params) => {
         
         // loadCategoryView 함수 존재 확인
         if (typeof window.loadCategoryView === 'function') {
-            window.loadCategoryView(params.category);
+            await window.loadCategoryView(params.category);
         } else if (typeof loadCategoryView === 'function') {
-            loadCategoryView(params.category);
+            await loadCategoryView(params.category);
         } else {
             console.error('❌ loadCategoryView 함수를 찾을 수 없습니다');
             // 🚀 대체 로직: 직접 카테고리 필터링 호출
@@ -501,34 +501,34 @@ router.addRoute('category', (params) => {
         console.warn('⚠️ 카테고리 파라미터가 없습니다, 전체 카테고리 표시');
         // 전체 카테고리 목록 표시
         if (typeof window.loadAllCategories === 'function') {
-            window.loadAllCategories();
+            await window.loadAllCategories();
         }
     }
 });
 
-router.addRoute('search', (params) => {
+router.addRoute('search', async (params) => {
     router.showView('list-view');
     if (params[0] && typeof performSearch === 'function') {
         const query = decodeURIComponent(params[0]);
         // URL에서 검색 옵션 추출
         const urlParams = new URLSearchParams(window.location.search);
         const searchOption = urlParams.get('option') || 'title+description';
-        performSearch(query, searchOption);
+        await performSearch(query, searchOption);
     }
 });
 
-router.addRoute('english', () => {
+router.addRoute('english', async () => {
     router.showView('english-view');
     if (typeof loadEnglishView === 'function') {
-        loadEnglishView();
+        await loadEnglishView();
     }
 });
 
-router.addRoute('unclassified', (params) => {
+router.addRoute('unclassified', async (params) => {
     router.showView('unclassified-view');
     if (params[0] && typeof loadUnclassifiedView === 'function') {
-        loadUnclassifiedView(params[0]);
+        await loadUnclassifiedView(params[0]);
     } else if (typeof loadUnclassifiedView === 'function') {
-        loadUnclassifiedView('all');
+        await loadUnclassifiedView('all');
     }
 });

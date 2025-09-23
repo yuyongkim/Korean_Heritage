@@ -1032,6 +1032,9 @@ class DataManager {
         console.log('📊 카테고리별 통계:', stats.categories);
         console.log('📊 지역 수:', stats.locations.size);
         
+        // 통계 업데이트 이벤트 발생
+        this.emit('statisticsChanged', stats);
+        
         return {
             ...stats,
             locationCount: stats.locations.size

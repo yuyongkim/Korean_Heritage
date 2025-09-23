@@ -59,6 +59,7 @@ class Router {
         setTimeout(() => {
             try {
                 if (this.routes[route]) {
+                    console.log('라우트 실행:', route, params);
                     this.routes[route](params);
                 } else {
                     // 알 수 없는 라우트에 대한 처리
@@ -325,25 +326,31 @@ router.addRoute('detail', async (params) => {
 });
 
 router.addRoute('category', (params) => {
+    console.log('카테고리 라우트 실행:', params);
     router.showView('category-view');
     if (params[0] && typeof loadCategoryView === 'function') {
+        const categoryName = decodeURIComponent(params[0]);
+        console.log('카테고리 로드:', categoryName);
+        
         // 페이지 번호가 있는 경우 처리
         if (params[1]) {
             const page = parseInt(params[1]);
             if (page && page > 0) {
                 // 카테고리 로드 후 페이지 설정
-                loadCategoryView(decodeURIComponent(params[0]));
+                loadCategoryView(categoryName);
                 setTimeout(() => {
                     if (typeof changeCategoryPage === 'function') {
                         changeCategoryPage(page);
                     }
                 }, 100);
             } else {
-                loadCategoryView(decodeURIComponent(params[0]));
+                loadCategoryView(categoryName);
             }
         } else {
-            loadCategoryView(decodeURIComponent(params[0]));
+            loadCategoryView(categoryName);
         }
+    } else {
+        console.error('카테고리 파라미터가 없거나 loadCategoryView 함수가 없습니다');
     }
 });
 

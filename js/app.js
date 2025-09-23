@@ -39,6 +39,11 @@ console.log('전역 객체들 확인:', {
         updateDashboard();
     });
     
+    dataManager.addEventListener('statisticsChanged', (stats) => {
+        console.log('📊 통계 변경 이벤트 수신:', stats);
+        updateDashboard();
+    });
+    
     // 이벤트 리스너 설정
     setupEventListeners();
     
@@ -137,6 +142,9 @@ function updateDashboard() {
     updateElement('treasure-count', stats.categories['보물'] || 0);
     updateElement('location-count', stats.locationCount);
     
+    // 히어로 섹션 통계 업데이트
+    updateElement('hero-total-count', stats.total.toLocaleString());
+    
     // 카테고리별 통계
     updateElement('site-count', (stats.categories['사적'] || 0) + (stats.categories['명승'] || 0));
     updateElement('natural-count', stats.categories['천연기념물'] || 0);
@@ -168,6 +176,9 @@ function updateDashboard() {
     
     // 애니메이션 효과
     animateNumbers();
+    
+    // 대시보드 업데이트 완료 이벤트 발생
+    console.log('✅ 대시보드 업데이트 완료');
 }
 
 /**
@@ -862,9 +873,15 @@ let currentCategoryName = '';
  * 카테고리별 뷰 로드
  */
 function loadCategoryView(category) {
-    console.log('카테고리 뷰 로드:', category);
+    console.log('카테고리 뷰 로드 시작:', category);
     currentCategoryName = category;
     currentCategoryPage = 1;
+    
+    // 데이터 매니저 확인
+    if (!dataManager || !dataManager.isLoaded) {
+        console.error('데이터 매니저가 로드되지 않았습니다');
+        return;
+    }
     
     // 기본 데이터 로드
     const allItems = dataManager.getByCategory(category);
@@ -888,6 +905,8 @@ function loadCategoryView(category) {
     
     // 이벤트 리스너 설정
     setupCategoryEventListeners();
+    
+    console.log('카테고리 뷰 로드 완료:', category);
 }
 
 /**
@@ -1976,6 +1995,18 @@ function updateTranslationRate() {
     
     // 번역률 업데이트
     updateElement('translation-rate', `${translationRate}%`);
+    updateElement('hero-translation-rate', `${translationRate}%`);
+    
+    // 번역 완료 수 업데이트 (사이드바)
+    updateElement('sidebar-translation-count', translatedItems);
+    
+    // 메인 대시보드 번역 완료 수 업데이트
+    const translationCountElements = document.querySelectorAll('.stat-number');
+    translationCountElements.forEach(element => {
+        if (element.textContent.includes('AI 번역 완료') || element.textContent.includes('번역 완료율')) {
+            element.textContent = `${translationRate}%`;
+        }
+    });
 }
 
 /**

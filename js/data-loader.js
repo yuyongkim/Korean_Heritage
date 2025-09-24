@@ -99,7 +99,7 @@ class DataLoader {
             return null;
         }
 
-        const indexedData = await IndexedDBManager.getData('heritageData');
+        const indexedData = await window.indexedDBManager.loadData('heritageData');
         if (indexedData && indexedData.data) {
             return indexedData.data;
         }
@@ -137,7 +137,7 @@ class DataLoader {
     _backupToStorage(data, source) {
         // IndexedDB에 백업 (JavaScript에서 로드한 경우)
         if (source !== 'IndexedDB') {
-            IndexedDBManager.saveData('heritageData', { data, timestamp: Date.now() });
+            window.indexedDBManager.saveData(data, 'heritageData');
         }
         
         // LocalStorage에 백업 (작은 데이터만)

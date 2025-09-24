@@ -18,41 +18,53 @@ class CategoryPage {
         this.currentCategoryName = category;
         this.currentPage = 1;
         
-        // 데이터 매니저가 준비될 때까지 기다리기
-        await dataManager.waitForData();
-        
-        // 기본 데이터 로드
-        const allItems = dataManager.getByCategory(category);
-        console.log('카테고리 데이터:', category, '→', allItems.length, '건');
-        this.currentData = allItems;
-        
-        // 제목 업데이트
-        const titleElement = document.getElementById('category-title');
-        if (titleElement) {
-            titleElement.textContent = category;
-        }
-        
-        // 카운트 업데이트
-        this.updateCategoryCount(allItems.length);
-        
-        // 지역 필터 초기화
-        this.setupCategoryLocationFilter(allItems);
-        
-        // 컨텐츠 렌더링
-        this.renderCategoryContent();
-        
-        // 🖼️ 카테고리 이미지 미리 로드 (다음 페이지들)
-        setTimeout(() => {
-            const nextPages = allItems.slice(20, 60); // 2-3페이지
-            if (nextPages.length > 0) {
-                imageCacheManager.preloadImages(nextPages);
+        try {
+            // 데이터 매니저가 준비될 때까지 기다리기
+            await dataManager.waitForData();
+            
+            // 기본 데이터 로드
+            const allItems = dataManager.getByCategory(category);
+            console.log('카테고리 데이터:', category, '→', allItems.length, '건');
+            
+            if (allItems.length === 0) {
+                console.warn('⚠️ 카테고리 데이터가 없습니다:', category);
+                this.showNoDataMessage(category);
+                return;
             }
-        }, 1000);
-        
-        // 이벤트 리스너 설정
-        this.setupCategoryEventListeners();
-        
-        console.log('카테고리 뷰 로드 완료:', category);
+            
+            this.currentData = allItems;
+            
+            // 제목 업데이트
+            const titleElement = document.getElementById('category-title');
+            if (titleElement) {
+                titleElement.textContent = category;
+            }
+            
+            // 카운트 업데이트
+            this.updateCategoryCount(allItems.length);
+            
+            // 지역 필터 초기화
+            this.setupCategoryLocationFilter(allItems);
+            
+            // 컨텐츠 렌더링
+            await this.renderCategoryContent();
+            
+            // 🖼️ 카테고리 이미지 미리 로드 (다음 페이지들)
+            setTimeout(() => {
+                const nextPages = allItems.slice(20, 60); // 2-3페이지
+                if (nextPages.length > 0) {
+                    imageCacheManager.preloadImages(nextPages);
+                }
+            }, 1000);
+            
+            // 이벤트 리스너 설정
+            this.setupCategoryEventListeners();
+            
+            console.log('✅ 카테고리 뷰 로드 완료:', category);
+        } catch (error) {
+            console.error('❌ 카테고리 뷰 로드 실패:', error);
+            this.showErrorMessage('카테고리 데이터를 불러오는 중 오류가 발생했습니다.');
+        }
     }
 
     /**
@@ -372,6 +384,51 @@ class CategoryPage {
                 this.showErrorMessage('페이지 로딩이 너무 오래 걸립니다. 새로고침을 시도해보세요.');
             }
         }, 10000);
+    }
+
+    /**
+     * 데이터 없음 메시지 표시
+     */
+    showNoDataMessage(category) {
+        const gridContainer = document.getElementById('category-grid');
+        const tableContainer = document.getElementById('category-table');
+        
+        const noDataMessage = `
+            <div class="col-12 text-center py-5">
+                <div class="empty-state">
+                    <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                    <h4>${category} 카테고리에 데이터가 없습니다</h4>
+                    <p class="text-muted">해당 카테고리의 문화재 정보를 찾을 수 없습니다.</p>
+                    <div class="mt-3">
+                        <button class="btn btn-primary" onclick="router.navigate('home')">
+                            <i class="fas fa-home me-2"></i>홈으로 이동
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        if (gridContainer) {
+            gridContainer.innerHTML = noDataMessage;
+        }
+        
+        if (tableContainer) {
+            const tbody = document.getElementById('category-list-tbody');
+            if (tbody) {
+                tbody.innerHTML = `
+                    <tr><td colspan="5" class="text-center py-5">
+                        <div class="empty-state">
+                            <i class="fas fa-folder-open fa-2x text-muted mb-2"></i>
+                            <h5>${category} 카테고리에 데이터가 없습니다</h5>
+                            <p class="text-muted mb-0">해당 카테고리의 문화재 정보를 찾을 수 없습니다.</p>
+                        </div>
+                    </td></tr>
+                `;
+            }
+        }
+        
+        // 카운트 업데이트
+        this.updateCategoryCount(0);
     }
 
     /**

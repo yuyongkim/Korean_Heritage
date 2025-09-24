@@ -31,45 +31,57 @@ class DetailPage {
     async loadDetailView(itemId) {
         console.log('🔍 상세뷰 로드 요청:', itemId);
         
-        // 데이터 매니저가 준비될 때까지 기다리기
-        await dataManager.waitForData();
-        
-        // 다양한 방식으로 아이템 찾기
-        let item = null;
-        
-        // 1. composite_key로 찾기 시도
-        item = dataManager.heritageData.find(data => 
-            data.composite_key === itemId
-        );
-        
-        // 2. name으로 찾기 시도
-        if (!item) {
+        try {
+            // 데이터 매니저가 준비될 때까지 기다리기
+            await dataManager.waitForData();
+            
+            // 다양한 방식으로 아이템 찾기
+            let item = null;
+            
+            // 1. composite_key로 찾기 시도
             item = dataManager.heritageData.find(data => 
-                data.name === itemId
+                data.composite_key === itemId
             );
-        }
-        
-        // 3. URL 디코딩된 이름으로 찾기 시도
-        if (!item) {
-            try {
-                const decodedId = decodeURIComponent(itemId);
+            
+            // 2. name으로 찾기 시도
+            if (!item) {
                 item = dataManager.heritageData.find(data => 
-                    data.name === decodedId
+                    data.name === itemId
                 );
-            } catch (e) {
-                console.log('URL 디코딩 실패:', e);
             }
+            
+            // 3. URL 디코딩된 이름으로 찾기 시도
+            if (!item) {
+                try {
+                    const decodedId = decodeURIComponent(itemId);
+                    item = dataManager.heritageData.find(data => 
+                        data.name === decodedId
+                    );
+                } catch (e) {
+                    console.log('URL 디코딩 실패:', e);
+                }
+            }
+            
+            // 4. 부분 일치로 찾기 시도
+            if (!item) {
+                item = dataManager.heritageData.find(data => 
+                    data.name && data.name.includes(itemId)
+                );
+            }
+            
+            if (!item) {
+                console.error('❌ 문화재를 찾을 수 없습니다:', itemId);
+                this.showHeritageNotFound(itemId);
+                return;
+            }
+            
+            console.log('✅ 문화재 발견:', item.name);
+            this.currentItem = item;
+            this.renderHeritageDetail(item);
+        } catch (error) {
+            console.error('❌ 상세뷰 로드 실패:', error);
+            this.showErrorMessage('문화재 정보를 불러오는 중 오류가 발생했습니다.');
         }
-        
-        if (!item) {
-            console.error('❌ 문화재를 찾을 수 없습니다:', itemId);
-            this.showHeritageNotFound(itemId);
-            return;
-        }
-        
-        console.log('✅ 문화재 발견:', item.name);
-        this.currentItem = item;
-        this.renderHeritageDetail(item);
     }
 
     /**
@@ -322,6 +334,44 @@ class DetailPage {
                 this.updateHeritageDescription(item);
             });
         });
+    }
+
+    /**
+     * 에러 메시지 표시
+     */
+    showErrorMessage(message) {
+        // 기존 에러 메시지 제거
+        const existingError = document.querySelector('.error-message');
+        if (existingError) {
+            existingError.remove();
+        }
+        
+        // 새 에러 메시지 생성
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-message alert alert-danger alert-dismissible fade show';
+        errorDiv.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            min-width: 300px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        `;
+        errorDiv.innerHTML = `
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>오류 발생</strong><br>
+            <small>${message}</small>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(errorDiv);
+        
+        // 5초 후 자동 제거
+        setTimeout(() => {
+            if (errorDiv && errorDiv.parentNode) {
+                errorDiv.remove();
+            }
+        }, 5000);
     }
 }
 

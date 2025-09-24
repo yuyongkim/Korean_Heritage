@@ -104,73 +104,278 @@ class DataManager {
     }
 
     /**
-     * 🚀 검색 기능 (SearchManager 사용)
+     * 🚀 검색 기능 (직접 구현)
      */
     search(query, categoryFilter = '', locationFilter = '', searchOption = 'title+description') {
-        return window.searchManager.search(query, categoryFilter, locationFilter, searchOption);
+        if (!query || query.trim() === '') {
+            return this.heritageData;
+        }
+
+        let results = this.heritageData;
+
+        // 카테고리 필터 적용
+        if (categoryFilter && categoryFilter.trim() !== '') {
+            results = results.filter(item => 
+                item.category === categoryFilter || 
+                item.kdcd_name === categoryFilter
+            );
+        }
+
+        // 지역 필터 적용
+        if (locationFilter && locationFilter.trim() !== '') {
+            results = results.filter(item => 
+                (item.location && item.location.includes(locationFilter)) ||
+                (item.ctcd_name && item.ctcd_name.includes(locationFilter))
+            );
+        }
+
+        // 검색어 필터 적용
+        if (query && query.trim() !== '') {
+            const searchTerms = query.toLowerCase().trim().split(/\s+/);
+            results = results.filter(item => {
+                return this._matchesSearchTerms(item, searchTerms, searchOption);
+            });
+        }
+
+        return results;
     }
 
     /**
-     * 카테고리별 데이터 검색 (SearchManager 사용)
+     * 검색어 매칭 확인
+     */
+    _matchesSearchTerms(item, searchTerms, searchOption) {
+        const searchFields = this._getSearchFields(item, searchOption);
+        const searchText = searchFields.join(' ').toLowerCase();
+
+        return searchTerms.every(term => 
+            searchText.includes(term.toLowerCase())
+        );
+    }
+
+    /**
+     * 검색 대상 필드 결정
+     */
+    _getSearchFields(item, searchOption) {
+        const fields = [];
+        
+        switch (searchOption) {
+            case 'title':
+                fields.push(item.name || '');
+                break;
+            case 'description':
+                fields.push(item.korean_description || '');
+                fields.push(item.english_description || '');
+                break;
+            case 'title+description':
+            default:
+                fields.push(item.name || '');
+                fields.push(item.korean_description || '');
+                fields.push(item.english_description || '');
+                break;
+        }
+        
+        return fields.filter(field => field && field.trim() !== '');
+    }
+
+    /**
+     * 카테고리별 데이터 검색
      */
     getByCategory(category) {
-        return window.searchManager.getByCategory(category);
+        if (!this.heritageData || this.heritageData.length === 0) {
+            return [];
+        }
+
+        return this.heritageData.filter(item => 
+            item.category === category || 
+            item.kdcd_name === category
+        );
     }
 
     /**
-     * 이름으로 데이터 검색 (SearchManager 사용)
+     * 이름으로 데이터 검색
      */
     getByName(name) {
-        return window.searchManager.getByName(name);
+        if (!this.heritageData || this.heritageData.length === 0) {
+            return null;
+        }
+
+        return this.heritageData.find(item => 
+            item.name === name || 
+            item.composite_key === name
+        );
     }
 
     /**
-     * 지역별 데이터 검색 (SearchManager 사용)
+     * 지역별 데이터 검색
      */
     getByLocation(location) {
-        return window.searchManager.getByLocation(location);
+        if (!this.heritageData || this.heritageData.length === 0) {
+            return [];
+        }
+
+        return this.heritageData.filter(item => 
+            (item.location && item.location.includes(location)) ||
+            (item.ctcd_name && item.ctcd_name.includes(location))
+        );
     }
 
     /**
-     * 🚀 필터링 기능 (FilterManager 사용)
+     * 🚀 필터링 기능 (직접 구현)
      */
     applyFilters() {
-        return window.filterManager.applyFilters();
+        const categoryFilter = document.getElementById('category-filter')?.value || '';
+        const locationFilter = document.getElementById('location-filter')?.value || '';
+        
+        let results = this.heritageData;
+
+        // 카테고리 필터 적용
+        if (categoryFilter && categoryFilter.trim() !== '') {
+            results = results.filter(item => 
+                item.category === categoryFilter || 
+                item.kdcd_name === categoryFilter
+            );
+        }
+
+        // 지역 필터 적용
+        if (locationFilter && locationFilter.trim() !== '') {
+            results = results.filter(item => 
+                (item.location && item.location.includes(locationFilter)) ||
+                (item.ctcd_name && item.ctcd_name.includes(locationFilter))
+            );
+        }
+
+        return results;
     }
 
     /**
-     * 현재 필터된 데이터 반환 (FilterManager 사용)
+     * 현재 필터된 데이터 반환
      */
     getCurrentData() {
-        return window.filterManager.getFilteredData();
+        return this.applyFilters();
     }
 
     /**
-     * 🚀 통계 계산 (StatisticsManager 사용)
+     * 🚀 통계 계산 (직접 구현)
      */
     getStatistics() {
-        return window.statisticsManager.getStatistics();
+        if (!this.heritageData || this.heritageData.length === 0) {
+            return {
+                total: 0,
+                categories: {},
+                locations: {},
+                periods: {},
+                locationCount: 0,
+                translationRate: 0,
+                unclassifiedCount: 0
+            };
+        }
+
+        const stats = {
+            total: this.heritageData.length,
+            categories: {},
+            locations: {},
+            periods: {},
+            locationCount: 0,
+            translationRate: 0,
+            unclassifiedCount: 0
+        };
+
+        // 카테고리별 통계
+        this.heritageData.forEach(item => {
+            const category = item.category || item.kdcd_name || '미분류';
+            stats.categories[category] = (stats.categories[category] || 0) + 1;
+        });
+
+        // 지역별 통계
+        const uniqueLocations = new Set();
+        this.heritageData.forEach(item => {
+            const location = item.location || item.ctcd_name;
+            if (location) {
+                uniqueLocations.add(location);
+                stats.locations[location] = (stats.locations[location] || 0) + 1;
+            }
+        });
+        stats.locationCount = uniqueLocations.size;
+
+        // 시대별 통계
+        this.heritageData.forEach(item => {
+            if (item.period) {
+                stats.periods[item.period] = (stats.periods[item.period] || 0) + 1;
+            }
+        });
+
+        // 번역률 계산
+        const translatedCount = this.heritageData.filter(item => {
+            const englishDesc = item.english_description;
+            if (!englishDesc) return false;
+            
+            const descStr = String(englishDesc).trim();
+            return descStr !== '' && 
+                   descStr !== 'null' && 
+                   descStr !== 'undefined' &&
+                   descStr !== '영문 설명 준비 중입니다.' &&
+                   !descStr.includes('Description not available');
+        }).length;
+
+        stats.translationRate = this.heritageData.length > 0 ? Math.round((translatedCount / this.heritageData.length) * 100) : 0;
+
+        // 미분류 항목 수
+        stats.unclassifiedCount = this.heritageData.filter(item => 
+            item.category === '미분류' || 
+            item.kdcd_name === '미분류' || 
+            item.ctcd_name === '미분류' ||
+            item.location === '미분류'
+        ).length;
+
+        return stats;
     }
 
     /**
-     * 대시보드용 통계 (StatisticsManager 사용)
+     * 대시보드용 통계
      */
     getDashboardStats() {
-        return window.statisticsManager.getDashboardStats();
+        return this.getStatistics();
     }
 
     /**
-     * 번역 통계 (StatisticsManager 사용)
+     * 번역 통계
      */
     getTranslationStats() {
-        return window.statisticsManager.getTranslationStats();
+        const stats = this.getStatistics();
+        return {
+            total: stats.total,
+            translated: Math.round((stats.total * stats.translationRate) / 100),
+            rate: stats.translationRate
+        };
     }
 
     /**
-     * 미분류 항목 통계 (StatisticsManager 사용)
+     * 미분류 항목 통계
      */
     getUnclassifiedStats() {
-        return window.statisticsManager.getUnclassifiedStats();
+        if (!this.heritageData || this.heritageData.length === 0) {
+            return {
+                total: 0,
+                byType: {}
+            };
+        }
+
+        const unclassified = {
+            sidoType: this.heritageData.filter(item => item.kdcd_name === '시도유형문화재').length,
+            sidoFolklore: this.heritageData.filter(item => item.kdcd_name === '시도민속문화재').length,
+            culturalData: this.heritageData.filter(item => item.kdcd_name === '문화재자료').length,
+            others: this.heritageData.filter(item => 
+                item.kdcd_name === '미분류' || 
+                item.ctcd_name === '미분류' || 
+                item.category === '미분류' || 
+                item.location === '미분류'
+            ).length
+        };
+
+        return {
+            total: Object.values(unclassified).reduce((sum, count) => sum + count, 0),
+            byType: unclassified
+        };
     }
 
     /**

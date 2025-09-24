@@ -30,10 +30,13 @@ class DetailPage {
      */
     async loadDetailView(itemId) {
         console.log('🔍 상세뷰 로드 요청:', itemId);
+        console.log('🔍 데이터 매니저 상태:', dataManager);
+        console.log('🔍 데이터 매니저 데이터 길이:', dataManager.heritageData?.length);
         
         try {
             // 데이터 매니저가 준비될 때까지 기다리기
             await dataManager.waitForData();
+            console.log('✅ 데이터 매니저 준비 완료');
             
             // 다양한 방식으로 아이템 찾기
             let item = null;
@@ -42,12 +45,14 @@ class DetailPage {
             item = dataManager.heritageData.find(data => 
                 data.composite_key === itemId
             );
+            console.log('🔍 composite_key로 찾기 결과:', item ? item.name : '없음');
             
             // 2. name으로 찾기 시도
             if (!item) {
                 item = dataManager.heritageData.find(data => 
                     data.name === itemId
                 );
+                console.log('🔍 name으로 찾기 결과:', item ? item.name : '없음');
             }
             
             // 3. URL 디코딩된 이름으로 찾기 시도
@@ -57,6 +62,7 @@ class DetailPage {
                     item = dataManager.heritageData.find(data => 
                         data.name === decodedId
                     );
+                    console.log('🔍 디코딩된 이름으로 찾기 결과:', item ? item.name : '없음');
                 } catch (e) {
                     console.log('URL 디코딩 실패:', e);
                 }
@@ -67,15 +73,34 @@ class DetailPage {
                 item = dataManager.heritageData.find(data => 
                     data.name && data.name.includes(itemId)
                 );
+                console.log('🔍 부분 일치로 찾기 결과:', item ? item.name : '없음');
+            }
+            
+            // 5. 대소문자 구분 없이 찾기 시도
+            if (!item) {
+                item = dataManager.heritageData.find(data => 
+                    data.name && data.name.toLowerCase().includes(itemId.toLowerCase())
+                );
+                console.log('🔍 대소문자 구분 없이 찾기 결과:', item ? item.name : '없음');
             }
             
             if (!item) {
                 console.error('❌ 문화재를 찾을 수 없습니다:', itemId);
+                console.log('🔍 전체 데이터에서 비슷한 이름 검색...');
+                const similarItems = dataManager.heritageData.filter(data => 
+                    data.name && data.name.includes(itemId.substring(0, 5))
+                );
+                console.log('🔍 비슷한 항목들:', similarItems.slice(0, 5).map(item => item.name));
                 this.showHeritageNotFound(itemId);
                 return;
             }
             
             console.log('✅ 문화재 발견:', item.name);
+            console.log('🔍 발견된 문화재 정보:', {
+                name: item.name,
+                category: item.kdcd_name,
+                location: item.ctcd_name
+            });
             this.currentItem = item;
             this.renderHeritageDetail(item);
         } catch (error) {
@@ -383,5 +408,21 @@ window.loadDetailView = function(itemId) {
 };
 
 window.viewHeritageDetail = function(name) {
-    router.navigate(`detail/${encodeURIComponent(name)}`);
+    console.log('🔍 viewHeritageDetail 호출됨:', name);
+    console.log('🔍 현재 라우터 상태:', router);
+    console.log('🔍 detailPage 객체:', window.detailPage);
+    
+    try {
+        const encodedName = encodeURIComponent(name);
+        console.log('🔍 인코딩된 이름:', encodedName);
+        router.navigate(`detail/${encodedName}`);
+        console.log('✅ 라우터 네비게이션 완료');
+    } catch (error) {
+        console.error('❌ viewHeritageDetail 오류:', error);
+        // 대체 방법으로 상세 페이지 로드 시도
+        if (window.detailPage && window.detailPage.loadDetailView) {
+            console.log('🔄 대체 방법으로 상세 페이지 로드 시도');
+            window.detailPage.loadDetailView(name);
+        }
+    }
 };

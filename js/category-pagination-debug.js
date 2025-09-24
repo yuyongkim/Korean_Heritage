@@ -206,8 +206,8 @@ class CategoryPaginationDebugger {
 
 // 전역 디버깅 함수
 window.debugTreasureCategoryPagination = function() {
-    const debugger = new CategoryPaginationDebugger();
-    return debugger.analyzeTreasureCategoryPagination();
+    const debuggerInstance = new CategoryPaginationDebugger();
+    return debuggerInstance.analyzeTreasureCategoryPagination();
 };
 
 // 자동 실행 (개발 모드)

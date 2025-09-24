@@ -59,7 +59,7 @@ class DataManager {
         
         try {
             // DataLoader 모듈 사용
-            this.heritageData = await dataLoader.loadData();
+            this.heritageData = await window.dataLoader.loadData();
             this.isLoaded = true;
             
             // 이벤트 발생
@@ -107,70 +107,70 @@ class DataManager {
      * 🚀 검색 기능 (SearchManager 사용)
      */
     search(query, categoryFilter = '', locationFilter = '', searchOption = 'title+description') {
-        return searchManager.search(query, categoryFilter, locationFilter, searchOption);
+        return window.searchManager.search(query, categoryFilter, locationFilter, searchOption);
     }
 
     /**
      * 카테고리별 데이터 검색 (SearchManager 사용)
      */
     getByCategory(category) {
-        return searchManager.getByCategory(category);
+        return window.searchManager.getByCategory(category);
     }
 
     /**
      * 이름으로 데이터 검색 (SearchManager 사용)
      */
     getByName(name) {
-        return searchManager.getByName(name);
+        return window.searchManager.getByName(name);
     }
 
     /**
      * 지역별 데이터 검색 (SearchManager 사용)
      */
     getByLocation(location) {
-        return searchManager.getByLocation(location);
+        return window.searchManager.getByLocation(location);
     }
 
     /**
      * 🚀 필터링 기능 (FilterManager 사용)
      */
     applyFilters() {
-        return filterManager.applyFilters();
+        return window.filterManager.applyFilters();
     }
 
     /**
      * 현재 필터된 데이터 반환 (FilterManager 사용)
      */
     getCurrentData() {
-        return filterManager.getFilteredData();
+        return window.filterManager.getFilteredData();
     }
 
     /**
      * 🚀 통계 계산 (StatisticsManager 사용)
      */
     getStatistics() {
-        return statisticsManager.getStatistics();
+        return window.statisticsManager.getStatistics();
     }
 
     /**
      * 대시보드용 통계 (StatisticsManager 사용)
      */
     getDashboardStats() {
-        return statisticsManager.getDashboardStats();
+        return window.statisticsManager.getDashboardStats();
     }
 
     /**
      * 번역 통계 (StatisticsManager 사용)
      */
     getTranslationStats() {
-        return statisticsManager.getTranslationStats();
+        return window.statisticsManager.getTranslationStats();
     }
 
     /**
      * 미분류 항목 통계 (StatisticsManager 사용)
      */
     getUnclassifiedStats() {
-        return statisticsManager.getUnclassifiedStats();
+        return window.statisticsManager.getUnclassifiedStats();
     }
 
     /**
@@ -227,10 +227,10 @@ class DataManager {
      * 캐시 무효화
      */
     invalidateCache() {
-        dataLoader.invalidateCache();
-        searchManager.clearSearchCache();
-        filterManager.clearFilterCache();
-        statisticsManager.invalidateStats();
+        window.dataLoader.invalidateCache();
+        window.searchManager.clearSearchCache();
+        window.filterManager.clearFilterCache();
+        window.statisticsManager.invalidateStats();
     }
 
     /**
@@ -251,8 +251,8 @@ class DataManager {
             isLoading: this.isLoading,
             dataCount: this.heritageData.length,
             currentLanguage: this.currentLanguage,
-            searchStats: searchManager.getSearchStats(),
-            filterStats: filterManager.getFilterStats()
+            searchStats: window.searchManager.getSearchStats(),
+            filterStats: window.filterManager.getFilterStats()
         };
     }
 }

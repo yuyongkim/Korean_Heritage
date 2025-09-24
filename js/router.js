@@ -493,16 +493,14 @@ router.addRoute('home', async (params) => {
     if (page > 1) {
         // 페이지가 1보다 크면 리스트 뷰로 전환
         router.showView('list-view');
-        if (typeof window.loadListView === 'function') {
-            await window.loadListView(page, params);
+        if (window.homePage && typeof window.homePage.loadHeritageList === 'function') {
+            await window.homePage.loadHeritageList();
         } else if (typeof loadHeritageList === 'function') {
             await loadHeritageList();
         }
     } else {
         // 첫 페이지면 홈 대시보드 표시
-        if (window.loadHomeView) {
-            window.loadHomeView();
-        } else if (typeof updateDashboard === 'function') {
+        if (typeof updateDashboard === 'function') {
             updateDashboard();
         }
     }
@@ -516,12 +514,12 @@ router.addRoute('list', async (params) => {
     const page = parseInt(params.page) || 1;
     console.log('📄 요청된 페이지:', page);
     
-    if (typeof window.loadListView === 'function') {
-        await window.loadListView(page, params);
+    if (window.homePage && typeof window.homePage.loadHeritageList === 'function') {
+        await window.homePage.loadHeritageList();
     } else if (typeof loadHeritageList === 'function') {
         await loadHeritageList();
     } else {
-        console.error('❌ loadListView 함수를 찾을 수 없습니다');
+        console.error('❌ homePage 또는 loadHeritageList 함수를 찾을 수 없습니다');
     }
 });
 
@@ -533,11 +531,10 @@ router.addRoute('detail', async (params) => {
     const itemId = params.id;
     if (itemId) {
         // 세부페이지 로드 함수 호출
-        if (typeof window.loadDetailView === 'function') {
-            await window.loadDetailView(itemId);
-        } else if (typeof loadDetailView === 'function') {
-            await loadDetailView(itemId);
+        if (window.detailPage && typeof window.detailPage.loadDetailView === 'function') {
+            await window.detailPage.loadDetailView(itemId);
         } else {
+            console.error('❌ detailPage 또는 loadDetailView 함수를 찾을 수 없습니다');
             // 🚨 대체 로직: 직접 데이터 찾기
             router.loadDetailDirectly(itemId);
         }
@@ -556,37 +553,23 @@ router.addRoute('category', async (params) => {
         const page = parseInt(params.page) || 1;
         console.log('📄 카테고리 페이지 요청:', page);
         
-        // loadCategoryView 함수 존재 확인
-        if (typeof window.loadCategoryView === 'function') {
-            await window.loadCategoryView(params.category);
+        // 카테고리 페이지 로드
+        if (window.categoryPage && typeof window.categoryPage.loadCategoryView === 'function') {
+            await window.categoryPage.loadCategoryView(params.category);
             
             // 🚨 중요: 페이지가 1보다 크면 해당 페이지로 이동
             if (page > 1) {
                 console.log(`🔄 카테고리 페이지 ${page}로 이동`);
-                if (typeof window.changeCategoryPage === 'function') {
-                    // 페이지 변경 전에 현재 카테고리 설정 확인
-                    if (window.currentCategoryName === params.category) {
-                        window.changeCategoryPage(page);
-                    } else {
-                        console.warn('⚠️ 카테고리 이름 불일치, 페이지 변경 무시');
-                    }
-                }
-            }
-        } else if (typeof loadCategoryView === 'function') {
-            await loadCategoryView(params.category);
-            
-            // 페이지가 1보다 크면 해당 페이지로 이동
-            if (page > 1) {
-                if (typeof window.changeCategoryPage === 'function') {
-                    window.changeCategoryPage(page);
+                if (typeof window.categoryPage.changeCategoryPage === 'function') {
+                    window.categoryPage.changeCategoryPage(page);
                 }
             }
         } else {
-            console.error('❌ loadCategoryView 함수를 찾을 수 없습니다');
+            console.error('❌ categoryPage 또는 loadCategoryView 함수를 찾을 수 없습니다');
             // 🚀 대체 로직: 직접 카테고리 필터링 호출
-            if (window.dataManager && window.dataManager.filterByCategory) {
-                window.dataManager.filterByCategory(params.category);
-                console.log('🔄 dataManager로 카테고리 필터링 실행');
+            if (window.dataManager && window.dataManager.getByCategory) {
+                const categoryData = window.dataManager.getByCategory(params.category);
+                console.log('🔄 dataManager로 카테고리 필터링 실행:', categoryData.length, '건');
             }
         }
     } else {
@@ -622,11 +605,27 @@ router.addRoute('unclassified', async (params) => {
     
     const unclassifiedType = params.type || 'sido-type';
     
-    if (typeof window.loadUnclassifiedView === 'function') {
-        await window.loadUnclassifiedView(unclassifiedType);
-    } else if (typeof loadUnclassifiedView === 'function') {
-        await loadUnclassifiedView(unclassifiedType);
+    if (window.searchPage && typeof window.searchPage.loadUnclassifiedView === 'function') {
+        await window.searchPage.loadUnclassifiedView(unclassifiedType);
     } else {
-        console.error('❌ loadUnclassifiedView 함수를 찾을 수 없습니다');
+        console.error('❌ searchPage 또는 loadUnclassifiedView 함수를 찾을 수 없습니다');
+        // 🚀 대체 로직: 직접 미분류 데이터 필터링
+        if (window.dataManager && window.dataManager.heritageData) {
+            const unclassifiedData = window.dataManager.heritageData.filter(item => {
+                switch (unclassifiedType) {
+                    case 'sido-type':
+                        return item.kdcd_name === '시도유형문화재';
+                    case 'sido-folklore':
+                        return item.kdcd_name === '시도민속문화재';
+                    case 'cultural-data':
+                        return item.kdcd_name === '문화재자료';
+                    case 'others':
+                        return item.kdcd_name === '미분류' || item.ctcd_name === '미분류';
+                    default:
+                        return false;
+                }
+            });
+            console.log('🔄 미분류 데이터 필터링 실행:', unclassifiedData.length, '건');
+        }
     }
 });

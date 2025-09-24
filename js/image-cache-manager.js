@@ -74,11 +74,32 @@ class ImageCacheManager {
             }
         } catch (error) {
             console.warn(`❌ 이미지 로드 실패: ${item.name}`, error);
+            // 실패한 이미지에 대해 플레이스홀더 URL 저장
+            this.cache.set(item.image_url, this._getPlaceholderImage(item));
         }
     }
 
     /**
-     * 이미지 로드
+     * 플레이스홀더 이미지 생성
+     */
+    _getPlaceholderImage(item) {
+        // SVG 플레이스홀더 이미지 생성
+        const svg = `
+            <svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+                <rect width="100%" height="100%" fill="#f8f9fa"/>
+                <text x="50%" y="50%" text-anchor="middle" dy=".3em" font-family="Arial, sans-serif" font-size="16" fill="#6c757d">
+                    이미지 로드 실패
+                </text>
+                <text x="50%" y="60%" text-anchor="middle" dy=".3em" font-family="Arial, sans-serif" font-size="12" fill="#adb5bd">
+                    ${item.name}
+                </text>
+            </svg>
+        `;
+        return `data:image/svg+xml;base64,${btoa(svg)}`;
+    }
+
+    /**
+     * 이미지 로드 (CORS 문제 해결)
      */
     _loadImage(url) {
         return new Promise((resolve, reject) => {
@@ -101,10 +122,30 @@ class ImageCacheManager {
                 reject(new Error('이미지 로드 실패'));
             };
             
-            // CORS 문제 방지
+            // CORS 문제 방지 - 여러 방법 시도
             img.crossOrigin = 'anonymous';
-            img.src = url;
+            
+            // CORS 프록시 URL 사용 (여러 서비스 시도)
+            const proxyUrl = this._getProxyUrl(url);
+            img.src = proxyUrl;
         });
+    }
+
+    /**
+     * CORS 프록시 URL 생성
+     */
+    _getProxyUrl(originalUrl) {
+        // 여러 CORS 프록시 서비스 시도
+        const proxies = [
+            `https://api.allorigins.win/raw?url=${encodeURIComponent(originalUrl)}`,
+            `https://cors-anywhere.herokuapp.com/${originalUrl}`,
+            `https://thingproxy.freeboard.io/fetch/${originalUrl}`,
+            originalUrl // 마지막에 원본 URL 시도
+        ];
+        
+        // 랜덤하게 프록시 선택 (로드 분산)
+        const randomIndex = Math.floor(Math.random() * proxies.length);
+        return proxies[randomIndex];
     }
 
     /**

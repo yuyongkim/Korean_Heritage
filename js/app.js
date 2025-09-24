@@ -2,6 +2,109 @@
  * 메인 애플리케이션 - 초기화 및 전역 관리
  */
 
+/**
+ * 앱 컨트롤러 클래스
+ */
+class AppController {
+    constructor() {
+        this.updateQueue = new Set();
+        this.isUpdating = false;
+        this.lastUpdateData = null;
+        this.updateTimeout = null;
+        this.DEBOUNCE_TIME = 300; // 300ms로 증가
+    }
+
+    // 🚀 디바운스된 업데이트 시스템
+    scheduleUpdate(updateType, data) {
+        // 🚨 동일한 데이터 체크 강화
+        const dataHash = this._hashData(data);
+        if (this.lastUpdateData === dataHash) {
+            return; // 완전히 무시
+        }
+
+        this.updateQueue.add(updateType);
+        
+        // 🚨 디바운싱 강화
+        clearTimeout(this.updateTimeout);
+        this.updateTimeout = setTimeout(() => {
+            this._processUpdateQueue(data, dataHash);
+        }, this.DEBOUNCE_TIME);
+    }
+
+    async _processUpdateQueue(data, dataHash) {
+        if (this.isUpdating) {
+            return;
+        }
+
+        this.isUpdating = true;
+        debugLog('🔄 업데이트 큐 처리:', Array.from(this.updateQueue));
+
+        try {
+            // 🚀 한 번에 모든 업데이트 처리
+            if (this.updateQueue.has('dashboard')) {
+                await this._updateDashboard(data);
+            }
+            
+            if (this.updateQueue.has('filters')) {
+                await this._updateFilters(data);
+            }
+            
+            if (this.updateQueue.has('stats')) {
+                await this._updateStats(data);
+            }
+
+            this.lastUpdateData = dataHash;
+            debugLog('✅ 모든 업데이트 완료');
+            
+        } catch (error) {
+            debugLog('❌ 업데이트 에러:', error);
+        } finally {
+            this.updateQueue.clear();
+            this.isUpdating = false;
+        }
+    }
+
+    _hashData(data) {
+        if (!data || !Array.isArray(data)) return 'empty';
+        return `${data.length}-${data[0]?.name || 'unknown'}`;
+    }
+
+    // 🚀 개별 업데이트 함수들
+    async _updateDashboard(data) {
+        if (typeof updateDashboard === 'function') {
+            updateDashboard();
+        }
+    }
+
+    async _updateFilters(data) {
+        if (dataManager && typeof dataManager.updateFilters === 'function') {
+            dataManager.updateFilters();
+        }
+    }
+
+    async _updateStats(data) {
+        if (dataManager && typeof dataManager.getStatistics === 'function') {
+            dataManager.getStatistics();
+        }
+    }
+
+    // 🚀 공개 메서드들
+    updateDashboard(data) {
+        this.scheduleUpdate('dashboard', data);
+    }
+
+    updateFilters(data) {
+        this.scheduleUpdate('filters', data);
+    }
+
+    updateStats(data) {
+        this.scheduleUpdate('stats', data);
+    }
+}
+
+// 🚀 전역 앱 컨트롤러
+const appController = new AppController();
+
 // 전역 페이지 인스턴스들
 let homePage, categoryPage, detailPage, searchPage;
 
@@ -310,3 +413,93 @@ window.addEventListener('error', (event) => {
     console.error('전역 에러 캐치:', event.error);
     Renderer.showErrorMessage('예상치 못한 오류가 발생했습니다.');
 });
+
+/**
+ * 대시보드 업데이트 함수
+ */
+async function updateDashboard() {
+    // 데이터 매니저가 준비될 때까지 기다리기
+    await dataManager.waitForData();
+    
+    const stats = dataManager.getStatistics();
+    
+    console.log('📊 대시보드 업데이트:', stats);
+    
+    // 메인 통계 업데이트
+    updateElement('total-count', stats.total.toLocaleString());
+    updateElement('national-count', stats.categories['국보'] || 0);
+    updateElement('treasure-count', stats.categories['보물'] || 0);
+    updateElement('location-count', stats.locationCount);
+    
+    // 히어로 섹션 통계 업데이트
+    updateElement('hero-total-count', stats.total.toLocaleString());
+    
+    // 카테고리별 통계
+    updateElement('site-count', (stats.categories['사적'] || 0) + (stats.categories['명승'] || 0));
+    updateElement('natural-count', stats.categories['천연기념물'] || 0);
+    
+    // 탐색 카드 카운트 업데이트
+    updateElement('explore-national-count', (stats.categories['국보'] || 0) + '건');
+    updateElement('explore-treasure-count', (stats.categories['보물'] || 0) + '건');
+    updateElement('explore-historic-count', (stats.categories['사적'] || 0) + '건');
+    updateElement('explore-scenic-count', (stats.categories['명승'] || 0) + '건');
+    updateElement('explore-natural-count', (stats.categories['천연기념물'] || 0) + '건');
+    updateElement('explore-intangible-count', (stats.categories['국가무형문화재'] || 0) + '건');
+    
+    // 사이드바 통계 업데이트
+    updateElement('sidebar-total', stats.total);
+    
+    // 번역률 계산 및 업데이트
+    updateTranslationRate();
+    
+    // 미분류 항목 통계 업데이트
+    updateUnclassifiedStats();
+    
+    // 결과 개수 실시간 업데이트
+    updateResultsCount();
+    
+    // 애니메이션 효과
+    animateNumbers();
+    
+    // 대시보드 업데이트 완료 이벤트 발생
+    console.log('✅ 대시보드 업데이트 완료');
+}
+
+/**
+ * 번역률 업데이트 함수
+ */
+function updateTranslationRate() {
+    if (dataManager && typeof dataManager.getTranslationStats === 'function') {
+        const translationStats = dataManager.getTranslationStats();
+        const rate = translationStats.rate || 0;
+        
+        // 번역률 표시 업데이트
+        updateElement('translation-rate', `${rate.toFixed(1)}%`);
+        updateElement('translation-count', `${translationStats.translated.toLocaleString()}개`);
+    }
+}
+
+/**
+ * 미분류 항목 통계 업데이트
+ */
+function updateUnclassifiedStats() {
+    if (dataManager && typeof dataManager.getUnclassifiedStats === 'function') {
+        const unclassifiedStats = dataManager.getUnclassifiedStats();
+        
+        // 미분류 항목 수 표시
+        updateElement('unclassified-count', unclassifiedStats.total.toLocaleString());
+        updateElement('unclassified-sido-count', unclassifiedStats.sidoType.toLocaleString());
+        updateElement('unclassified-category-count', unclassifiedStats.categoryType.toLocaleString());
+    }
+}
+
+/**
+ * 숫자 애니메이션 효과
+ */
+function animateNumbers() {
+    // 숫자 애니메이션 효과를 위한 클래스 추가
+    const numberElements = document.querySelectorAll('.count-number, .stat-number');
+    numberElements.forEach(element => {
+        element.classList.add('animate-number');
+    });
+}

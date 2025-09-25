@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>카카오 지도 디버깅 테스트</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .debug-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .error-button {
+            background: #dc3545;
+        }
+        .error-button:hover {
+            background: #c82333;
+        }
+        .success-button {
+            background: #28a745;
+        }
+        .success-button:hover {
+            background: #218838;
+        }
+        #test-map {
+            width: 100%;
+            height: 400px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .debug-info {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .status {
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗺️ 카카오 지도 디버깅 테스트</h1>
+        
+        <div class="debug-section">
+            <h3>🔧 디버깅 도구</h3>
+            <button class="test-button" onclick="testMapLoading()">지도 로딩 테스트</button>
+            <button class="test-button" onclick="checkApiKey()">API 키 확인</button>
+            <button class="test-button" onclick="checkNetwork()">네트워크 확인</button>
+            <button class="test-button" onclick="showDebugInfo()">디버그 정보</button>
+            <button class="error-button" onclick="clearMap()">지도 초기화</button>
+        </div>
+
+        <div class="debug-section">
+            <h3>📊 상태 정보</h3>
+            <div id="status-info">
+                <div>API 키 상태: <span id="api-key-status" class="status">확인 중...</span></div>
+                <div>스크립트 로드: <span id="script-status" class="status">확인 중...</span></div>
+                <div>Kakao 객체: <span id="kakao-status" class="status">확인 중...</span></div>
+            </div>
+        </div>
+
+        <div class="debug-section">
+            <h3>🧪 테스트 지도</h3>
+            <div id="test-map">지도가 여기에 표시됩니다...</div>
+        </div>
+
+        <div class="debug-section">
+            <h3>📝 디버그 로그</h3>
+            <div id="debug-log" class="debug-info">디버그 정보가 여기에 표시됩니다...</div>
+        </div>
+    </div>
+
+    <!-- 설정 파일 로드 -->
+    <script src="js/config.js"></script>
+    <script src="js/map-manager-simple.js"></script>
+    
+    <script>
+        // 디버그 로그 함수
+        function log(message, type = 'info') {
+            const debugLog = document.getElementById('debug-log');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}\n`;
+            debugLog.textContent += logEntry;
+            debugLog.scrollTop = debugLog.scrollHeight;
+            
+            console.log(message);
+        }
+
+        // 상태 업데이트
+        function updateStatus() {
+            const apiKeyStatus = document.getElementById('api-key-status');
+            const scriptStatus = document.getElementById('script-status');
+            const kakaoStatus = document.getElementById('kakao-status');
+
+            // API 키 상태
+            if (API_KEY_STATUS.isValid) {
+                apiKeyStatus.textContent = '유효';
+                apiKeyStatus.className = 'status success';
+            } else {
+                apiKeyStatus.textContent = '무효';
+                apiKeyStatus.className = 'status error';
+            }
+
+            // 스크립트 상태
+            if (mapManager.scriptLoaded) {
+                scriptStatus.textContent = '로드됨';
+                scriptStatus.className = 'status success';
+            } else if (mapManager.scriptLoading) {
+                scriptStatus.textContent = '로딩 중';
+                scriptStatus.className = 'status warning';
+            } else {
+                scriptStatus.textContent = '로드 안됨';
+                scriptStatus.className = 'status error';
+            }
+
+            // Kakao 객체 상태
+            if (typeof kakao !== 'undefined' && kakao.maps) {
+                kakaoStatus.textContent = '사용 가능';
+                kakaoStatus.className = 'status success';
+            } else {
+                kakaoStatus.textContent = '사용 불가';
+                kakaoStatus.className = 'status error';
+            }
+        }
+
+        // 지도 로딩 테스트
+        async function testMapLoading() {
+            log('🧪 지도 로딩 테스트 시작');
+            updateStatus();
+            
+            try {
+                await mapManager.testMap('test-map');
+                log('✅ 지도 로딩 테스트 성공');
+            } catch (error) {
+                log(`❌ 지도 로딩 테스트 실패: ${error.message}`);
+            }
+            
+            updateStatus();
+        }
+
+        // API 키 확인
+        function checkApiKey() {
+            log('🔑 API 키 확인 중...');
+            log(`API 키: ${KAKAO_MAP_API_KEY ? KAKAO_MAP_API_KEY.substring(0, 8) + '...' : 'undefined'}`);
+            log(`API 키 상태: ${JSON.stringify(API_KEY_STATUS)}`);
+            updateStatus();
+        }
+
+        // 네트워크 확인
+        function checkNetwork() {
+            log('🌐 네트워크 확인 중...');
+            
+            // 카카오 API 엔드포인트 확인
+            fetch('https://dapi.kakao.com/v2/maps/sdk.js?appkey=' + KAKAO_MAP_API_KEY, { method: 'HEAD' })
+                .then(response => {
+                    log(`카카오 API 응답: ${response.status} ${response.statusText}`);
+                    if (response.ok) {
+                        log('✅ 카카오 API 접근 가능');
+                    } else {
+                        log(`❌ 카카오 API 접근 실패: ${response.status}`);
+                    }
+                })
+                .catch(error => {
+                    log(`❌ 네트워크 오류: ${error.message}`);
+                });
+        }
+
+        // 디버그 정보 표시
+        function showDebugInfo() {
+            const debugInfo = mapManager.getDebugInfo();
+            log('🔍 디버그 정보:');
+            log(JSON.stringify(debugInfo, null, 2));
+            updateStatus();
+        }
+
+        // 지도 초기화
+        function clearMap() {
+            log('🗑️ 지도 초기화 중...');
+            mapManager.cleanup();
+            document.getElementById('test-map').innerHTML = '지도가 초기화되었습니다...';
+            updateStatus();
+        }
+
+        // 페이지 로드 시 초기 상태 확인
+        window.addEventListener('load', () => {
+            log('📄 페이지 로드 완료');
+            updateStatus();
+            
+            // 2초 후 자동으로 상태 재확인
+            setTimeout(updateStatus, 2000);
+        });
+
+        // 주기적으로 상태 업데이트
+        setInterval(updateStatus, 5000);
+    </script>
+</body>
+</html>

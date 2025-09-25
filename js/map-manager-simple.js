@@ -19,8 +19,18 @@ class SimpleMapManager {
      */
     loadMapScript() {
         return new Promise((resolve, reject) => {
+            console.log('🔄 Kakao Maps API 스크립트 로딩 시작...');
+            
+            // API 키 상태 확인
+            if (!API_KEY_STATUS.isValid) {
+                console.error('❌ API 키가 유효하지 않습니다:', API_KEY_STATUS);
+                reject(new Error('Invalid API key'));
+                return;
+            }
+
             // 이미 로드된 경우
             if (this.scriptLoaded || (typeof kakao !== 'undefined' && kakao.maps)) {
+                console.log('✅ Kakao Maps API 이미 로드됨');
                 this.scriptLoaded = true;
                 resolve();
                 return;
@@ -28,6 +38,7 @@ class SimpleMapManager {
 
             // 이미 로딩 중인 경우
             if (this.scriptLoading) {
+                console.log('⏳ Kakao Maps API 로딩 중... 대기');
                 // 로딩 완료까지 대기
                 const checkLoaded = () => {
                     if (this.scriptLoaded) {
@@ -48,14 +59,17 @@ class SimpleMapManager {
             // 기존 스크립트 태그가 있는지 확인
             const existingScript = document.querySelector('script[src*="dapi.kakao.com"]');
             if (existingScript) {
+                console.log('📜 기존 Kakao Maps API 스크립트 발견');
                 // 기존 스크립트의 로드 이벤트 대기
                 existingScript.onload = () => {
                     this.scriptLoaded = true;
                     this.scriptLoading = false;
+                    console.log('✅ 기존 스크립트 로드 완료');
                     resolve();
                 };
                 existingScript.onerror = () => {
                     this.scriptLoading = false;
+                    console.error('❌ 기존 스크립트 로드 실패');
                     reject(new Error('Kakao Maps API script failed to load'));
                 };
                 return;
@@ -64,24 +78,48 @@ class SimpleMapManager {
             // 새 스크립트 태그 생성
             const script = document.createElement('script');
             script.type = 'text/javascript';
-            script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_MAP_API_KEY}&autoload=false`;
+            
+            // HTTPS 우선 사용
+            const protocol = window.location.protocol === 'https:' ? 'https:' : 'https:';
+            script.src = `${protocol}//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_MAP_API_KEY}&autoload=false`;
             script.async = true;
+            script.crossOrigin = 'anonymous';
+
+            // 타임아웃 설정 (10초)
+            const timeoutId = setTimeout(() => {
+                console.error('⏰ Kakao Maps API 로딩 타임아웃');
+                this.scriptLoading = false;
+                reject(new Error('Kakao Maps API loading timeout'));
+            }, 10000);
 
             script.onload = () => {
+                clearTimeout(timeoutId);
                 this.scriptLoaded = true;
                 this.scriptLoading = false;
                 console.log('✅ Kakao Maps API script loaded successfully');
-                resolve();
+                
+                // 추가 검증
+                if (typeof kakao !== 'undefined' && kakao.maps) {
+                    console.log('✅ Kakao Maps 객체 확인됨');
+                    resolve();
+                } else {
+                    console.error('❌ Kakao Maps 객체가 정의되지 않음');
+                    reject(new Error('Kakao Maps object not defined'));
+                }
             };
 
-            script.onerror = () => {
+            script.onerror = (error) => {
+                clearTimeout(timeoutId);
                 this.scriptLoading = false;
-                console.error('❌ Kakao Maps API script failed to load');
+                console.error('❌ Kakao Maps API script failed to load:', error);
+                console.error('API Key:', KAKAO_MAP_API_KEY ? `${KAKAO_MAP_API_KEY.substring(0, 8)}...` : 'undefined');
+                console.error('Script URL:', script.src);
                 reject(new Error('Kakao Maps API script failed to load'));
             };
 
             // 스크립트를 head에 추가
             document.head.appendChild(script);
+            console.log('📝 Kakao Maps API 스크립트 추가됨:', script.src);
         });
     }
 
@@ -133,6 +171,9 @@ class SimpleMapManager {
             if (typeof kakao === 'undefined' || !kakao.maps) {
                 console.log('🔄 Kakao Maps API 로드 중...');
                 await this.loadMapScript();
+                
+                // 추가 대기 시간 (API 초기화)
+                await new Promise(resolve => setTimeout(resolve, 500));
             }
         } catch (error) {
             console.error('❌ Kakao Maps API 로드 실패:', error);
@@ -140,7 +181,8 @@ class SimpleMapManager {
                 <div class="text-center py-4 bg-light rounded">
                     <i class="fas fa-exclamation-circle fa-2x text-danger mb-2"></i>
                     <p class="mb-0 text-muted">지도 API 로드 실패</p>
-                    <small class="text-muted">Kakao Maps API를 확인해주세요</small>
+                    <small class="text-muted">오류: ${error.message}</small>
+                    <br><small class="text-muted">API 키: ${KAKAO_MAP_API_KEY ? KAKAO_MAP_API_KEY.substring(0, 8) + '...' : 'undefined'}</small>
                 </div>
             `;
             return;
@@ -178,13 +220,21 @@ class SimpleMapManager {
             
             // Kakao Maps 지도 생성
             const mapContainer = document.getElementById(containerId);
+            if (!mapContainer) {
+                throw new Error('지도 컨테이너를 찾을 수 없습니다: ' + containerId);
+            }
+            
             const mapOption = {
                 center: new kakao.maps.LatLng(lat, lng), // 지도의 중심좌표
                 level: 3 // 지도의 확대 레벨
             };
 
+            console.log('🗺️ 지도 생성 중...', { lat, lng, containerId });
+            
             // 지도 생성
             this.currentMap = new kakao.maps.Map(mapContainer, mapOption);
+            
+            console.log('✅ 지도 생성 완료');
             
             // 지도 크기 강제 설정
             setTimeout(() => {
@@ -256,6 +306,52 @@ class SimpleMapManager {
         if (this.currentMap) {
             // Kakao Maps는 remove() 메서드가 없으므로 null로 설정
             this.currentMap = null;
+        }
+    }
+
+    /**
+     * 디버깅용 상태 확인
+     */
+    getDebugInfo() {
+        return {
+            scriptLoaded: this.scriptLoaded,
+            scriptLoading: this.scriptLoading,
+            currentMap: !!this.currentMap,
+            kakaoDefined: typeof kakao !== 'undefined',
+            kakaoMapsDefined: typeof kakao !== 'undefined' && !!kakao.maps,
+            apiKeyStatus: API_KEY_STATUS,
+            apiKey: KAKAO_MAP_API_KEY ? `${KAKAO_MAP_API_KEY.substring(0, 8)}...` : 'undefined'
+        };
+    }
+
+    /**
+     * 테스트용 지도 표시
+     */
+    async testMap(containerId = 'test-map') {
+        console.log('🧪 테스트 지도 표시 시작');
+        
+        // 테스트 컨테이너 생성
+        let container = document.getElementById(containerId);
+        if (!container) {
+            container = document.createElement('div');
+            container.id = containerId;
+            container.style.width = '300px';
+            container.style.height = '300px';
+            container.style.border = '1px solid #ccc';
+            document.body.appendChild(container);
+        }
+        
+        // 디버그 정보 출력
+        console.log('🔍 디버그 정보:', this.getDebugInfo());
+        
+        // 테스트 좌표 (서울시청)
+        const testCoords = { lat: 37.5665, lng: 126.9780 };
+        
+        try {
+            await this.showMap(containerId, testCoords, '서울시청 (테스트)');
+            console.log('✅ 테스트 지도 표시 완료');
+        } catch (error) {
+            console.error('❌ 테스트 지도 표시 실패:', error);
         }
     }
 }

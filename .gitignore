@@ -14,6 +14,15 @@ backup/
 *.tmp
 *.temp
 
+# 환경변수 및 API 키 (보안)
+.env
+.env.local
+.env.development
+.env.production
+.env.staging
+config.local.js
+secrets.json
+
 # Python 관련
 __pycache__/
 *.pyc

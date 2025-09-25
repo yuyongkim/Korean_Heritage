@@ -142,7 +142,8 @@ class SimpleMapManager {
         }
 
         // 좌표가 없으면 기본 메시지
-        if (!coords || !coords.lat || !coords.lng) {
+        if (!coords || (!coords.lat && !coords.latitude) || (!coords.lng && !coords.longitude)) {
+            console.warn('위치 정보 없음:', coords);
             container.innerHTML = `
                 <div class="text-center py-4 bg-light rounded">
                     <i class="fas fa-map-marked-alt fa-2x text-muted mb-2"></i>
@@ -152,9 +153,11 @@ class SimpleMapManager {
             return;
         }
 
-        // 좌표 유효성 검사
-        const lat = parseFloat(coords.lat);
-        const lng = parseFloat(coords.lng);
+        // 좌표 추출 (다양한 필드명 지원)
+        const lat = parseFloat(coords.lat || coords.latitude);
+        const lng = parseFloat(coords.lng || coords.longitude);
+        
+        console.log('🗺️ 지도 좌표 확인:', { lat, lng, coords });
         
         if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
             console.warn('잘못된 좌표:', lat, lng);
@@ -162,6 +165,7 @@ class SimpleMapManager {
                 <div class="text-center py-4 bg-light rounded">
                     <i class="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
                     <p class="mb-0 text-muted">잘못된 좌표 정보입니다</p>
+                    <small class="text-muted">위도: ${lat}, 경도: ${lng}</small>
                 </div>
             `;
             return;
@@ -225,17 +229,22 @@ class SimpleMapManager {
                 throw new Error('지도 컨테이너를 찾을 수 없습니다: ' + containerId);
             }
             
+            // 좌표 객체 생성 전 유효성 재검사
+            if (!kakao.maps.LatLng) {
+                throw new Error('Kakao Maps LatLng 클래스를 찾을 수 없습니다');
+            }
+            
             const mapOption = {
                 center: new kakao.maps.LatLng(lat, lng), // 지도의 중심좌표
                 level: 3 // 지도의 확대 레벨
             };
 
-            console.log('🗺️ 지도 생성 중...', { lat, lng, containerId });
-            
             // 지도 생성
             this.currentMap = new kakao.maps.Map(mapContainer, mapOption);
             
-            console.log('✅ 지도 생성 완료');
+            if (!this.currentMap) {
+                throw new Error('지도 생성 실패');
+            }
             
             // 지도 크기 강제 설정
             setTimeout(() => {
@@ -250,7 +259,9 @@ class SimpleMapManager {
                     mapElement.style.aspectRatio = '1/1';
                 }
                 // Kakao Maps 크기 조정
-                kakao.maps.event.trigger(this.currentMap, 'resize');
+                if (this.currentMap && kakao.maps.event) {
+                    kakao.maps.event.trigger(this.currentMap, 'resize');
+                }
             }, 100);
 
             // 마커 생성
@@ -280,8 +291,6 @@ class SimpleMapManager {
             // 타임아웃 해제
             clearTimeout(timeoutId);
             
-            console.log('✅ Kakao 지도 로딩 성공');
-            
             // 콜백 실행 (지도가 성공적으로 로드된 후)
             if (callback && typeof callback === 'function') {
                 callback();
@@ -295,6 +304,7 @@ class SimpleMapManager {
                     <i class="fas fa-exclamation-triangle fa-2x text-danger mb-2"></i>
                     <p class="mb-0 text-muted">지도를 불러올 수 없습니다</p>
                     <small class="text-muted">좌표: ${lat.toFixed(6)}, ${lng.toFixed(6)}</small>
+                    <br><small class="text-muted">오류: ${error.message}</small>
                 </div>
             `;
         }

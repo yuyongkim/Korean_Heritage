@@ -10,6 +10,7 @@ class Router {
         this.routes = {};
         this.currentView = null;
         this.currentRoute = null;
+        this.lastParams = null;
         this.isNavigating = false;
         this.lastParseResult = null;
         this.lastParseHash = null;
@@ -33,10 +34,25 @@ class Router {
      * 🚀 최적화된 라우팅 처리 (파라미터 파싱 개선)
      */
     handleRoute() {
+        // 중복 실행 방지
+        if (this.isNavigating) {
+            console.log('⏳ 라우팅 처리 중, 중복 실행 방지');
+            return;
+        }
+        
         // 🚀 parseHash로 라우트와 파라미터 추출
         const { route, params } = this.parseHash();
         
+        // 동일한 라우트 중복 실행 방지
+        if (this.currentRoute === route && JSON.stringify(this.lastParams) === JSON.stringify(params)) {
+            console.log('🔄 동일한 라우트와 파라미터, 중복 실행 방지:', route);
+            return;
+        }
+        
         console.log(`🎯 라우트 실행: ${route}`, params);
+        
+        this.currentRoute = route;
+        this.lastParams = params;
         
         // 🚀 라우트 존재 확인
         if (this.routes[route]) {

@@ -15,15 +15,27 @@ class ImageCacheManager {
     }
 
     /**
-     * 이미지 미리 로드
+     * 이미지 미리 로드 (중복 방지 및 성능 최적화)
      */
     async preloadImages(items, startIndex = 0, count = null) {
         const endIndex = count ? startIndex + count : items.length;
         const itemsToPreload = items.slice(startIndex, endIndex);
         
-        console.log(`🖼️ 이미지 미리 로드 시작: ${itemsToPreload.length}개`);
+        // 중복 로딩 방지: 이미 처리 중인 항목 필터링
+        const newItems = itemsToPreload.filter(item => 
+            item.image_url && 
+            !this.preloadedImages.has(item.image_url) && 
+            !this.failedImages.has(item.image_url)
+        );
         
-        const batches = this._createBatches(itemsToPreload, this.preloadBatchSize);
+        if (newItems.length === 0) {
+            console.log('🖼️ 이미지 미리 로드: 모든 이미지가 이미 처리됨');
+            return;
+        }
+        
+        console.log(`🖼️ 이미지 미리 로드 시작: ${newItems.length}개 (중복 제외: ${itemsToPreload.length - newItems.length}개)`);
+        
+        const batches = this._createBatches(newItems, this.preloadBatchSize);
         
         for (let i = 0; i < batches.length; i++) {
             const batch = batches[i];
@@ -37,7 +49,7 @@ class ImageCacheManager {
             }
         }
         
-        console.log(`✅ 이미지 미리 로드 완료: ${itemsToPreload.length}개`);
+        console.log(`✅ 이미지 미리 로드 완료: ${newItems.length}개`);
     }
 
     /**
@@ -77,10 +89,11 @@ class ImageCacheManager {
             if (imageUrl) {
                 this.cache.set(item.image_url, imageUrl);
                 this.preloadedImages.add(item.image_url);
-                console.log(`✅ 이미지 캐시됨: ${item.name}`);
+                // 로깅 최소화: 성공한 이미지는 로그하지 않음
             }
         } catch (error) {
-            console.warn(`❌ 이미지 로드 실패: ${item.name}`, error);
+            // 로깅 최소화: 에러만 간단히 기록
+            console.warn(`❌ 이미지 로드 실패: ${item.name}`);
             // 실패한 이미지 URL을 기록하여 재시도 방지
             this.failedImages.add(item.image_url);
         }
@@ -104,18 +117,13 @@ class ImageCacheManager {
             img.onload = () => {
                 clearTimeout(timeoutId);
                 try {
-                    // 이미지를 캔버스로 변환하여 base64로 저장
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    ctx.drawImage(img, 0, 0);
-                    
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                    resolve(dataUrl);
+                    // CORS 문제 해결: 캔버스 변환 없이 원본 URL 반환
+                    // 이미지가 로드되었으면 원본 URL을 그대로 사용
+                    resolve(url);
                 } catch (error) {
-                    reject(new Error('이미지 변환 실패: ' + error.message));
+                    // 캔버스 변환 실패 시에도 원본 URL 반환
+                    console.warn('이미지 캔버스 변환 실패, 원본 URL 사용:', error.message);
+                    resolve(url);
                 }
             };
             
@@ -135,8 +143,8 @@ class ImageCacheManager {
                 }
             };
             
-            // CORS 문제 방지를 위해 crossOrigin 제거
-            // img.crossOrigin = 'anonymous';
+            // CORS 문제 방지를 위해 crossOrigin 설정
+            img.crossOrigin = 'anonymous';
             img.src = url;
         });
     }

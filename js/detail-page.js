@@ -255,13 +255,24 @@ class DetailPage {
 
             // 지도 표시 - Kakao Maps API 사용
             const mapContainer = document.getElementById('heritage-map');
-            if (mapContainer && item.longitude && item.latitude) {
+            if (mapContainer && (item.longitude || item.lng) && (item.latitude || item.lat)) {
+                // 좌표 데이터 정규화
+                const coords = {
+                    lat: item.latitude || item.lat,
+                    lng: item.longitude || item.lng
+                };
+                
+                console.log('🗺️ 지도 표시 요청:', { coords, itemName: item.name });
+                
                 // Kakao Maps API 사용
-                mapManager.showMap('heritage-map', {
-                    lat: item.latitude,
-                    lng: item.longitude
-                }, item.name);
+                mapManager.showMap('heritage-map', coords, item.name);
             } else if (mapContainer) {
+                console.log('🗺️ 위치 정보 없음:', { 
+                    longitude: item.longitude, 
+                    latitude: item.latitude,
+                    lng: item.lng,
+                    lat: item.lat 
+                });
                 mapContainer.innerHTML = `
                     <div class="text-center text-muted p-4">
                         <i class="fas fa-map-marked-alt fa-2x mb-2"></i>

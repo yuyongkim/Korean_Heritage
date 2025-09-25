@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>네비게이션 테스트</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .current-url { background: #f8f9fa; padding: 10px; border-radius: 3px; font-family: monospace; }
+        .log-output { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 10px 0; height: 200px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>네비게이션 기능 테스트</h1>
+        
+        <div class="test-section">
+            <h3>1. 현재 URL 상태</h3>
+            <div class="current-url" id="current-url">
+                <strong>현재 URL:</strong> <span id="url-display">로딩 중...</span><br>
+                <strong>Hash:</strong> <span id="hash-display">로딩 중...</span>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>2. 네비게이션 테스트</h3>
+            <div class="d-flex gap-2 flex-wrap">
+                <button class="btn btn-primary" onclick="testNavigate('home')">
+                    <i class="fas fa-home"></i> 홈으로
+                </button>
+                <button class="btn btn-secondary" onclick="testNavigate('list')">
+                    <i class="fas fa-list"></i> 목록으로
+                </button>
+                <button class="btn btn-info" onclick="testNavigate('detail/서울 부암동 백석동천')">
+                    <i class="fas fa-info-circle"></i> 상세페이지
+                </button>
+                <button class="btn btn-warning" onclick="testNavigate('category/국보')">
+                    <i class="fas fa-tags"></i> 카테고리
+                </button>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>3. 함수 테스트</h3>
+            <div class="d-flex gap-2 flex-wrap">
+                <button class="btn btn-success" onclick="testGoHome()">
+                    <i class="fas fa-home"></i> goHome() 테스트
+                </button>
+                <button class="btn btn-outline-secondary" onclick="testGoBack()">
+                    <i class="fas fa-arrow-left"></i> goBack() 테스트
+                </button>
+                <button class="btn btn-outline-primary" onclick="testRouterNavigate('home')">
+                    <i class="fas fa-route"></i> router.navigate('home')
+                </button>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>4. 라우터 상태 확인</h3>
+            <button class="btn btn-info" onclick="checkRouterStatus()">
+                <i class="fas fa-info"></i> 라우터 상태 확인
+            </button>
+            <div id="router-status" class="mt-2"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>5. 로그 출력</h3>
+            <div id="log-output" class="log-output">
+                <!-- 로그가 여기에 표시됩니다 -->
+            </div>
+            <button class="btn btn-sm btn-outline-secondary" onclick="clearLog()">
+                <i class="fas fa-trash"></i> 로그 지우기
+            </button>
+        </div>
+    </div>
+
+    <!-- 스크립트 로드 -->
+    <script src="js/config.js"></script>
+    <script src="js/router.js"></script>
+    
+    <script>
+        // 로그 출력 함수
+        function log(message) {
+            const logOutput = document.getElementById('log-output');
+            const timestamp = new Date().toLocaleTimeString();
+            logOutput.innerHTML += `[${timestamp}] ${message}<br>`;
+            logOutput.scrollTop = logOutput.scrollHeight;
+            console.log(message);
+        }
+        
+        // 로그 지우기
+        function clearLog() {
+            document.getElementById('log-output').innerHTML = '';
+        }
+        
+        // URL 상태 업데이트
+        function updateUrlStatus() {
+            document.getElementById('url-display').textContent = window.location.href;
+            document.getElementById('hash-display').textContent = window.location.hash || '#(없음)';
+        }
+        
+        // 네비게이션 테스트
+        function testNavigate(hash) {
+            log(`🧪 네비게이션 테스트: ${hash}`);
+            try {
+                router.navigate(hash);
+                log(`✅ router.navigate('${hash}') 호출 완료`);
+            } catch (error) {
+                log(`❌ router.navigate('${hash}') 실패: ${error.message}`);
+            }
+            updateUrlStatus();
+        }
+        
+        // goHome 함수 테스트
+        function testGoHome() {
+            log('🧪 goHome() 함수 테스트');
+            try {
+                if (typeof goHome === 'function') {
+                    goHome();
+                    log('✅ goHome() 호출 완료');
+                } else {
+                    log('❌ goHome() 함수를 찾을 수 없습니다');
+                }
+            } catch (error) {
+                log(`❌ goHome() 실패: ${error.message}`);
+            }
+            updateUrlStatus();
+        }
+        
+        // goBack 함수 테스트
+        function testGoBack() {
+            log('🧪 goBack() 함수 테스트');
+            try {
+                if (typeof goBack === 'function') {
+                    goBack();
+                    log('✅ goBack() 호출 완료');
+                } else {
+                    log('❌ goBack() 함수를 찾을 수 없습니다');
+                }
+            } catch (error) {
+                log(`❌ goBack() 실패: ${error.message}`);
+            }
+            updateUrlStatus();
+        }
+        
+        // router.navigate 직접 테스트
+        function testRouterNavigate(hash) {
+            log(`🧪 router.navigate('${hash}') 직접 테스트`);
+            try {
+                if (router && typeof router.navigate === 'function') {
+                    router.navigate(hash);
+                    log(`✅ router.navigate('${hash}') 직접 호출 완료`);
+                } else {
+                    log('❌ router 객체 또는 navigate 메서드를 찾을 수 없습니다');
+                }
+            } catch (error) {
+                log(`❌ router.navigate('${hash}') 직접 호출 실패: ${error.message}`);
+            }
+            updateUrlStatus();
+        }
+        
+        // 라우터 상태 확인
+        function checkRouterStatus() {
+            log('🔍 라우터 상태 확인');
+            const statusDiv = document.getElementById('router-status');
+            
+            let statusHtml = '<h5>라우터 상태:</h5><ul>';
+            
+            if (router) {
+                statusHtml += `<li><strong>라우터 객체:</strong> ✅ 존재</li>`;
+                statusHtml += `<li><strong>현재 뷰:</strong> ${router.currentView || '없음'}</li>`;
+                statusHtml += `<li><strong>현재 라우트:</strong> ${router.currentRoute || '없음'}</li>`;
+                statusHtml += `<li><strong>네비게이션 중:</strong> ${router.isNavigating ? '⏳ 예' : '❌ 아니오'}</li>`;
+                statusHtml += `<li><strong>등록된 라우트:</strong> ${Object.keys(router.routes).join(', ')}</li>`;
+            } else {
+                statusHtml += `<li><strong>라우터 객체:</strong> ❌ 없음</li>`;
+            }
+            
+            statusHtml += '</ul>';
+            statusDiv.innerHTML = statusHtml;
+            
+            log('✅ 라우터 상태 확인 완료');
+        }
+        
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            log('📄 네비게이션 테스트 페이지 로드 완료');
+            updateUrlStatus();
+            
+            // URL 변경 감지
+            window.addEventListener('hashchange', function() {
+                log('🔄 Hash 변경 감지: ' + window.location.hash);
+                updateUrlStatus();
+            });
+            
+            // 1초마다 URL 상태 업데이트
+            setInterval(updateUrlStatus, 1000);
+        });
+        
+        // 콘솔 로그를 페이지에도 표시
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            log('LOG: ' + args.join(' '));
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            log('ERROR: ' + args.join(' '));
+        };
+        
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            log('WARN: ' + args.join(' '));
+        };
+    </script>
+</body>
+</html>

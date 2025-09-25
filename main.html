@@ -516,11 +516,16 @@
         <!-- 상세 뷰 -->
         <div id="detail-view" class="view" style="display: none;">
             <div class="row">
-                <!-- 뒤로가기 버튼 -->
+                <!-- 네비게이션 버튼 -->
                 <div class="col-12 mb-3">
-                    <button class="btn btn-outline-secondary" onclick="goBack()">
-                        <i class="fas fa-arrow-left"></i> 뒤로가기
-                    </button>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-secondary" onclick="goBack()">
+                            <i class="fas fa-arrow-left"></i> 뒤로가기
+                        </button>
+                        <button class="btn btn-outline-primary" onclick="goHome()">
+                            <i class="fas fa-home"></i> 홈으로
+                        </button>
+                    </div>
                 </div>
                 
                 <!-- 메인 컨텐츠 -->

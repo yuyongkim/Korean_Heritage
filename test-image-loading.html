@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>이미지 로딩 테스트</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .image-test { margin: 10px 0; }
+        .image-test img { max-width: 200px; max-height: 150px; border: 1px solid #ccc; margin: 5px; }
+        .log-output { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 10px 0; height: 300px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+        .stats-display { background: #e9ecef; padding: 10px; border-radius: 5px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>이미지 로딩 테스트</h1>
+        
+        <div class="test-section">
+            <h3>1. 이미지 캐시 매니저 상태</h3>
+            <div id="cache-stats" class="stats-display">
+                <i class="fas fa-spinner fa-spin"></i> 로딩 중...
+            </div>
+            <button class="btn btn-info btn-sm" onclick="updateCacheStats()">
+                <i class="fas fa-refresh"></i> 상태 새로고침
+            </button>
+        </div>
+        
+        <div class="test-section">
+            <h3>2. 테스트 이미지들</h3>
+            <div class="d-flex gap-2 flex-wrap mb-3">
+                <button class="btn btn-primary" onclick="testValidImages()">
+                    <i class="fas fa-check"></i> 유효한 이미지 테스트
+                </button>
+                <button class="btn btn-warning" onclick="testInvalidImages()">
+                    <i class="fas fa-times"></i> 무효한 이미지 테스트
+                </button>
+                <button class="btn btn-danger" onclick="testCorsImages()">
+                    <i class="fas fa-ban"></i> CORS 이미지 테스트
+                </button>
+                <button class="btn btn-secondary" onclick="clearTestImages()">
+                    <i class="fas fa-trash"></i> 테스트 이미지 지우기
+                </button>
+            </div>
+            <div id="test-images" class="image-test">
+                <!-- 테스트 이미지들이 여기에 표시됩니다 -->
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>3. 배치 이미지 로딩 테스트</h3>
+            <div class="d-flex gap-2 flex-wrap mb-3">
+                <button class="btn btn-success" onclick="testBatchLoading()">
+                    <i class="fas fa-images"></i> 배치 로딩 테스트
+                </button>
+                <button class="btn btn-info" onclick="testPreloadImages()">
+                    <i class="fas fa-download"></i> 미리 로드 테스트
+                </button>
+            </div>
+            <div id="batch-results" class="stats-display">
+                배치 테스트 결과가 여기에 표시됩니다.
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>4. 로그 출력</h3>
+            <div id="log-output" class="log-output">
+                <!-- 로그가 여기에 표시됩니다 -->
+            </div>
+            <button class="btn btn-sm btn-outline-secondary" onclick="clearLog()">
+                <i class="fas fa-trash"></i> 로그 지우기
+            </button>
+        </div>
+    </div>
+
+    <!-- 스크립트 로드 -->
+    <script src="js/config.js"></script>
+    <script src="js/image-cache-manager.js"></script>
+    
+    <script>
+        // 로그 출력 함수
+        function log(message) {
+            const logOutput = document.getElementById('log-output');
+            const timestamp = new Date().toLocaleTimeString();
+            logOutput.innerHTML += `[${timestamp}] ${message}<br>`;
+            logOutput.scrollTop = logOutput.scrollHeight;
+            console.log(message);
+        }
+        
+        // 로그 지우기
+        function clearLog() {
+            document.getElementById('log-output').innerHTML = '';
+        }
+        
+        // 캐시 통계 업데이트
+        function updateCacheStats() {
+            const statsDiv = document.getElementById('cache-stats');
+            const stats = imageCacheManager.getCacheStats();
+            
+            let statsHtml = `
+                <h5>이미지 캐시 통계</h5>
+                <div class="row">
+                    <div class="col-md-3">
+                        <strong>캐시 크기:</strong> ${stats.cacheSize}개
+                    </div>
+                    <div class="col-md-3">
+                        <strong>미리 로드됨:</strong> ${stats.preloadedCount}개
+                    </div>
+                    <div class="col-md-3">
+                        <strong>로드 실패:</strong> ${stats.failedCount}개
+                    </div>
+                    <div class="col-md-3">
+                        <strong>최대 크기:</strong> ${stats.maxCacheSize}개
+                    </div>
+                </div>
+            `;
+            
+            if (stats.failedCount > 0) {
+                statsHtml += `<div class="alert alert-warning mt-2">⚠️ ${stats.failedCount}개의 이미지 로딩이 실패했습니다.</div>`;
+            }
+            
+            statsDiv.innerHTML = statsHtml;
+            log('📊 캐시 통계 업데이트 완료');
+        }
+        
+        // 유효한 이미지 테스트
+        function testValidImages() {
+            log('🧪 유효한 이미지 테스트 시작');
+            const testImages = [
+                'https://via.placeholder.com/200x150/007bff/ffffff?text=Test+1',
+                'https://via.placeholder.com/200x150/28a745/ffffff?text=Test+2',
+                'https://via.placeholder.com/200x150/dc3545/ffffff?text=Test+3'
+            ];
+            
+            const container = document.getElementById('test-images');
+            container.innerHTML = '';
+            
+            testImages.forEach((url, index) => {
+                const imgDiv = document.createElement('div');
+                imgDiv.className = 'd-inline-block m-2';
+                imgDiv.innerHTML = `
+                    <div class="card" style="width: 200px;">
+                        <img src="${url}" class="card-img-top" alt="Test ${index + 1}" 
+                             onload="log('✅ 이미지 로드 성공: ${url}')"
+                             onerror="log('❌ 이미지 로드 실패: ${url}')">
+                        <div class="card-body p-2">
+                            <small class="text-muted">Test ${index + 1}</small>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(imgDiv);
+            });
+        }
+        
+        // 무효한 이미지 테스트
+        function testInvalidImages() {
+            log('🧪 무효한 이미지 테스트 시작');
+            const invalidImages = [
+                'https://invalid-url-that-does-not-exist.com/image.jpg',
+                'https://httpstat.us/404',
+                'not-a-valid-url',
+                ''
+            ];
+            
+            const container = document.getElementById('test-images');
+            container.innerHTML = '';
+            
+            invalidImages.forEach((url, index) => {
+                const imgDiv = document.createElement('div');
+                imgDiv.className = 'd-inline-block m-2';
+                imgDiv.innerHTML = `
+                    <div class="card" style="width: 200px;">
+                        <img src="${url}" class="card-img-top" alt="Invalid ${index + 1}" 
+                             onload="log('✅ 예상치 못한 성공: ${url}')"
+                             onerror="log('❌ 예상된 실패: ${url}')">
+                        <div class="card-body p-2">
+                            <small class="text-muted">Invalid ${index + 1}</small>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(imgDiv);
+            });
+        }
+        
+        // CORS 이미지 테스트
+        function testCorsImages() {
+            log('🧪 CORS 이미지 테스트 시작');
+            const corsImages = [
+                'https://www.khs.go.kr/unisearch/images/national_treasure/1611449.jpg',
+                'https://www.heritage.go.kr/images/test.jpg',
+                'https://cdn.heritage.go.kr/images/test.jpg'
+            ];
+            
+            const container = document.getElementById('test-images');
+            container.innerHTML = '';
+            
+            corsImages.forEach((url, index) => {
+                const imgDiv = document.createElement('div');
+                imgDiv.className = 'd-inline-block m-2';
+                imgDiv.innerHTML = `
+                    <div class="card" style="width: 200px;">
+                        <img src="${url}" class="card-img-top" alt="CORS ${index + 1}" 
+                             onload="log('✅ CORS 이미지 로드 성공: ${url}')"
+                             onerror="log('❌ CORS 이미지 로드 실패: ${url}')">
+                        <div class="card-body p-2">
+                            <small class="text-muted">CORS ${index + 1}</small>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(imgDiv);
+            });
+        }
+        
+        // 테스트 이미지 지우기
+        function clearTestImages() {
+            document.getElementById('test-images').innerHTML = '';
+            log('🧹 테스트 이미지 지우기 완료');
+        }
+        
+        // 배치 로딩 테스트
+        async function testBatchLoading() {
+            log('🧪 배치 이미지 로딩 테스트 시작');
+            
+            const testItems = [
+                { name: 'Test 1', image_url: 'https://via.placeholder.com/200x150/007bff/ffffff?text=Batch+1' },
+                { name: 'Test 2', image_url: 'https://via.placeholder.com/200x150/28a745/ffffff?text=Batch+2' },
+                { name: 'Test 3', image_url: 'https://via.placeholder.com/200x150/dc3545/ffffff?text=Batch+3' },
+                { name: 'Invalid 1', image_url: 'https://invalid-url.com/image.jpg' },
+                { name: 'Invalid 2', image_url: 'not-a-url' }
+            ];
+            
+            try {
+                await imageCacheManager.preloadImages(testItems);
+                log('✅ 배치 로딩 테스트 완료');
+            } catch (error) {
+                log('❌ 배치 로딩 테스트 실패: ' + error.message);
+            }
+            
+            updateCacheStats();
+        }
+        
+        // 미리 로드 테스트
+        async function testPreloadImages() {
+            log('🧪 미리 로드 테스트 시작');
+            
+            const testItems = [
+                { name: 'Preload 1', image_url: 'https://via.placeholder.com/200x150/ffc107/000000?text=Preload+1' },
+                { name: 'Preload 2', image_url: 'https://via.placeholder.com/200x150/17a2b8/ffffff?text=Preload+2' },
+                { name: 'Preload 3', image_url: 'https://via.placeholder.com/200x150/6f42c1/ffffff?text=Preload+3' }
+            ];
+            
+            try {
+                await imageCacheManager.preloadImages(testItems, 0, 3);
+                log('✅ 미리 로드 테스트 완료');
+            } catch (error) {
+                log('❌ 미리 로드 테스트 실패: ' + error.message);
+            }
+            
+            updateCacheStats();
+        }
+        
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            log('📄 이미지 로딩 테스트 페이지 로드 완료');
+            updateCacheStats();
+        });
+        
+        // 콘솔 로그를 페이지에도 표시
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            log('LOG: ' + args.join(' '));
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            log('ERROR: ' + args.join(' '));
+        };
+        
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            log('WARN: ' + args.join(' '));
+        };
+    </script>
+</body>
+</html>

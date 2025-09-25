@@ -211,6 +211,37 @@ class Router {
         const currentHash = window.location.hash.slice(1);
         const newHash = hash.startsWith('#') ? hash.slice(1) : hash;
         
+        console.log(`🛣️ 라우터 네비게이션 요청: ${currentHash} -> ${newHash}`);
+        
+        // 홈으로 이동하는 경우 특별 처리
+        if (newHash === 'home' || newHash === '') {
+            console.log('🏠 홈으로 이동 요청');
+            this.isNavigating = true;
+            
+            try {
+                // URL 업데이트
+                window.location.hash = 'home';
+                
+                // 즉시 홈 뷰 표시
+                this.showView('home-view');
+                
+                // 홈 라우트 실행
+                if (this.routes['home']) {
+                    this.routes['home']({});
+                }
+                
+                console.log('✅ 홈으로 이동 완료');
+                
+            } catch (error) {
+                console.error('❌ 홈 네비게이션 에러:', error);
+            } finally {
+                setTimeout(() => {
+                    this.isNavigating = false;
+                }, 100);
+            }
+            return;
+        }
+        
         if (currentHash === newHash) {
             console.log('🔄 동일한 라우트, 무시:', newHash);
             return;
@@ -497,9 +528,21 @@ function goBack() {
     }
 }
 
+// 홈으로 이동 함수
+function goHome() {
+    console.log('🏠 홈으로 이동 요청');
+    router.navigate('home');
+}
+
+// 전역 함수로 등록
+window.goBack = goBack;
+window.goHome = goHome;
+
 // 라우트 등록
 router.addRoute('home', async (params) => {
     console.log('🏠 홈 라우트 실행:', params);
+    
+    // 홈 뷰 표시
     router.showView('home-view');
     
     // 🚀 페이지 파라미터 처리
@@ -516,9 +559,20 @@ router.addRoute('home', async (params) => {
         }
     } else {
         // 첫 페이지면 홈 대시보드 표시
+        console.log('🏠 홈 대시보드 로드 시작');
+        
+        // 대시보드 업데이트 함수들 호출
         if (typeof updateDashboard === 'function') {
+            console.log('📊 updateDashboard 함수 호출');
             updateDashboard();
+        } else if (window.app && typeof window.app.updateDashboard === 'function') {
+            console.log('📊 app.updateDashboard 함수 호출');
+            await window.app.updateDashboard();
+        } else {
+            console.log('⚠️ updateDashboard 함수를 찾을 수 없습니다');
         }
+        
+        console.log('✅ 홈 대시보드 로드 완료');
     }
 });
 

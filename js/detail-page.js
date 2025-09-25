@@ -160,24 +160,41 @@ class DetailPage {
             // Handle both raw data format (imageUrl) and transformed format (image_url)
             const imageUrl = item.imageUrl || item.image_url || '';
             if (imageUrl && imageUrl.trim() !== '') {
-                imageContainer.innerHTML = `
-                    <div class="heritage-image-wrapper">
-                        <img src="${imageCacheManager.getCachedImageUrl(imageUrl)}" alt="${item.name}" class="heritage-main-image" 
-                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                        <div class="heritage-image-placeholder d-none" style="min-height: 400px;">
-                            <div class="text-center text-muted">
-                                <i class="fas fa-image fa-3x mb-3" style="color: var(--primary);"></i>
-                                <h5>이미지 로드 실패</h5>
-                                <small>이미지를 불러올 수 없습니다</small>
+                // 이미지 URL 유효성 검사
+                const isValidUrl = this._isValidImageUrl(imageUrl);
+                
+                if (isValidUrl) {
+                    imageContainer.innerHTML = `
+                        <div class="heritage-image-wrapper">
+                            <img src="${imageCacheManager.getCachedImageUrl(imageUrl)}" alt="${item.name}" class="heritage-main-image" 
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                                 onload="this.style.opacity='1';">
+                            <div class="heritage-image-placeholder d-none" style="min-height: 400px;">
+                                <div class="text-center text-muted">
+                                    <i class="fas fa-image fa-3x mb-3" style="color: var(--primary);"></i>
+                                    <h5>이미지 로드 실패</h5>
+                                    <small>이미지를 불러올 수 없습니다</small>
+                                </div>
+                            </div>
+                            <div class="heritage-image-overlay">
+                                <button class="btn btn-light btn-sm" onclick="openImageModal('${imageUrl}', '${item.name}')">
+                                    <i class="fas fa-expand"></i> 확대보기
+                                </button>
                             </div>
                         </div>
-                        <div class="heritage-image-overlay">
-                            <button class="btn btn-light btn-sm" onclick="openImageModal('${imageUrl}', '${item.name}')">
-                                <i class="fas fa-expand"></i> 확대보기
-                            </button>
+                    `;
+                } else {
+                    // 유효하지 않은 URL인 경우 바로 플레이스홀더 표시
+                    imageContainer.innerHTML = `
+                        <div class="heritage-image-placeholder d-flex align-items-center justify-content-center" style="min-height: 400px;">
+                            <div class="text-center text-muted">
+                                <i class="fas fa-exclamation-triangle fa-3x mb-3" style="color: var(--warning);"></i>
+                                <h5>잘못된 이미지 URL</h5>
+                                <small>이미지 주소가 올바르지 않습니다</small>
+                            </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                }
             } else {
                 imageContainer.innerHTML = `
                     <div class="heritage-image-placeholder d-flex align-items-center justify-content-center" style="min-height: 400px;">
@@ -345,6 +362,27 @@ class DetailPage {
                 this.updateHeritageDescription(item);
             });
         });
+    }
+
+    /**
+     * 이미지 URL 유효성 검사
+     */
+    _isValidImageUrl(url) {
+        if (!url || typeof url !== 'string' || url.trim() === '') {
+            return false;
+        }
+
+        // 기본 URL 패턴 검사
+        try {
+            new URL(url);
+        } catch {
+            return false;
+        }
+
+        // 이미지 확장자 검사
+        const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
+        const lowercaseUrl = url.toLowerCase();
+        return imageExtensions.some(ext => lowercaseUrl.includes(ext));
     }
 
     /**

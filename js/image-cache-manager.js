@@ -7,9 +7,11 @@ class ImageCacheManager {
     constructor() {
         this.cache = new Map();
         this.preloadedImages = new Set();
+        this.failedImages = new Set(); // 실패한 이미지 URL 저장
         this.maxCacheSize = 1000; // 최대 1000개 이미지 캐시
         this.preloadBatchSize = 20; // 한 번에 미리 로드할 이미지 수
         this.preloadDelay = 100; // 배치 간 지연 시간 (ms)
+        this.maxRetries = 2; // 최대 재시도 횟수
     }
 
     /**
@@ -65,6 +67,11 @@ class ImageCacheManager {
             return;
         }
 
+        // 이미 실패한 이미지는 다시 시도하지 않음
+        if (this.failedImages.has(item.image_url)) {
+            return;
+        }
+
         try {
             const imageUrl = await this._loadImage(item.image_url);
             if (imageUrl) {
@@ -74,35 +81,62 @@ class ImageCacheManager {
             }
         } catch (error) {
             console.warn(`❌ 이미지 로드 실패: ${item.name}`, error);
+            // 실패한 이미지 URL을 기록하여 재시도 방지
+            this.failedImages.add(item.image_url);
         }
     }
 
     /**
-     * 이미지 로드
+     * 이미지 로드 (재시도 로직 포함)
      */
-    _loadImage(url) {
+    _loadImage(url, retryCount = 0) {
         return new Promise((resolve, reject) => {
             const img = new Image();
+            let timeoutId;
+            
+            // 타임아웃 설정 (10초)
+            timeoutId = setTimeout(() => {
+                img.onload = null;
+                img.onerror = null;
+                reject(new Error('이미지 로드 타임아웃'));
+            }, 10000);
             
             img.onload = () => {
-                // 이미지를 캔버스로 변환하여 base64로 저장
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                
-                canvas.width = img.width;
-                canvas.height = img.height;
-                ctx.drawImage(img, 0, 0);
-                
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                resolve(dataUrl);
+                clearTimeout(timeoutId);
+                try {
+                    // 이미지를 캔버스로 변환하여 base64로 저장
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                    resolve(dataUrl);
+                } catch (error) {
+                    reject(new Error('이미지 변환 실패: ' + error.message));
+                }
             };
             
             img.onerror = () => {
-                reject(new Error('이미지 로드 실패'));
+                clearTimeout(timeoutId);
+                
+                // 재시도 로직
+                if (retryCount < this.maxRetries) {
+                    console.log(`🔄 이미지 재시도 ${retryCount + 1}/${this.maxRetries}: ${url}`);
+                    setTimeout(() => {
+                        this._loadImage(url, retryCount + 1)
+                            .then(resolve)
+                            .catch(reject);
+                    }, 1000 * (retryCount + 1)); // 지수 백오프
+                } else {
+                    reject(new Error('이미지 로드 실패 (최대 재시도 횟수 초과)'));
+                }
             };
             
-            // CORS 문제 방지
-            img.crossOrigin = 'anonymous';
+            // CORS 문제 방지를 위해 crossOrigin 제거
+            // img.crossOrigin = 'anonymous';
             img.src = url;
         });
     }
@@ -150,6 +184,7 @@ class ImageCacheManager {
         return {
             cacheSize: this.cache.size,
             preloadedCount: this.preloadedImages.size,
+            failedCount: this.failedImages.size,
             maxCacheSize: this.maxCacheSize
         };
     }
@@ -160,6 +195,7 @@ class ImageCacheManager {
     clearCache() {
         this.cache.clear();
         this.preloadedImages.clear();
+        this.failedImages.clear();
         console.log('🧹 이미지 캐시 클리어됨');
     }
 }

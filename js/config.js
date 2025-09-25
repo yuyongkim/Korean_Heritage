@@ -27,6 +27,33 @@ const KAKAO_MAP_API_KEY = (() => {
     return 'f3b94f450409b9b743b3932047bdbe4b';
 })();
 
+// 허용된 도메인 목록
+const ALLOWED_DOMAINS = [
+    'localhost',
+    '127.0.0.1',
+    'yuyongkim.github.io',
+    'github.io'
+];
+
+// 현재 도메인 검증
+function validateDomain() {
+    if (typeof window === 'undefined') {
+        return true; // 서버 환경에서는 통과
+    }
+    
+    const hostname = window.location.hostname;
+    const isAllowed = ALLOWED_DOMAINS.some(domain => 
+        hostname === domain || hostname.endsWith('.' + domain)
+    );
+    
+    if (!isAllowed) {
+        console.warn('⚠️ 현재 도메인에서 API 키 사용이 제한될 수 있습니다:', hostname);
+        console.warn('허용된 도메인:', ALLOWED_DOMAINS);
+    }
+    
+    return isAllowed;
+}
+
 // API 키 유효성 검증
 function validateApiKey(apiKey) {
     if (!apiKey || typeof apiKey !== 'string') {
@@ -41,6 +68,7 @@ function validateApiKey(apiKey) {
 // API 키 상태 확인
 const API_KEY_STATUS = {
     isValid: validateApiKey(KAKAO_MAP_API_KEY),
+    domainValid: validateDomain(),
     source: (() => {
         if (typeof process !== 'undefined' && process.env && process.env.KAKAO_MAP_API_KEY) return 'environment';
         if (typeof window !== 'undefined' && window.KAKAO_MAP_API_KEY) return 'window';
@@ -66,9 +94,14 @@ function checkApiKeyStatus() {
         return false;
     }
     
+    if (!API_KEY_STATUS.domainValid) {
+        console.warn('⚠️ 현재 도메인에서 API 키 사용이 제한될 수 있습니다');
+    }
+    
     console.log('✅ 카카오 지도 API 키가 유효합니다:', {
         source: API_KEY_STATUS.source,
-        keyPrefix: KAKAO_MAP_API_KEY.substring(0, 8) + '...'
+        keyPrefix: KAKAO_MAP_API_KEY.substring(0, 8) + '...',
+        domainValid: API_KEY_STATUS.domainValid
     });
     
     return true;

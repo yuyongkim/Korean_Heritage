@@ -83,7 +83,8 @@ class SimpleMapManager {
             const protocol = window.location.protocol === 'https:' ? 'https:' : 'https:';
             script.src = `${protocol}//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_MAP_API_KEY}&autoload=false`;
             script.async = true;
-            script.crossOrigin = 'anonymous';
+            // CORS 문제 해결을 위해 crossOrigin 제거
+            // script.crossOrigin = 'anonymous';
 
             // 타임아웃 설정 (10초)
             const timeoutId = setTimeout(() => {

@@ -14,6 +14,7 @@ class Router {
         this.isNavigating = false;
         this.lastParseResult = null;
         this.lastParseHash = null;
+        this.history = [];
         
         // 브라우저 뒤로가기/앞으로가기 이벤트 처리
         window.addEventListener('hashchange', () => this.handleRoute());
@@ -40,37 +41,49 @@ class Router {
             return;
         }
         
-        // 🚀 parseHash로 라우트와 파라미터 추출
-        const { route, params } = this.parseHash();
+        // 🚀 네비게이션 플래그 설정
+        this.isNavigating = true;
         
-        // 동일한 라우트 중복 실행 방지
-        if (this.currentRoute === route && JSON.stringify(this.lastParams) === JSON.stringify(params)) {
-            console.log('🔄 동일한 라우트와 파라미터, 중복 실행 방지:', route);
-            return;
-        }
-        
-        console.log(`🎯 라우트 실행: ${route}`, params);
-        
-        this.currentRoute = route;
-        this.lastParams = params;
-        
-        // 🚀 라우트 존재 확인
-        if (this.routes[route]) {
-            console.log(`✅ 라우트 '${route}' 핸들러 찾음, 실행 중...`);
-            try {
-                // ✅ 파라미터를 확실히 전달
-                this.routes[route](params);
-                console.log(`✅ ${route} 라우트 실행 완료`);
-            } catch (error) {
-                console.error(`❌ ${route} 라우트 실행 에러:`, error);
-                // 에러 시 홈으로 리다이렉트
-                if (route !== 'home') {
-                    this.navigate('home');
-                }
+        try {
+            // 🚀 parseHash로 라우트와 파라미터 추출
+            const { route, params } = this.parseHash();
+            
+            // 동일한 라우트 중복 실행 방지
+            if (this.currentRoute === route && JSON.stringify(this.lastParams) === JSON.stringify(params)) {
+                console.log('🔄 동일한 라우트와 파라미터, 중복 실행 방지:', route);
+                return;
             }
-        } else {
-            console.error(`❌ 알 수 없는 라우트: ${route}`, '사용 가능한 라우트:', Object.keys(this.routes));
-            this.navigate('home');
+            
+            console.log(`🎯 라우트 실행: ${route}`, params);
+            
+            this.currentRoute = route;
+            this.lastParams = params;
+        
+            // 🚀 라우트 존재 확인
+            if (this.routes[route]) {
+                console.log(`✅ 라우트 '${route}' 핸들러 찾음, 실행 중...`);
+                try {
+                    // ✅ 파라미터를 확실히 전달
+                    this.routes[route](params);
+                    console.log(`✅ ${route} 라우트 실행 완료`);
+                } catch (error) {
+                    console.error(`❌ ${route} 라우트 실행 에러:`, error);
+                    // 에러 시 홈으로 리다이렉트
+                    if (route !== 'home') {
+                        this.navigate('home');
+                    }
+                }
+            } else {
+                console.error(`❌ 알 수 없는 라우트: ${route}`, '사용 가능한 라우트:', Object.keys(this.routes));
+                this.navigate('home');
+            }
+        } catch (error) {
+            console.error('❌ 라우팅 처리 중 에러:', error);
+        } finally {
+            // 🚀 네비게이션 플래그 해제
+            setTimeout(() => {
+                this.isNavigating = false;
+            }, 100);
         }
     }
 
@@ -216,7 +229,6 @@ class Router {
         // 홈으로 이동하는 경우 특별 처리
         if (newHash === 'home' || newHash === '') {
             console.log('🏠 홈으로 이동 요청');
-            this.isNavigating = true;
             
             try {
                 // URL 업데이트
@@ -234,10 +246,6 @@ class Router {
                 
             } catch (error) {
                 console.error('❌ 홈 네비게이션 에러:', error);
-            } finally {
-                setTimeout(() => {
-                    this.isNavigating = false;
-                }, 100);
             }
             return;
         }
@@ -249,11 +257,14 @@ class Router {
 
         console.log(`🛣️ 라우터 네비게이션: ${currentHash} -> ${newHash}`);
         
-        this.isNavigating = true;
-        
         try {
             // URL 업데이트
             window.location.hash = newHash;
+            
+            // 🚀 히스토리 업데이트
+            if (currentHash && currentHash !== newHash) {
+                this.history.push(currentHash);
+            }
             
             // 🚀 즉시 라우팅 처리 (hashchange 이벤트 기다리지 않음)
             this.handleRoute();
@@ -263,10 +274,6 @@ class Router {
             if (newHash !== 'home') {
                 this.navigate('home');
             }
-        } finally {
-            setTimeout(() => {
-                this.isNavigating = false;
-            }, 100);
         }
     }
     
@@ -500,14 +507,8 @@ const router = new Router();
 function goBack() {
     console.log('뒤로가기 요청, 현재 히스토리:', router.history);
     
-    // 🚨 중요: 무한 루프 방지를 위한 플래그 체크
-    if (router.isNavigating) {
-        console.log('이미 네비게이션 중이므로 뒤로가기 무시');
-        return;
-    }
-    
     // 라우터 히스토리 사용
-    if (router.history.length > 1) {
+    if (router.history && router.history.length > 1) {
         // 현재 경로를 히스토리에서 제거
         router.history.pop();
         // 이전 경로로 이동

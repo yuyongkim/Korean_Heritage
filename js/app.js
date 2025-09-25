@@ -486,10 +486,17 @@ function updateUnclassifiedStats() {
     if (dataManager && typeof dataManager.getUnclassifiedStats === 'function') {
         const unclassifiedStats = dataManager.getUnclassifiedStats();
         
-        // 미분류 항목 수 표시
-        updateElement('unclassified-count', unclassifiedStats.total.toLocaleString());
-        updateElement('unclassified-sido-count', unclassifiedStats.sidoType.toLocaleString());
-        updateElement('unclassified-category-count', unclassifiedStats.categoryType.toLocaleString());
+        // 안전한 속성 접근
+        if (unclassifiedStats && typeof unclassifiedStats === 'object') {
+            updateElement('unclassified-count', (unclassifiedStats.total || 0).toLocaleString());
+            updateElement('unclassified-sido-count', (unclassifiedStats.sidoType || 0).toLocaleString());
+            updateElement('unclassified-category-count', (unclassifiedStats.categoryType || 0).toLocaleString());
+        } else {
+            // 기본값 설정
+            updateElement('unclassified-count', '0');
+            updateElement('unclassified-sido-count', '0');
+            updateElement('unclassified-category-count', '0');
+        }
     }
 }
 

@@ -672,9 +672,10 @@ router.addRoute('english', async () => {
 
 router.addRoute('unclassified', async (params) => {
     console.log('🗂️ 미분류 라우트 실행:', params);
-    router.showView('unclassified-view');
+    router.showView('list-view'); // list-view 사용하여 기존 시스템 재활용
     
     const unclassifiedType = params.type || 'sido-type';
+    const page = parseInt(params.page) || 1;
     
     // 데이터 매니저가 준비될 때까지 기다리기
     await window.dataManager.waitForData();
@@ -698,7 +699,21 @@ router.addRoute('unclassified', async (params) => {
     console.log('🔄 미분류 데이터 필터링 완료:', unclassifiedData.length, '건');
     
     if (window.searchPage && typeof window.searchPage.loadUnclassifiedView === 'function') {
-        await window.searchPage.loadUnclassifiedView(unclassifiedType, unclassifiedData, 1);
+        await window.searchPage.loadUnclassifiedView(unclassifiedType, unclassifiedData, page);
+        
+        // 페이지네이션 이벤트 연결
+        setTimeout(() => {
+            document.querySelectorAll('#pagination a').forEach(link => {
+                link.onclick = (e) => {
+                    e.preventDefault();
+                    const pageMatch = link.href.match(/page=(\d+)/);
+                    if (pageMatch) {
+                        const newPage = parseInt(pageMatch[1]);
+                        router.navigate(`unclassified/${unclassifiedType}?page=${newPage}`);
+                    }
+                };
+            });
+        }, 100);
     } else {
         console.error('❌ searchPage 또는 loadUnclassifiedView 함수를 찾을 수 없습니다');
     }

@@ -94,27 +94,26 @@ class SearchPage {
         
         // 데이터가 없으면 빈 결과 표시
         if (!data || data.length === 0) {
-            this.renderUnclassifiedResults([]);
-            this.renderUnclassifiedPagination(1, 1, 0);
+            this.renderSearchResults([]);
+            this.renderSearchPagination(1, 1, 0);
             return;
         }
         
-        // 페이지네이션 처리
+        // 기존 페이지네이션 시스템 재활용
         const paginationData = this.getPaginatedData(data, page);
-        
         if (!paginationData) {
             console.warn('페이지네이션 데이터 없음');
-            this.renderUnclassifiedResults([]);
+            this.renderSearchResults([]);
             return;
         }
         
-        console.log(`✅ 미분류 항목 표시: ${paginationData.items.length}개 (${paginationData.currentPage}/${paginationData.totalPages})`);
+        console.log(`✅ 미분류 항목: ${paginationData.items.length}개`);
         
-        // 미분류 전용 결과 렌더링
-        this.renderUnclassifiedResults(paginationData.items);
+        // 기존 렌더링 함수 재활용!
+        this.renderSearchResults(paginationData.items);
+        this.renderSearchPagination(paginationData.currentPage, paginationData.totalPages, paginationData.totalItems);
         
-        // 미분류 전용 페이지네이션 렌더링
-        this.renderUnclassifiedPagination(paginationData.currentPage, paginationData.totalPages, paginationData.totalItems);
+        window.scrollTo(0, 0);
     }
 
     /**
@@ -277,118 +276,85 @@ class SearchPage {
     }
 
     /**
-     * 미분류 항목 결과 렌더링
+     * 미분류 페이지 변경
      */
-    renderUnclassifiedResults(items) {
-        console.log('미분류 결과 렌더링 시작:', items.length, '개 항목');
-        
-        // unclassified-view 요소 찾기
-        const unclassifiedView = document.getElementById('unclassified-view');
-        if (!unclassifiedView) {
-            console.error('unclassified-view 요소를 찾을 수 없습니다');
+    async changeUnclassifiedPage(page) {
+        // 로딩 중이면 무시
+        if (this.isLoading) {
+            console.log('이미 로딩 중이므로 미분류 페이지 변경 무시:', page);
             return;
         }
         
-        // 기존 결과 컨테이너 제거
-        const existingContainer = document.getElementById('unclassified-results-container');
-        if (existingContainer) {
-            existingContainer.remove();
+        // 페이지 번호 유효성 검사
+        if (page < 1 || isNaN(page)) {
+            console.warn('유효하지 않은 미분류 페이지 번호:', page);
+            return;
         }
         
-        // 새로운 결과 컨테이너 생성
-        const resultsContainer = document.createElement('div');
-        resultsContainer.id = 'unclassified-results-container';
-        resultsContainer.className = 'unclassified-results-container';
-        
-        if (items.length === 0) {
-            // 빈 상태 표시
-            resultsContainer.innerHTML = `
-                <div class="col-12 text-center py-5">
-                    <div class="empty-state">
-                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
-                        <h4>미분류 항목이 없습니다</h4>
-                        <p class="text-muted">해당 조건에 맞는 미분류 항목이 없습니다.</p>
-                    </div>
-                </div>
-            `;
-        } else {
-            // 카드 그리드 형태로 데이터 렌더링
-            resultsContainer.innerHTML = `
-                <div class="row g-4">
-                    ${items.map(item => `
-                        <div class="col-lg-3 col-md-4 col-sm-6">
-                            <div class="card heritage-card h-100" onclick="viewHeritageDetail('${item.name}')" style="cursor: pointer;">
-                                <div class="card-img-top heritage-image">
-                                    ${item.image_url ? 
-                                        `<img src="${imageCacheManager.getCachedImageUrl(item.image_url)}" alt="${item.name}" onerror="this.style.display='none'; this.parentElement.classList.add('no-image')">` : 
-                                        `<div class="no-image-placeholder"><i class="fas fa-image"></i><span>이미지 없음</span></div>`
-                                    }
-                                </div>
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-start mb-2">
-                                        <span class="badge category-badge category-${item.category}">${item.category}</span>
-                                        <small class="text-muted">${item.location}</small>
-                                    </div>
-                                    <h6 class="card-title">${item.name}</h6>
-                                    <p class="card-text text-truncate-2">
-                                        ${dataManager.currentLanguage === 'ko' 
-                                            ? (item.korean_description ? item.korean_description.substring(0, 100) + '...' : '설명 없음')
-                                            : (item.english_description ? item.english_description.substring(0, 100) + '...' : '영문 설명 준비 중...')
-                                        }
-                                    </p>
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <small class="text-muted">${item.period || '시대 정보 없음'}</small>
-                                        <small class="text-primary">${item.designation_no || ''}</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
+        // 현재 페이지와 동일하면 무시
+        if (page === this.currentPage) {
+            console.log('현재 미분류 페이지와 동일하므로 무시:', page);
+            return;
         }
         
-        // unclassified-view 내부에 결과 컨테이너 추가
-        unclassifiedView.appendChild(resultsContainer);
+        console.log(`미분류 페이지 변경: ${this.currentPage} -> ${page}`);
+        this.currentPage = page;
+        this.isLoading = true;
         
-        console.log('미분류 결과 렌더링 완료');
+        // 로딩 타임아웃 설정
+        this.setLoadingTimeout();
+        
+        try {
+            // URL 업데이트
+            const newUrl = this.createUnclassifiedPageUrl(page);
+            router.navigate(newUrl);
+            
+            // 미분류 데이터 다시 로드
+            await this.loadUnclassifiedData(this.currentQuery, page);
+            
+            window.scrollTo(0, 0);
+        } catch (error) {
+            console.error('미분류 페이지 로딩 오류:', error);
+            this.showErrorMessage('미분류 페이지를 불러오는 중 오류가 발생했습니다.');
+        } finally {
+            this.isLoading = false;
+        }
     }
 
     /**
-     * 미분류 항목 페이지네이션 렌더링
+     * 미분류 페이지 URL 생성
      */
-    renderUnclassifiedPagination(current, total, totalItems) {
-        console.log('미분류 페이지네이션 렌더링:', current, total, totalItems);
+    createUnclassifiedPageUrl(newPage) {
+        return `unclassified/${this.currentQuery}?page=${newPage}`;
+    }
+
+    /**
+     * 미분류 데이터 로드 (페이지네이션용)
+     */
+    async loadUnclassifiedData(type, page = 1) {
+        // 데이터 매니저가 준비될 때까지 기다리기
+        await dataManager.waitForData();
         
-        // unclassified-view 내부에서 페이지네이션 컨테이너 찾기 또는 생성
-        const unclassifiedView = document.getElementById('unclassified-view');
-        if (!unclassifiedView) {
-            console.error('unclassified-view 요소를 찾을 수 없습니다');
-            return;
-        }
+        // 미분류 데이터 필터링
+        const unclassifiedData = dataManager.heritageData.filter(item => {
+            switch (type) {
+                case 'sido-type':
+                    return item.kdcd_name === '시도유형문화재';
+                case 'sido-folklore':
+                    return item.kdcd_name === '시도민속문화재';
+                case 'cultural-data':
+                    return item.kdcd_name === '문화재자료';
+                case 'others':
+                    return item.kdcd_name === '미분류' || item.ctcd_name === '미분류';
+                default:
+                    return false;
+            }
+        });
         
-        // 기존 페이지네이션 컨테이너 제거
-        const existingPagination = document.getElementById('unclassified-pagination');
-        if (existingPagination) {
-            existingPagination.remove();
-        }
+        console.log('🔄 미분류 데이터 필터링 완료:', unclassifiedData.length, '건');
         
-        if (total <= 1) {
-            return; // 페이지가 1개 이하면 페이지네이션 숨김
-        }
-        
-        // 새로운 페이지네이션 컨테이너 생성
-        const paginationContainer = document.createElement('div');
-        paginationContainer.id = 'unclassified-pagination';
-        paginationContainer.className = 'd-flex justify-content-center mt-4';
-        
-        const html = paginationManager.generatePaginationHTML(current, total, totalItems);
-        paginationContainer.innerHTML = html;
-        
-        // unclassified-view 내부에 페이지네이션 컨테이너 추가
-        unclassifiedView.appendChild(paginationContainer);
-        
-        console.log('미분류 페이지네이션 렌더링 완료');
+        // 기존 loadUnclassifiedView 함수 호출
+        await this.loadUnclassifiedView(type, unclassifiedData, page);
     }
 
     /**
@@ -514,5 +480,11 @@ window.performSearch = function(query, searchOption) {
 window.changeSearchPage = function(page) {
     if (window.searchPage) {
         window.searchPage.changeSearchPage(page);
+    }
+};
+
+window.changeUnclassifiedPage = function(page) {
+    if (window.searchPage) {
+        window.searchPage.changeUnclassifiedPage(page);
     }
 };

@@ -142,12 +142,14 @@ class Router {
         }
         // 미분류 항목 처리 (쿼리 파라미터 분리)
         else if (decodedHash.startsWith('unclassified/')) {
-            // 쿼리 파라미터 분리
+            // 1. decodedHash를 먼저 '?'로 split (경로와 쿼리 분리)
             const [pathPart, queryPart] = decodedHash.split('?');
+            
+            // 2. 경로 부분만 '/'로 split하여 parts 생성
             const parts = pathPart.split('/').filter(p => p);
             const unclassifiedType = parts[1] || 'sido-type';
             
-            // 쿼리 파라미터 파싱
+            // 3. 쿼리 부분은 '&'와 '='로 파싱하여 객체 생성
             const queryParams = {};
             if (queryPart) {
                 queryPart.split('&').forEach(param => {
@@ -158,6 +160,9 @@ class Router {
                 });
             }
             
+            // 4. unclassified 라우트 반환 시:
+            //    - params.type = parts[1] (쿼리 없는 순수 타입)
+            //    - params.page = queryParams.page || 1
             result = {
                 route: 'unclassified',
                 params: { 
@@ -165,6 +170,16 @@ class Router {
                     page: parseInt(queryParams.page) || 1  // ✅ 쿼리에서 page 추출
                 }
             };
+            
+            // 디버깅: unclassified 라우트 파싱 확인
+            console.log('🔍 unclassified 파싱 디버그:');
+            console.log('  - 원본 hash:', hash);
+            console.log('  - decodedHash:', decodedHash);
+            console.log('  - pathPart:', pathPart);
+            console.log('  - queryPart:', queryPart || 'N/A');
+            console.log('  - parts:', parts);
+            console.log('  - unclassifiedType:', unclassifiedType);
+            console.log('  - queryParams:', queryParams);
         }
         // 🚀 list 페이지네이션 처리 (list?page=X)
         else if (decodedHash.startsWith('list?page=')) {

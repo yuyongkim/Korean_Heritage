@@ -94,8 +94,8 @@ class SearchPage {
         
         // 데이터가 없으면 빈 결과 표시
         if (!data || data.length === 0) {
-            this.renderSearchResults([]);
-            this.renderSearchPagination(1, 1, 0);
+            this.renderUnclassifiedResults([]);
+            this.renderUnclassifiedPagination(1, 1, 0);
             return;
         }
         
@@ -104,17 +104,17 @@ class SearchPage {
         
         if (!paginationData) {
             console.warn('페이지네이션 데이터 없음');
-            this.renderSearchResults([]);
+            this.renderUnclassifiedResults([]);
             return;
         }
         
         console.log(`✅ 미분류 항목 표시: ${paginationData.items.length}개 (${paginationData.currentPage}/${paginationData.totalPages})`);
         
-        // 결과 렌더링 (검색 결과와 동일한 방식)
-        this.renderSearchResults(paginationData.items);
+        // 미분류 전용 결과 렌더링
+        this.renderUnclassifiedResults(paginationData.items);
         
-        // 페이지네이션 렌더링
-        this.renderSearchPagination(paginationData.currentPage, paginationData.totalPages, paginationData.totalItems);
+        // 미분류 전용 페이지네이션 렌더링
+        this.renderUnclassifiedPagination(paginationData.currentPage, paginationData.totalPages, paginationData.totalItems);
     }
 
     /**
@@ -274,6 +274,121 @@ class SearchPage {
 
         const html = paginationManager.generatePaginationHTML(current, total, totalItems);
         container.innerHTML = html;
+    }
+
+    /**
+     * 미분류 항목 결과 렌더링
+     */
+    renderUnclassifiedResults(items) {
+        console.log('미분류 결과 렌더링 시작:', items.length, '개 항목');
+        
+        // unclassified-view 요소 찾기
+        const unclassifiedView = document.getElementById('unclassified-view');
+        if (!unclassifiedView) {
+            console.error('unclassified-view 요소를 찾을 수 없습니다');
+            return;
+        }
+        
+        // 기존 결과 컨테이너 제거
+        const existingContainer = document.getElementById('unclassified-results-container');
+        if (existingContainer) {
+            existingContainer.remove();
+        }
+        
+        // 새로운 결과 컨테이너 생성
+        const resultsContainer = document.createElement('div');
+        resultsContainer.id = 'unclassified-results-container';
+        resultsContainer.className = 'unclassified-results-container';
+        
+        if (items.length === 0) {
+            // 빈 상태 표시
+            resultsContainer.innerHTML = `
+                <div class="col-12 text-center py-5">
+                    <div class="empty-state">
+                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                        <h4>미분류 항목이 없습니다</h4>
+                        <p class="text-muted">해당 조건에 맞는 미분류 항목이 없습니다.</p>
+                    </div>
+                </div>
+            `;
+        } else {
+            // 카드 그리드 형태로 데이터 렌더링
+            resultsContainer.innerHTML = `
+                <div class="row g-4">
+                    ${items.map(item => `
+                        <div class="col-lg-3 col-md-4 col-sm-6">
+                            <div class="card heritage-card h-100" onclick="viewHeritageDetail('${item.name}')" style="cursor: pointer;">
+                                <div class="card-img-top heritage-image">
+                                    ${item.image_url ? 
+                                        `<img src="${imageCacheManager.getCachedImageUrl(item.image_url)}" alt="${item.name}" onerror="this.style.display='none'; this.parentElement.classList.add('no-image')">` : 
+                                        `<div class="no-image-placeholder"><i class="fas fa-image"></i><span>이미지 없음</span></div>`
+                                    }
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <span class="badge category-badge category-${item.category}">${item.category}</span>
+                                        <small class="text-muted">${item.location}</small>
+                                    </div>
+                                    <h6 class="card-title">${item.name}</h6>
+                                    <p class="card-text text-truncate-2">
+                                        ${dataManager.currentLanguage === 'ko' 
+                                            ? (item.korean_description ? item.korean_description.substring(0, 100) + '...' : '설명 없음')
+                                            : (item.english_description ? item.english_description.substring(0, 100) + '...' : '영문 설명 준비 중...')
+                                        }
+                                    </p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">${item.period || '시대 정보 없음'}</small>
+                                        <small class="text-primary">${item.designation_no || ''}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+        
+        // unclassified-view 내부에 결과 컨테이너 추가
+        unclassifiedView.appendChild(resultsContainer);
+        
+        console.log('미분류 결과 렌더링 완료');
+    }
+
+    /**
+     * 미분류 항목 페이지네이션 렌더링
+     */
+    renderUnclassifiedPagination(current, total, totalItems) {
+        console.log('미분류 페이지네이션 렌더링:', current, total, totalItems);
+        
+        // unclassified-view 내부에서 페이지네이션 컨테이너 찾기 또는 생성
+        const unclassifiedView = document.getElementById('unclassified-view');
+        if (!unclassifiedView) {
+            console.error('unclassified-view 요소를 찾을 수 없습니다');
+            return;
+        }
+        
+        // 기존 페이지네이션 컨테이너 제거
+        const existingPagination = document.getElementById('unclassified-pagination');
+        if (existingPagination) {
+            existingPagination.remove();
+        }
+        
+        if (total <= 1) {
+            return; // 페이지가 1개 이하면 페이지네이션 숨김
+        }
+        
+        // 새로운 페이지네이션 컨테이너 생성
+        const paginationContainer = document.createElement('div');
+        paginationContainer.id = 'unclassified-pagination';
+        paginationContainer.className = 'd-flex justify-content-center mt-4';
+        
+        const html = paginationManager.generatePaginationHTML(current, total, totalItems);
+        paginationContainer.innerHTML = html;
+        
+        // unclassified-view 내부에 페이지네이션 컨테이너 추가
+        unclassifiedView.appendChild(paginationContainer);
+        
+        console.log('미분류 페이지네이션 렌더링 완료');
     }
 
     /**

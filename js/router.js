@@ -707,10 +707,14 @@ router.addRoute('unclassified', async (params) => {
             case 'cultural-data':
                 return item.kdcd_name === '문화재자료';
             case 'others':
-                // 기타 미분류 로직 개선
-                const knownCategories = ['국보', '보물', '사적', '명승', '천연기념물', '국가무형문화재',
-                                         '시도유형문화재', '시도민속문화재', '문화재자료'];
-                const itemCategory = item.category || item.kdcd_name || '';
+                // 기타 미분류 로직 개선 - 실제 데이터 기반으로 수정
+                const knownCategories = [
+                    '국보', '보물', '사적', '명승', '천연기념물', 
+                    '국가무형문화재', '국가민속문화재',  // ✅ 추가
+                    '시도유형문화재', '시도민속문화재', '문화재자료',
+                    '시도기념물', '등록문화재'  // ✅ 추가
+                ];
+                const itemCategory = item.kdcd_name || '';
                 return !knownCategories.includes(itemCategory) && 
                        itemCategory !== '' && 
                        itemCategory !== '미분류';

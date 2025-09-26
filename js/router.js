@@ -707,17 +707,22 @@ router.addRoute('unclassified', async (params) => {
             case 'cultural-data':
                 return item.kdcd_name === '문화재자료';
             case 'others':
-                // 기타 미분류 로직 개선 - 실제 데이터 기반으로 수정
+                // 기타 미분류 로직 - 정확한 12개 카테고리 목록
                 const knownCategories = [
                     '국보', '보물', '사적', '명승', '천연기념물', 
-                    '국가무형문화재', '국가민속문화재',  // ✅ 추가
-                    '시도유형문화재', '시도민속문화재', '문화재자료',
-                    '시도기념물', '등록문화재'  // ✅ 추가
+                    '국가무형문화재', '국가민속문화재',
+                    '시도유형문화재', '시도민속문화재', '시도기념물', 
+                    '문화재자료', '등록문화재'
                 ];
                 const itemCategory = item.kdcd_name || '';
-                return !knownCategories.includes(itemCategory) && 
-                       itemCategory !== '' && 
-                       itemCategory !== '미분류';
+                
+                // 기타 미분류 조건:
+                // 1. category === '미분류' 이거나
+                // 2. category가 비어있거나  
+                // 3. knownCategories에 없는 카테고리
+                return itemCategory === '미분류' || 
+                       itemCategory === '' || 
+                       !knownCategories.includes(itemCategory);
             default:
                 return false;
         }

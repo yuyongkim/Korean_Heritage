@@ -485,8 +485,10 @@ function updateTranslationRate() {
         const translationStats = dataManager.getTranslationStats();
         const rate = translationStats.rate || 0;
         
-        // 번역률 표시 업데이트
+        // 두 곳 모두 업데이트
         updateElement('translation-rate', `${rate.toFixed(1)}%`);
+        updateElement('hero-translation-rate', `${rate.toFixed(1)}%`);
+        updateElement('translation-count', `${translationStats.translated.toLocaleString()}개`);
     }
 }
 

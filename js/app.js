@@ -500,15 +500,15 @@ function updateUnclassifiedStats() {
         // 안전한 속성 접근
         if (unclassifiedStats && typeof unclassifiedStats === 'object') {
             updateElement('unclassified-count', (unclassifiedStats.total || 0).toLocaleString());
-            updateElement('unclassified-sido-count', (unclassifiedStats.byType?.sidoType || 0).toLocaleString());
-            updateElement('unclassified-category-count', (unclassifiedStats.byType?.sidoFolklore || 0).toLocaleString());
+            updateElement('sido-type-count', (unclassifiedStats.byType?.sidoType || 0).toLocaleString());
+            updateElement('sido-folklore-count', (unclassifiedStats.byType?.sidoFolklore || 0).toLocaleString());
             updateElement('cultural-data-count', (unclassifiedStats.byType?.culturalData || 0).toLocaleString());
             updateElement('others-count', (unclassifiedStats.byType?.others || 0).toLocaleString());
         } else {
             // 기본값 설정
             updateElement('unclassified-count', '0');
-            updateElement('unclassified-sido-count', '0');
-            updateElement('unclassified-category-count', '0');
+            updateElement('sido-type-count', '0');
+            updateElement('sido-folklore-count', '0');
             updateElement('cultural-data-count', '0');
             updateElement('others-count', '0');
         }

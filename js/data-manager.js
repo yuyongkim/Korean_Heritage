@@ -306,15 +306,25 @@ class DataManager {
 
         // 번역률 계산
         const translatedCount = this.heritageData.filter(item => {
+            // english_description 또는 content_en 필드 중 하나라도 유효한 번역이 있으면 번역된 것으로 간주
             const englishDesc = item.english_description;
-            if (!englishDesc) return false;
+            const contentEn = item.content_en;
             
-            const descStr = String(englishDesc).trim();
-            return descStr !== '' && 
-                   descStr !== 'null' && 
-                   descStr !== 'undefined' &&
-                   descStr !== '영문 설명 준비 중입니다.' &&
-                   !descStr.includes('Description not available');
+            const hasValidEnglishDesc = englishDesc && 
+                String(englishDesc).trim() !== '' && 
+                String(englishDesc).trim() !== 'null' && 
+                String(englishDesc).trim() !== 'undefined' &&
+                String(englishDesc).trim() !== '영문 설명 준비 중입니다.' &&
+                !String(englishDesc).includes('Description not available');
+                
+            const hasValidContentEn = contentEn && 
+                String(contentEn).trim() !== '' && 
+                String(contentEn).trim() !== 'null' && 
+                String(contentEn).trim() !== 'undefined' &&
+                String(contentEn).trim() !== '영문 설명 준비 중입니다.' &&
+                !String(contentEn).includes('Description not available');
+            
+            return hasValidEnglishDesc || hasValidContentEn;
         }).length;
 
         stats.translationRate = this.heritageData.length > 0 ? Math.round((translatedCount / this.heritageData.length) * 100) : 0;

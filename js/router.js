@@ -676,27 +676,30 @@ router.addRoute('unclassified', async (params) => {
     
     const unclassifiedType = params.type || 'sido-type';
     
+    // 데이터 매니저가 준비될 때까지 기다리기
+    await window.dataManager.waitForData();
+    
+    // 미분류 데이터 필터링
+    const unclassifiedData = window.dataManager.heritageData.filter(item => {
+        switch (unclassifiedType) {
+            case 'sido-type':
+                return item.kdcd_name === '시도유형문화재';
+            case 'sido-folklore':
+                return item.kdcd_name === '시도민속문화재';
+            case 'cultural-data':
+                return item.kdcd_name === '문화재자료';
+            case 'others':
+                return item.kdcd_name === '미분류' || item.ctcd_name === '미분류';
+            default:
+                return false;
+        }
+    });
+    
+    console.log('🔄 미분류 데이터 필터링 완료:', unclassifiedData.length, '건');
+    
     if (window.searchPage && typeof window.searchPage.loadUnclassifiedView === 'function') {
-        await window.searchPage.loadUnclassifiedView(unclassifiedType);
+        await window.searchPage.loadUnclassifiedView(unclassifiedType, unclassifiedData, 1);
     } else {
         console.error('❌ searchPage 또는 loadUnclassifiedView 함수를 찾을 수 없습니다');
-        // 🚀 대체 로직: 직접 미분류 데이터 필터링
-        if (window.dataManager && window.dataManager.heritageData) {
-            const unclassifiedData = window.dataManager.heritageData.filter(item => {
-                switch (unclassifiedType) {
-                    case 'sido-type':
-                        return item.kdcd_name === '시도유형문화재';
-                    case 'sido-folklore':
-                        return item.kdcd_name === '시도민속문화재';
-                    case 'cultural-data':
-                        return item.kdcd_name === '문화재자료';
-                    case 'others':
-                        return item.kdcd_name === '미분류' || item.ctcd_name === '미분류';
-                    default:
-                        return false;
-                }
-            });
-            console.log('🔄 미분류 데이터 필터링 실행:', unclassifiedData.length, '건');
-        }
     }
 });

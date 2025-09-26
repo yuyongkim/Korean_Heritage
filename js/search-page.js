@@ -84,6 +84,40 @@ class SearchPage {
     }
 
     /**
+     * 미분류 항목 표시 (라우터에서 호출)
+     */
+    async loadUnclassifiedView(type, data, page = 1) {
+        console.log(`미분류 뷰 로드: ${type}, ${data.length}건, 페이지 ${page}`);
+        
+        this.currentPage = page;
+        this.currentQuery = type; // 타입을 쿼리로 저장
+        
+        // 데이터가 없으면 빈 결과 표시
+        if (!data || data.length === 0) {
+            this.renderSearchResults([]);
+            this.renderSearchPagination(1, 1, 0);
+            return;
+        }
+        
+        // 페이지네이션 처리
+        const paginationData = this.getPaginatedData(data, page);
+        
+        if (!paginationData) {
+            console.warn('페이지네이션 데이터 없음');
+            this.renderSearchResults([]);
+            return;
+        }
+        
+        console.log(`✅ 미분류 항목 표시: ${paginationData.items.length}개 (${paginationData.currentPage}/${paginationData.totalPages})`);
+        
+        // 결과 렌더링 (검색 결과와 동일한 방식)
+        this.renderSearchResults(paginationData.items);
+        
+        // 페이지네이션 렌더링
+        this.renderSearchPagination(paginationData.currentPage, paginationData.totalPages, paginationData.totalItems);
+    }
+
+    /**
      * 페이지네이션 데이터 생성
      */
     getPaginatedData(data, page) {

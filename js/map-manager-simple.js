@@ -81,7 +81,7 @@ class SimpleMapManager {
             
             // HTTPS 우선 사용
             const protocol = window.location.protocol === 'https:' ? 'https:' : 'https:';
-            script.src = `${protocol}//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_MAP_API_KEY}&autoload=false`;
+            script.src = `${protocol}//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_MAP_API_KEY}`;
             script.async = true;
             // CORS 문제 해결을 위해 crossOrigin 제거
             // script.crossOrigin = 'anonymous';
@@ -97,17 +97,20 @@ class SimpleMapManager {
                 clearTimeout(timeoutId);
                 console.log('✅ Kakao Maps API script loaded successfully');
                 
-                // Kakao Maps API가 완전히 초기화될 때까지 대기
-                this.waitForKakaoMapsReady().then(() => {
-                    this.scriptLoaded = true;
-                    this.scriptLoading = false;
-                    console.log('✅ Kakao Maps API 완전 초기화 완료');
-                    resolve();
-                }).catch((error) => {
-                    this.scriptLoading = false;
-                    console.error('❌ Kakao Maps API 초기화 실패:', error);
-                    reject(error);
-                });
+                // 스크립트 로드 후 추가 대기 시간
+                setTimeout(() => {
+                    // Kakao Maps API가 완전히 초기화될 때까지 대기
+                    this.waitForKakaoMapsReady().then(() => {
+                        this.scriptLoaded = true;
+                        this.scriptLoading = false;
+                        console.log('✅ Kakao Maps API 완전 초기화 완료');
+                        resolve();
+                    }).catch((error) => {
+                        this.scriptLoading = false;
+                        console.error('❌ Kakao Maps API 초기화 실패:', error);
+                        reject(error);
+                    });
+                }, 500); // 0.5초 추가 대기
             };
 
             script.onerror = (error) => {
@@ -147,11 +150,21 @@ class SimpleMapManager {
      */
     waitForKakaoMapsReady() {
         return new Promise((resolve, reject) => {
-            const maxAttempts = 50; // 5초간 시도 (100ms * 50)
+            const maxAttempts = 100; // 10초간 시도 (100ms * 100)
             let attempts = 0;
             
             const checkReady = () => {
                 attempts++;
+                
+                // 더 상세한 상태 확인
+                const status = {
+                    kakao: typeof kakao !== 'undefined',
+                    maps: typeof kakao !== 'undefined' && !!kakao.maps,
+                    LatLng: typeof kakao !== 'undefined' && kakao.maps && !!kakao.maps.LatLng,
+                    Map: typeof kakao !== 'undefined' && kakao.maps && !!kakao.maps.Map,
+                    Marker: typeof kakao !== 'undefined' && kakao.maps && !!kakao.maps.Marker,
+                    InfoWindow: typeof kakao !== 'undefined' && kakao.maps && !!kakao.maps.InfoWindow
+                };
                 
                 if (this.isKakaoMapsReady()) {
                     console.log('✅ Kakao Maps API 클래스들이 모두 준비됨');
@@ -159,15 +172,15 @@ class SimpleMapManager {
                     return;
                 }
                 
+                // 중간 상태 로깅 (10번째마다)
+                if (attempts % 10 === 0) {
+                    console.log(`⏳ Kakao Maps API 초기화 대기 중... (${attempts}/${maxAttempts})`);
+                    console.log('현재 상태:', status);
+                }
+                
                 if (attempts >= maxAttempts) {
                     console.error('❌ Kakao Maps API 초기화 타임아웃');
-                    console.error('현재 상태:', {
-                        kakao: typeof kakao !== 'undefined',
-                        maps: typeof kakao !== 'undefined' && !!kakao.maps,
-                        LatLng: typeof kakao !== 'undefined' && kakao.maps && !!kakao.maps.LatLng,
-                        Map: typeof kakao !== 'undefined' && kakao.maps && !!kakao.maps.Map,
-                        Marker: typeof kakao !== 'undefined' && kakao.maps && !!kakao.maps.Marker
-                    });
+                    console.error('최종 상태:', status);
                     reject(new Error('Kakao Maps API classes not ready'));
                     return;
                 }
@@ -237,15 +250,24 @@ class SimpleMapManager {
             }
         } catch (error) {
             console.error('❌ Kakao Maps API 로드 실패:', error);
-            container.innerHTML = `
-                <div class="text-center py-4 bg-light rounded">
-                    <i class="fas fa-exclamation-circle fa-2x text-danger mb-2"></i>
-                    <p class="mb-0 text-muted">지도 API 로드 실패</p>
-                    <small class="text-muted">오류: ${error.message}</small>
-                    <br><small class="text-muted">API 키: ${KAKAO_MAP_API_KEY ? KAKAO_MAP_API_KEY.substring(0, 8) + '...' : 'undefined'}</small>
-                </div>
-            `;
-            return;
+            console.log('🔄 Leaflet 지도로 대체 시도...');
+            
+            // Leaflet 지도로 대체
+            try {
+                await this.showLeafletMap(container, coords, locationName);
+                return;
+            } catch (leafletError) {
+                console.error('❌ Leaflet 지도도 실패:', leafletError);
+                container.innerHTML = `
+                    <div class="text-center py-4 bg-light rounded">
+                        <i class="fas fa-exclamation-circle fa-2x text-danger mb-2"></i>
+                        <p class="mb-0 text-muted">지도 API 로드 실패</p>
+                        <small class="text-muted">오류: ${error.message}</small>
+                        <br><small class="text-muted">API 키: ${KAKAO_MAP_API_KEY ? KAKAO_MAP_API_KEY.substring(0, 8) + '...' : 'undefined'}</small>
+                    </div>
+                `;
+                return;
+            }
         }
 
         // 지도 컨테이너 설정 - 정사각형 강제
@@ -374,11 +396,77 @@ class SimpleMapManager {
     }
 
     /**
+     * Leaflet 지도 표시 (대체 솔루션)
+     */
+    async showLeafletMap(container, coords, locationName = '') {
+        console.log('🍃 Leaflet 지도 표시 시작');
+        
+        // Leaflet이 로드되었는지 확인
+        if (typeof L === 'undefined') {
+            throw new Error('Leaflet 라이브러리가 로드되지 않았습니다');
+        }
+        
+        const lat = parseFloat(coords.lat || coords.latitude);
+        const lng = parseFloat(coords.lng || coords.longitude);
+        
+        // 지도 컨테이너 설정
+        container.innerHTML = '';
+        container.style.height = '300px';
+        container.style.width = '300px';
+        container.style.minWidth = '300px';
+        container.style.minHeight = '300px';
+        container.style.maxWidth = '300px';
+        container.style.maxHeight = '300px';
+        container.style.aspectRatio = '1/1';
+        container.style.margin = '0 auto';
+        container.style.display = 'flex';
+        container.style.alignItems = 'center';
+        container.style.justifyContent = 'center';
+        
+        // Leaflet 지도 생성
+        const map = L.map(container, {
+            center: [lat, lng],
+            zoom: 13,
+            zoomControl: true
+        });
+        
+        // OpenStreetMap 타일 레이어 추가
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(map);
+        
+        // 마커 추가
+        const marker = L.marker([lat, lng]).addTo(map);
+        
+        // 팝업 추가 (위치명이 있는 경우)
+        if (locationName) {
+            marker.bindPopup(`
+                <div style="text-align: center; min-width: 150px;">
+                    <strong>${locationName}</strong><br>
+                    <small style="color: #666;">${lat.toFixed(6)}, ${lng.toFixed(6)}</small>
+                </div>
+            `).openPopup();
+        }
+        
+        // 지도 크기 조정
+        setTimeout(() => {
+            map.invalidateSize();
+        }, 100);
+        
+        this.currentMap = map;
+        console.log('✅ Leaflet 지도 표시 완료');
+    }
+
+    /**
      * 지도 정리
      */
     cleanup() {
         if (this.currentMap) {
-            // Kakao Maps는 remove() 메서드가 없으므로 null로 설정
+            // Leaflet 지도인 경우
+            if (this.currentMap.remove) {
+                this.currentMap.remove();
+            }
             this.currentMap = null;
         }
     }

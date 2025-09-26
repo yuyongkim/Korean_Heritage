@@ -4,7 +4,7 @@
  */
 
 // Debug mode configuration
-const DEBUG_MODE = false; // Set to true for development debugging
+const DEBUG_MODE = true; // Set to true for development debugging
 
 // API Keys - 보안을 위해 환경변수 또는 별도 설정 파일 사용 권장
 const KAKAO_MAP_API_KEY = (() => {
@@ -24,6 +24,7 @@ const KAKAO_MAP_API_KEY = (() => {
     }
     
     // 4. 기본값 (개발용 - 프로덕션에서는 제거 필요)
+    // 더 안정적인 API 키 사용
     return 'f3b94f450409b9b743b3932047bdbe4b';
 })();
 

@@ -169,16 +169,23 @@ class FilterManager {
     getAvailableCategories() {
         const data = dataManager.heritageData;
         if (!data || data.length === 0) {
+            console.log('❌ 데이터가 없어서 카테고리를 가져올 수 없습니다');
             return [];
         }
 
         const categories = new Set();
         data.forEach(item => {
-            if (item.category) categories.add(item.category);
-            if (item.kdcd_name) categories.add(item.kdcd_name);
+            if (item.category && item.category.trim() !== '') {
+                categories.add(item.category);
+            }
+            if (item.kdcd_name && item.kdcd_name.trim() !== '') {
+                categories.add(item.kdcd_name);
+            }
         });
 
-        return Array.from(categories).sort();
+        const result = Array.from(categories).sort();
+        console.log('📋 발견된 카테고리:', result);
+        return result;
     }
 
     /**
@@ -187,16 +194,23 @@ class FilterManager {
     getAvailableLocations() {
         const data = dataManager.heritageData;
         if (!data || data.length === 0) {
+            console.log('❌ 데이터가 없어서 지역을 가져올 수 없습니다');
             return [];
         }
 
         const locations = new Set();
         data.forEach(item => {
-            if (item.location) locations.add(item.location);
-            if (item.ctcd_name) locations.add(item.ctcd_name);
+            if (item.location && item.location.trim() !== '') {
+                locations.add(item.location);
+            }
+            if (item.ctcd_name && item.ctcd_name.trim() !== '') {
+                locations.add(item.ctcd_name);
+            }
         });
 
-        return Array.from(locations).sort();
+        const result = Array.from(locations).sort();
+        console.log('📍 발견된 지역:', result);
+        return result;
     }
 
     /**
@@ -222,9 +236,11 @@ class FilterManager {
      * 필터 옵션 UI 업데이트
      */
     updateFilterOptions() {
+        console.log('🔧 필터 옵션 업데이트 시작');
         this._updateCategoryOptions();
         this._updateLocationOptions();
         this._updatePeriodOptions();
+        console.log('✅ 필터 옵션 업데이트 완료');
     }
 
     /**
@@ -232,11 +248,18 @@ class FilterManager {
      */
     _updateCategoryOptions() {
         const categoryFilter = document.getElementById('category-filter');
-        if (!categoryFilter) return;
+        if (!categoryFilter) {
+            console.log('❌ category-filter 요소를 찾을 수 없습니다');
+            return;
+        }
 
         const categories = this.getAvailableCategories();
+        console.log('📋 사용 가능한 카테고리:', categories);
+        
         categoryFilter.innerHTML = '<option value="">모든 카테고리</option>' + 
             categories.map(category => `<option value="${category}">${category}</option>`).join('');
+        
+        console.log('✅ 카테고리 옵션 업데이트 완료:', categories.length, '개');
     }
 
     /**
@@ -244,11 +267,18 @@ class FilterManager {
      */
     _updateLocationOptions() {
         const locationFilter = document.getElementById('location-filter');
-        if (!locationFilter) return;
+        if (!locationFilter) {
+            console.log('❌ location-filter 요소를 찾을 수 없습니다');
+            return;
+        }
 
         const locations = this.getAvailableLocations();
+        console.log('📍 사용 가능한 지역:', locations);
+        
         locationFilter.innerHTML = '<option value="">모든 지역</option>' + 
             locations.map(location => `<option value="${location}">${location}</option>`).join('');
+        
+        console.log('✅ 지역 옵션 업데이트 완료:', locations.length, '개');
     }
 
     /**

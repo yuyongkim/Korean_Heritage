@@ -148,6 +148,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 🚀 최적화된 대시보드 업데이트
     appController.updateDashboard(dataManager.heritageData);
     
+    // 🔧 필터 옵션 업데이트 (드롭다운 메뉴 문제 해결)
+    if (window.filterManager && typeof filterManager.updateFilterOptions === 'function') {
+        filterManager.updateFilterOptions();
+        debugLog('✅ 필터 옵션 업데이트 완료');
+    }
+    
     // 🖼️ 이미지 미리 로드 (첫 3페이지)
     setTimeout(() => {
         const firstThreePages = dataManager.heritageData.slice(0, 60); // 20 * 3 = 60개
@@ -158,6 +164,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     dataManager.addEventListener('dataLoaded', (data) => {
         console.log('📊 데이터 로딩 완료 이벤트 수신:', data.length, '개 항목');
         appController.updateDashboard(data);
+        
+        // 🔧 필터 옵션 업데이트 (드롭다운 메뉴 문제 해결)
+        if (window.filterManager && typeof filterManager.updateFilterOptions === 'function') {
+            filterManager.updateFilterOptions();
+            debugLog('✅ 데이터 로드 후 필터 옵션 업데이트 완료');
+        }
         
         // 🖼️ 이미지 미리 로드
         setTimeout(() => {

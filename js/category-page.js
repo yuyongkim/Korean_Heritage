@@ -328,17 +328,30 @@ class CategoryPage {
      */
     setupCategoryLocationFilter(items) {
         const locationFilter = document.getElementById('category-location-filter');
-        if (!locationFilter) return;
+        if (!locationFilter) {
+            console.log('❌ category-location-filter 요소를 찾을 수 없습니다');
+            return;
+        }
         
-        // 고유한 지역 목록 추출
-        const locations = [...new Set(items
-            .map(item => item.location)
-            .filter(location => location && location.trim())
-        )].sort();
+        // 고유한 지역 목록 추출 (location과 ctcd_name 모두 포함)
+        const locations = new Set();
+        items.forEach(item => {
+            if (item.location && item.location.trim() !== '') {
+                locations.add(item.location);
+            }
+            if (item.ctcd_name && item.ctcd_name.trim() !== '') {
+                locations.add(item.ctcd_name);
+            }
+        });
+        
+        const sortedLocations = Array.from(locations).sort();
+        console.log('📍 카테고리 지역 필터 옵션:', sortedLocations);
         
         // 옵션 생성
         locationFilter.innerHTML = '<option value="">모든 지역</option>' + 
-            locations.map(location => `<option value="${location}">${location}</option>`).join('');
+            sortedLocations.map(location => `<option value="${location}">${location}</option>`).join('');
+        
+        console.log('✅ 카테고리 지역 필터 설정 완료:', sortedLocations.length, '개');
     }
 
     /**

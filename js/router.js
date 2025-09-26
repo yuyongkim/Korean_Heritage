@@ -140,14 +140,46 @@ class Router {
                 params: { category: categoryName, page: 1 }
             };
         }
-        // 미분류 항목 처리
+        // 미분류 항목 처리 (쿼리 파라미터 분리)
         else if (decodedHash.startsWith('unclassified/')) {
-            const parts = decodedHash.split('/');
+            // 1. decodedHash를 먼저 '?'로 split (경로와 쿼리 분리)
+            const [pathPart, queryPart] = decodedHash.split('?');
+            
+            // 2. 경로 부분만 '/'로 split하여 parts 생성
+            const parts = pathPart.split('/').filter(p => p);
             const unclassifiedType = parts[1] || 'sido-type';
+            
+            // 3. 쿼리 부분은 '&'와 '='로 파싱하여 객체 생성
+            const queryParams = {};
+            if (queryPart) {
+                queryPart.split('&').forEach(param => {
+                    const [key, value] = param.split('=');
+                    if (key && value !== undefined) {
+                        queryParams[key] = isNaN(value) ? decodeURIComponent(value) : parseInt(value);
+                    }
+                });
+            }
+            
+            // 4. unclassified 라우트 반환 시:
+            //    - params.type = parts[1] (쿼리 없는 순수 타입)
+            //    - params.page = queryParams.page || 1
             result = {
                 route: 'unclassified',
-                params: { type: unclassifiedType, page: 1 }
+                params: { 
+                    type: unclassifiedType,  // ✅ 쿼리 파라미터 제거된 깨끗한 type
+                    page: parseInt(queryParams.page) || 1  // ✅ 쿼리에서 page 추출
+                }
             };
+            
+            // 디버깅: unclassified 라우트 파싱 확인
+            console.log('🔍 unclassified 파싱 디버그:');
+            console.log('  - 원본 hash:', hash);
+            console.log('  - decodedHash:', decodedHash);
+            console.log('  - pathPart:', pathPart);
+            console.log('  - queryPart:', queryPart || 'N/A');
+            console.log('  - parts:', parts);
+            console.log('  - unclassifiedType:', unclassifiedType);
+            console.log('  - queryParams:', queryParams);
         }
         // 🚀 list 페이지네이션 처리 (list?page=X)
         else if (decodedHash.startsWith('list?page=')) {
@@ -690,7 +722,22 @@ router.addRoute('unclassified', async (params) => {
             case 'cultural-data':
                 return item.kdcd_name === '문화재자료';
             case 'others':
-                return item.kdcd_name === '미분류' || item.ctcd_name === '미분류';
+                // 기타 미분류 로직 - 정확한 12개 카테고리 목록
+                const knownCategories = [
+                    '국보', '보물', '사적', '명승', '천연기념물', 
+                    '국가무형문화재', '국가민속문화재',
+                    '시도유형문화재', '시도민속문화재', '시도기념물', 
+                    '문화재자료', '등록문화재'
+                ];
+                const itemCategory = item.kdcd_name || '';
+                
+                // 기타 미분류 조건:
+                // 1. category === '미분류' 이거나
+                // 2. category가 비어있거나  
+                // 3. knownCategories에 없는 카테고리
+                return itemCategory === '미분류' || 
+                       itemCategory === '' || 
+                       !knownCategories.includes(itemCategory);
             default:
                 return false;
         }

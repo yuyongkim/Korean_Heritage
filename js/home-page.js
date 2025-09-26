@@ -14,6 +14,54 @@ class HomePage {
     async init() {
         console.log('🏠 홈페이지 초기화');
         await this.loadHeritageList();
+        this.setupEventListeners();
+    }
+
+    /**
+     * 이벤트 리스너 설정
+     */
+    setupEventListeners() {
+        // 카테고리 필터 이벤트 리스너
+        const categoryFilter = document.getElementById('category-filter');
+        if (categoryFilter) {
+            categoryFilter.addEventListener('change', (e) => {
+                console.log('카테고리 필터 변경:', e.target.value);
+                this.currentPage = 1; // 첫 페이지로 리셋
+                this.loadHeritageList();
+            });
+        }
+
+        // 지역 필터 이벤트 리스너
+        const locationFilter = document.getElementById('location-filter');
+        if (locationFilter) {
+            locationFilter.addEventListener('change', (e) => {
+                console.log('지역 필터 변경:', e.target.value);
+                this.currentPage = 1; // 첫 페이지로 리셋
+                this.loadHeritageList();
+            });
+        }
+
+        // 뷰 모드 전환 이벤트 리스너
+        const gridViewBtn = document.getElementById('grid-view-btn');
+        const listViewBtn = document.getElementById('list-view-btn');
+        
+        if (gridViewBtn) {
+            gridViewBtn.addEventListener('change', () => {
+                if (gridViewBtn.checked) {
+                    this.toggleViewMode('grid');
+                }
+            });
+        }
+        
+        if (listViewBtn) {
+            listViewBtn.addEventListener('change', () => {
+                if (listViewBtn.checked) {
+                    this.toggleViewMode('list');
+                }
+            });
+        }
+
+        console.log('✅ 홈페이지 이벤트 리스너 설정 완료');
     }
 
     /**

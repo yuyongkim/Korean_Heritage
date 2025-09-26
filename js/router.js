@@ -140,13 +140,30 @@ class Router {
                 params: { category: categoryName, page: 1 }
             };
         }
-        // 미분류 항목 처리
+        // 미분류 항목 처리 (쿼리 파라미터 분리)
         else if (decodedHash.startsWith('unclassified/')) {
-            const parts = decodedHash.split('/');
+            // 쿼리 파라미터 분리
+            const [pathPart, queryPart] = decodedHash.split('?');
+            const parts = pathPart.split('/').filter(p => p);
             const unclassifiedType = parts[1] || 'sido-type';
+            
+            // 쿼리 파라미터 파싱
+            const queryParams = {};
+            if (queryPart) {
+                queryPart.split('&').forEach(param => {
+                    const [key, value] = param.split('=');
+                    if (key && value !== undefined) {
+                        queryParams[key] = isNaN(value) ? decodeURIComponent(value) : parseInt(value);
+                    }
+                });
+            }
+            
             result = {
                 route: 'unclassified',
-                params: { type: unclassifiedType, page: 1 }
+                params: { 
+                    type: unclassifiedType,  // ✅ 쿼리 파라미터 제거된 깨끗한 type
+                    page: parseInt(queryParams.page) || 1  // ✅ 쿼리에서 page 추출
+                }
             };
         }
         // 🚀 list 페이지네이션 처리 (list?page=X)
@@ -690,7 +707,13 @@ router.addRoute('unclassified', async (params) => {
             case 'cultural-data':
                 return item.kdcd_name === '문화재자료';
             case 'others':
-                return item.kdcd_name === '미분류' || item.ctcd_name === '미분류';
+                // 기타 미분류 로직 개선
+                const knownCategories = ['국보', '보물', '사적', '명승', '천연기념물', '국가무형문화재',
+                                         '시도유형문화재', '시도민속문화재', '문화재자료'];
+                const itemCategory = item.category || item.kdcd_name || '';
+                return !knownCategories.includes(itemCategory) && 
+                       itemCategory !== '' && 
+                       itemCategory !== '미분류';
             default:
                 return false;
         }
